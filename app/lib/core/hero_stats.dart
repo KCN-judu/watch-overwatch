@@ -99,9 +99,9 @@ class HeroStats {
         r.per10 = null;
       }
     }
+    final out = _mergeSelfHealing(byGuid.values.toList());
     // Stats the game's list does not carry for this hero but matches show it doing
-    // (Domina heals, yet the list only has her self-healing): add them from matches.
-    final out = byGuid.values.toList();
+    // (a hero whose list has no healing at all): add them from matches.
     if (agg != null) {
       for (final e in _matchField.entries) {
         if (out.any((r) => r.name == e.key)) continue;
@@ -138,6 +138,43 @@ class HeroStats {
       );
     }
     return out;
+  }
+
+  /// Self-healing is healing: one row 治疗量, the two figures added together. A hero
+  /// with only self-healing in its list gets that row renamed.
+  static List<HeroStatRow> _mergeSelfHealing(List<HeroStatRow> rows) {
+    final self = rows.where((r) => r.name == '自我治疗量').firstOrNull;
+    if (self == null) return rows;
+    final total = rows.where((r) => r.name == '治疗量').firstOrNull;
+    if (total == null) {
+      return [
+        for (final r in rows)
+          if (identical(r, self))
+            HeroStatRow(self.guid, '治疗量')
+              ..per10 = self.per10
+              ..perMatch = self.perMatch
+              ..per10Source = self.per10Source
+              ..perMatchSource = self.perMatchSource
+          else
+            r,
+      ];
+    }
+    double? add(double? a, double? b) =>
+        a == null && b == null ? null : (a ?? 0) + (b ?? 0);
+    // The merged figure is provider data when either part is, otherwise the weaker source.
+    StatSource join(StatSource a, StatSource b) =>
+        a == StatSource.provider || b == StatSource.provider
+        ? StatSource.provider
+        : (a == StatSource.zero ? b : a);
+    total
+      ..per10 = add(total.per10, self.per10)
+      ..perMatch = add(total.perMatch, self.perMatch)
+      ..per10Source = join(total.per10Source, self.per10Source)
+      ..perMatchSource = join(total.perMatchSource, self.perMatchSource);
+    return [
+      for (final r in rows)
+        if (!identical(r, self)) r,
+    ];
   }
 
   /// Per-10-minute figure for one named stat in a table cell: null when the hero

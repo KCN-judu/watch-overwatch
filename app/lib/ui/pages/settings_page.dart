@@ -304,6 +304,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     : '${secretsPath.substring(0, math.max(0, secretsPath.lastIndexOf(RegExp(r'[\\/]'))))}\\exports',
               ),
               _info('最近导出', app.lastExportPath ?? '还没有导出'),
+              _cacheRow(app),
               _info(
                 '本地服务',
                 '${app.backend.api.base}${app.backend.binaryPath == null ? '' : '  ·  ${app.backend.binaryPath}'}',
@@ -451,6 +452,40 @@ class _SettingsPageState extends State<SettingsPage> {
       ],
     ),
   );
+
+  /// What the strength cache holds, with a button to empty it.
+  Widget _cacheRow(AppState app) {
+    final s = app.cacheStats;
+    final bytes = (s?['bytes'] as num?)?.toInt() ?? 0;
+    final size = bytes >= 1048576
+        ? '${(bytes / 1048576).toStringAsFixed(1)} MB'
+        : '${(bytes / 1024).round()} KB';
+    final text = s == null
+        ? '不可用'
+        : '${s['matches']} 场对局、${s['players']} 名玩家，$size';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              '强度缓存',
+              style: Ty.body.copyWith(color: context.c.textSecondary),
+            ),
+          ),
+          Flexible(child: Text(text, style: Ty.body)),
+          const SizedBox(width: Sp.withinGroup),
+          AppButton(
+            '清除缓存',
+            quiet: true,
+            onPressed: s == null ? null : app.clearStrengthCache,
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _info(String label, String value) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 3),

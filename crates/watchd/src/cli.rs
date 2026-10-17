@@ -116,6 +116,22 @@ async fn dataset(args: &Args) -> anyhow::Result<()> {
     plan.hero_board = !args.flag("no-hero-board");
     plan.lobby_ratings = args.flag("lobby");
     plan.max_rated_players = args.number("max-rated")?.unwrap_or(plan.max_rated_players);
+    // Per-role selection: the newest N matches of each chosen role (all three by default).
+    plan.details_per_role = args.number("per-role")?;
+    if let Some(roles) = args.value("roles") {
+        plan.roles = roles
+            .split(',')
+            .map(|r| match watch_core::ir::Role::parse(r.trim()) {
+                role if watch_core::ir::Role::PLAYABLE.contains(&role) => Ok(role),
+                _ => Err(anyhow::anyhow!("--roles expects tank, damage or support")),
+            })
+            .collect::<anyhow::Result<_>>()?;
+    }
+    // Finished matches and ranks are kept between runs unless asked not to.
+    if !args.flag("no-cache") {
+        plan.cache = crate::open_strength_cache()
+            .map(|c| c as std::sync::Arc<dyn watch_core::StrengthCache>);
+    }
     plan.validate().map_err(|e| anyhow::anyhow!(e.message))?;
 
     let client = WatchClient::new(load_secrets()?)?;

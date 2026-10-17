@@ -80,12 +80,40 @@ void main() {
           {'heroGuid': _hero, 'valueGuid': '7', 'valueText': '自我治疗量'},
         ],
       });
-      final v =
-          HeroStats.cell10(usage(), cat, const [], (n) => n == '治疗量') ??
-          HeroStats.cell10(usage(), cat, const [], (n) => n == '自我治疗量');
-      expect(v, 0); // it can heal itself, none was recorded: zero, not a dash
+      final rows = HeroStats.rows(usage(), cat, const []);
+      expect(rows.where((r) => r.name == '自我治疗量'), isEmpty);
+      // it can heal itself, none was recorded: zero, not a dash
+      expect(rows.singleWhere((r) => r.name == '治疗量').per10, 0);
     },
   );
+
+  test('self-healing and healing are one row, added together', () {
+    final cat = Catalog({
+      'heroes': {
+        _hero: {'name': '测试', 'role': 'healer'},
+      },
+      'statistics': [
+        {'heroGuid': _hero, 'valueGuid': '7', 'valueText': '自我治疗量'},
+        {'heroGuid': _hero, 'valueGuid': '8', 'valueText': '治疗量'},
+      ],
+    });
+    final h = HeroUsage({
+      'queue': 'role_queue',
+      'hero': {'kind': 'hero', 'guid': _hero, 'name': '测试'},
+      'matches': 10,
+      'play_time_s': 6000.0,
+      'per_match': const [],
+      'per_10min': [
+        {'stat': stat('7', '自我治疗量'), 'value': 100.0},
+        {'stat': stat('8', '治疗量'), 'value': 2000.0},
+      ],
+    });
+    final rows = HeroStats.rows(h, cat, const []);
+    expect(rows.where((r) => r.name == '自我治疗量'), isEmpty);
+    final heal = rows.singleWhere((r) => r.name == '治疗量');
+    expect(heal.per10, 2100);
+    expect(heal.per10Source, StatSource.provider);
+  });
 
   test('kills and damage are never a dash; supports always have healing', () {
     final bare = Catalog({

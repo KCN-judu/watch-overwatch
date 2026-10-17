@@ -1,6 +1,7 @@
 //! Orchestrates upstream calls into a complete [`PlayerDataset`]. Transport,
 //! caching and credentials stay behind [`Fetcher`]; this module only decides
 //! what to ask for and records how complete the answer is.
+use crate::cache::{CachedDetail, RATINGS_TTL, StrengthCache};
 use crate::dashen::{Endpoint, Mode, normalize};
 use crate::ir::*;
 use crate::progress::{Progress, report};
@@ -47,9 +48,22 @@ pub struct CollectPlan {
     /// Needed for lobby strength outside competitive, where details carry no ranks.
     pub lobby_ratings: bool,
     pub max_rated_players: usize,
+    /// Only these roles (of the roles the subject played) are analysed; empty means all
+    /// three. Applies to `details_per_role`: paging and the choice of matches look at
+    /// these roles only.
+    pub roles: Vec<Role>,
+    /// Look current-season ratings up again even if they are cached.
+    pub refresh_ratings: bool,
+    /// Match-list rows the caller has already read (the app's match page). When not
+    /// empty, the list is not fetched again: these rows are the history to choose
+    /// from, in their own words, and only their details and ratings are looked up.
+    pub known_matches: Vec<MatchSummary>,
     /// Optional live progress sink; never serialised.
     #[serde(skip)]
     pub progress: Option<Arc<Progress>>,
+    /// Optional store for finished-match details and ratings; never serialised.
+    #[serde(skip)]
+    pub cache: Option<Arc<dyn StrengthCache>>,
 }
 
 impl Default for CollectPlan {
@@ -64,7 +78,11 @@ impl Default for CollectPlan {
             hero_board: true,
             lobby_ratings: false,
             max_rated_players: 60,
+            roles: Vec::new(),
+            refresh_ratings: false,
+            known_matches: Vec::new(),
             progress: None,
+            cache: None,
         }
     }
 }
@@ -79,6 +97,9 @@ impl CollectPlan {
                 .details_per_role
                 .is_some_and(|n| !(1..=50).contains(&n))
             || self.max_rated_players > 600
+            || self.roles.iter().any(|r| !Role::PLAYABLE.contains(r))
+            || self.known_matches.len() > 300
+            || self.known_matches.iter().any(|m| m.id.is_empty())
             || self.career_seasons.len() > 11
             || self.season.is_some_and(|s| !season_ok(s))
             || !self.career_seasons.iter().all(|s| season_ok(*s))
@@ -172,7 +193,12 @@ pub async fn match_pages<F: Fetcher>(
 
 /// True once each playable role has at least `n` matches.
 pub fn role_quota_met(matches: &[MatchSummary], n: usize) -> bool {
-    Role::PLAYABLE
+    role_quota_met_for(matches, n, &Role::PLAYABLE)
+}
+
+/// True once each of `roles` has at least `n` matches.
+pub fn role_quota_met_for(matches: &[MatchSummary], n: usize, roles: &[Role]) -> bool {
+    roles
         .iter()
         .all(|r| matches.iter().filter(|m| m.role == *r).count() >= n)
 }
@@ -180,9 +206,17 @@ pub fn role_quota_met(matches: &[MatchSummary], n: usize) -> bool {
 /// Indices of the newest `n` matches per playable role, in list order. `matches`
 /// must already be newest first. Matches with no known role are not chosen.
 pub fn select_per_role(matches: &[MatchSummary], n: usize) -> Vec<usize> {
+    select_per_role_for(matches, n, &Role::PLAYABLE)
+}
+
+/// Like [`select_per_role`], restricted to `roles`.
+pub fn select_per_role_for(matches: &[MatchSummary], n: usize, roles: &[Role]) -> Vec<usize> {
     let mut taken = [0usize; 3];
     let mut out = Vec::new();
     for (i, m) in matches.iter().enumerate() {
+        if !roles.contains(&m.role) {
+            continue;
+        }
         if let Some(slot) = Role::PLAYABLE.iter().position(|r| *r == m.role)
             && taken[slot] < n
         {
@@ -278,6 +312,94 @@ pub async fn match_pages_until<F: Fetcher>(
     out
 }
 
+/// A participant whose rank has to be looked up, and the roles they played.
+struct Unrated {
+    id: String,
+    /// Known only when the match was fetched in this run.
+    token: Option<String>,
+    name: Option<String>,
+    roles: Vec<Role>,
+}
+
+fn note_unrated(
+    list: &mut Vec<Unrated>,
+    id: String,
+    token: Option<String>,
+    name: Option<String>,
+    role: Role,
+) {
+    match list.iter_mut().find(|u| u.id == id) {
+        Some(u) => {
+            if !u.roles.contains(&role) {
+                u.roles.push(role);
+            }
+            if u.token.is_none() {
+                u.token = token;
+            }
+        }
+        None => list.push(Unrated {
+            id,
+            token,
+            name,
+            roles: vec![role],
+        }),
+    }
+}
+
+/// Participants of a detail who carry no rank in the match and played a known role:
+/// the ones whose career rank is needed for lobby strength.
+fn rating_needs(detail: &MatchDetail) -> Vec<(String, Option<String>, Role)> {
+    detail
+        .allies
+        .iter()
+        .chain(&detail.enemies)
+        .filter_map(|p| {
+            let id = p.bnet_id.clone()?;
+            let ranked = p.rank.as_ref().is_some_and(|r| r.skill_rating.is_some());
+            (!ranked && p.role != Role::Unknown).then(|| (id, p.name.clone(), p.role))
+        })
+        .collect()
+}
+
+/// Whether `role`'s rating for this player can be answered from the cache without a request.
+fn rating_cached(
+    cache: &dyn StrengthCache,
+    id: &str,
+    role: Role,
+    current: u32,
+    previous: Option<u32>,
+    refresh: bool,
+) -> bool {
+    if refresh {
+        return false;
+    }
+    match cache.season_ratings(id, current, Some(RATINGS_TTL)) {
+        Some(rows)
+            if rows
+                .iter()
+                .any(|r| r.role == role && r.rank.skill_rating.is_some()) =>
+        {
+            true
+        }
+        // The current season has no rank for this role: the previous one decides, and it
+        // is either cached or looked up, so only a missing entry needs the network.
+        Some(_) => previous.is_none_or(|p| cache.season_ratings(id, p, None).is_some()),
+        None => false,
+    }
+}
+
+/// Adds `rows` (read from, or about to be stored for, season `key`) to a player's
+/// ratings: the first rank seen for a role wins, and the season is stated relative to now
+/// (`None` is the current season) however long ago it was stored.
+fn merge_ratings(ratings: &mut Vec<RoleRating>, rows: Vec<RoleRating>, key: u32, current: u32) {
+    for mut r in rows {
+        r.season = (key != current).then_some(key);
+        if !ratings.iter().any(|x| x.role == r.role) {
+            ratings.push(r);
+        }
+    }
+}
+
 /// Collects the player's card, careers, match lists, newest match details and
 /// hero board. Individual failures are recorded in `coverage` instead of aborting.
 pub async fn collect_player<F: Fetcher>(
@@ -322,10 +444,27 @@ pub async fn collect_player<F: Fetcher>(
         }
     }
 
+    let roles: Vec<Role> = if plan.roles.is_empty() {
+        Role::PLAYABLE.to_vec()
+    } else {
+        plan.roles.clone()
+    };
     let mut match_lists = Vec::new();
     let mut matches = Vec::new();
     let mut seen = HashSet::new();
+    if !plan.known_matches.is_empty() {
+        // The history is what the caller already read; nothing to page through.
+        matches.extend(
+            plan.known_matches
+                .iter()
+                .filter(|m| seen.insert(m.id.clone()))
+                .cloned(),
+        );
+    }
     for &mode in &plan.modes {
+        if !plan.known_matches.is_empty() {
+            break;
+        }
         let quota = plan.details_per_role;
         let scope = PageScope {
             token,
@@ -337,7 +476,7 @@ pub async fn collect_player<F: Fetcher>(
             f,
             cat,
             &scope,
-            |read| quota.is_some_and(|n| role_quota_met(read, n)),
+            |read| quota.is_some_and(|n| role_quota_met_for(read, n, &roles)),
             plan.progress.as_deref(),
         )
         .await;
@@ -353,11 +492,22 @@ pub async fn collect_player<F: Fetcher>(
     matches.sort_by_key(|m| std::cmp::Reverse(m.started_at_ms));
 
     let mut details = BTreeMap::new();
-    // bnet_id → (token, name, roles played without an in-match rank). Memory only.
-    let mut unrated: Vec<(String, String, Option<String>, Vec<Role>)> = Vec::new();
-    let chosen: Vec<usize> = match plan.details_per_role {
-        Some(n) => select_per_role(&matches, n),
-        None => (0..matches.len().min(plan.max_details)).collect(),
+    // Players whose rank is needed, with their token when the match was fetched this run.
+    // Memory only; tokens never reach the cache.
+    let mut unrated: Vec<Unrated> = Vec::new();
+    let cache = plan.cache.as_deref();
+    let subject_id = profile.bnet_id.clone();
+    let current = cat.current_season;
+    let previous = current.checked_sub(1).filter(|s| *s > 0);
+    let mut cache_hits = 0usize;
+    let chosen: Vec<usize> = if !plan.known_matches.is_empty() {
+        // The caller already chose which matches to look up; take them all.
+        (0..matches.len()).collect()
+    } else {
+        match plan.details_per_role {
+            Some(n) => select_per_role_for(&matches, n, &roles),
+            None => (0..matches.len().min(plan.max_details)).collect(),
+        }
     };
     let wanted = chosen.len();
     report(plan.progress.as_deref(), |s| {
@@ -368,7 +518,47 @@ pub async fn collect_player<F: Fetcher>(
         s.matches_found = matches.len();
     });
     for m in chosen.iter().map(|&i| &matches[i]) {
-        let endpoint = m.kind.mode.match_info();
+        let mode = m.kind.mode;
+        let map_name = m
+            .map
+            .as_ref()
+            .and_then(|e| e.name.clone())
+            .unwrap_or_default();
+
+        // A finished match is the same every time; reuse it when every rating it needs
+        // is also at hand. Otherwise fetch it again, to get the participants' tokens.
+        if let (Some(cache), Some(subject)) = (cache, subject_id.as_deref())
+            && let Some(CachedDetail {
+                detail,
+                unreachable,
+            }) = cache.detail(mode, &m.id, subject)
+        {
+            let needs: Vec<_> = rating_needs(&detail)
+                .into_iter()
+                .filter(|(id, _, _)| !unreachable.contains(id))
+                .collect();
+            let covered = !plan.lobby_ratings
+                || needs.iter().all(|(id, _, role)| {
+                    rating_cached(cache, id, *role, current, previous, plan.refresh_ratings)
+                });
+            if covered {
+                cache_hits += 1;
+                report(plan.progress.as_deref(), |s| {
+                    s.done += 1;
+                    s.cached += 1;
+                    s.note = map_name.clone();
+                });
+                if plan.lobby_ratings {
+                    for (id, name, role) in needs {
+                        note_unrated(&mut unrated, id, None, name, role);
+                    }
+                }
+                details.insert(m.id.clone(), detail);
+                continue;
+            }
+        }
+
+        let endpoint = mode.match_info();
         let result = f.fetch(endpoint, match_info_payload(token, &m.id)).await;
         report(plan.progress.as_deref(), |s| {
             s.done += 1;
@@ -376,15 +566,11 @@ pub async fn collect_player<F: Fetcher>(
             if result.is_err() {
                 s.failures += 1;
             }
-            s.note = m
-                .map
-                .as_ref()
-                .and_then(|e| e.name.clone())
-                .unwrap_or_default();
+            s.note = map_name.clone();
         });
         fetches.push(record(
             endpoint,
-            Some(m.kind.mode),
+            Some(mode),
             None,
             None,
             Some(&m.id),
@@ -394,44 +580,31 @@ pub async fn collect_player<F: Fetcher>(
             let mut detail = normalize::match_detail(
                 &m.id,
                 normalize::payload(&v.value),
-                m.kind.mode,
+                mode,
                 profile.bnet_id.as_deref(),
                 cat,
             );
             detail.started_at_ms = detail.started_at_ms.or(m.started_at_ms);
+            let mut unreachable = Vec::new();
             if plan.lobby_ratings {
                 let tokens = normalize::participant_tokens(normalize::payload(&v.value));
-                for p in detail.allies.iter().chain(&detail.enemies) {
-                    let Some(id) = p.bnet_id.as_deref() else {
-                        continue;
-                    };
-                    if p.rank.as_ref().is_some_and(|r| r.skill_rating.is_some())
-                        || p.role == Role::Unknown
-                    {
-                        continue;
-                    }
-                    match unrated.iter_mut().find(|u| u.0 == id) {
-                        Some(u) if !u.3.contains(&p.role) => u.3.push(p.role),
-                        Some(_) => {}
-                        None => {
-                            if let Some((_, token, name)) = tokens.iter().find(|t| t.0 == id) {
-                                unrated.push((
-                                    id.into(),
-                                    token.clone(),
-                                    name.clone(),
-                                    vec![p.role],
-                                ));
-                            }
-                        }
+                for (id, name, role) in rating_needs(&detail) {
+                    // Without a token the player cannot be looked up.
+                    if let Some((_, token, _)) = tokens.iter().find(|t| t.0 == id) {
+                        note_unrated(&mut unrated, id, Some(token.clone()), name, role);
+                    } else if !unreachable.contains(&id) {
+                        unreachable.push(id);
                     }
                 }
+            }
+            if let (Some(cache), Some(subject)) = (cache, subject_id.as_deref()) {
+                cache.put_detail(subject, &detail, &unreachable);
             }
             details.insert(m.id.clone(), detail);
         }
     }
 
     let mut player_ratings = Vec::new();
-    let previous = cat.current_season.checked_sub(1).filter(|s| *s > 0);
     let to_rate = unrated.len().min(plan.max_rated_players);
     report(plan.progress.as_deref(), |s| {
         s.phase = "ratings".into();
@@ -439,25 +612,39 @@ pub async fn collect_player<F: Fetcher>(
         s.total = to_rate;
         s.note.clear();
     });
-    for (bnet_id, player_token, name, roles) in unrated.into_iter().take(plan.max_rated_players) {
+    for u in unrated.into_iter().take(plan.max_rated_players) {
         report(plan.progress.as_deref(), |s| {
             s.done += 1;
-            s.note = name.clone().unwrap_or_default();
+            s.note = u.name.clone().unwrap_or_default();
         });
-        let mut ratings = Vec::new();
+        let mut ratings: Vec<RoleRating> = Vec::new();
         // Current season first; the previous season only fills roles still unrated.
         for season in std::iter::once(None).chain(previous.map(Some)) {
-            if roles
+            if u.roles
                 .iter()
                 .all(|r| ratings.iter().any(|x: &RoleRating| x.role == *r))
             {
                 break;
             }
+            let key = season.unwrap_or(current);
+            let max_age = season.is_none().then_some(RATINGS_TTL);
+            let skip_cache = plan.refresh_ratings && season.is_none();
+            if let Some(cache) = cache.filter(|_| !skip_cache)
+                && let Some(rows) = cache.season_ratings(&u.id, key, max_age)
+            {
+                cache_hits += 1;
+                report(plan.progress.as_deref(), |s| s.cached += 1);
+                merge_ratings(&mut ratings, rows, key, current);
+                continue;
+            }
+            let Some(player_token) = u.token.as_deref() else {
+                continue;
+            };
             let endpoint = Mode::Competitive.career();
             let result = f
                 .fetch(
                     endpoint,
-                    career_payload(&player_token, Mode::Competitive, season),
+                    career_payload(player_token, Mode::Competitive, season),
                 )
                 .await;
             fetches.push(record(
@@ -475,16 +662,16 @@ pub async fn collect_player<F: Fetcher>(
                 }
             });
             if let Ok(v) = result {
-                for r in normalize::role_ratings(normalize::payload(&v.value), season) {
-                    if !ratings.iter().any(|x: &RoleRating| x.role == r.role) {
-                        ratings.push(r);
-                    }
+                let rows = normalize::role_ratings(normalize::payload(&v.value), season);
+                if let Some(cache) = cache {
+                    cache.put_season_ratings(&u.id, key, &rows);
                 }
+                merge_ratings(&mut ratings, rows, key, current);
             }
         }
         player_ratings.push(PlayerRating {
-            bnet_id,
-            name,
+            bnet_id: u.id,
+            name: u.name,
             roles: ratings,
         });
     }
@@ -518,6 +705,7 @@ pub async fn collect_player<F: Fetcher>(
             match_lists,
             details_requested: wanted,
             details_ok: details.len(),
+            cache_hits,
             fetches,
         },
         details,

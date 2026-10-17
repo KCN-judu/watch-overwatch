@@ -52,10 +52,9 @@ class _HeroesPageState extends State<HeroesPage> {
       HeroStats.cell10(h, _cat, _of(h), (n) => n == '消灭');
   double? _damage(HeroUsage h) =>
       HeroStats.cell10(h, _cat, _of(h), (n) => n == '对英雄伤害量');
-  // Self-healing is healing: used when the hero has no total-healing figure.
+  // Self-healing is already folded into 治疗量 by HeroStats.rows.
   double? _healing(HeroUsage h) =>
       HeroStats.cell10(h, _cat, _of(h), (n) => n == '治疗量') ??
-      HeroStats.cell10(h, _cat, _of(h), (n) => n == '自我治疗量') ??
       // Hero-specific healing stats (a staff, an orb) also mean it can heal.
       HeroStats.cell10(
         h,

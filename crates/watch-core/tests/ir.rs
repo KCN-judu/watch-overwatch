@@ -737,3 +737,317 @@ async fn paging_stops_once_every_role_has_enough_and_the_dataset_uses_only_those
         .is_err()
     );
 }
+
+// ---- strength cache and single-role selection -------------------------------------------
+
+/// Counts the requests a run makes, so cache hits show up as requests that did not happen.
+struct Counting {
+    info: Mutex<usize>,
+    careers: Mutex<usize>,
+}
+impl Counting {
+    fn new() -> Self {
+        Self {
+            info: Mutex::new(0),
+            careers: Mutex::new(0),
+        }
+    }
+    fn counts(&self) -> (usize, usize) {
+        (*self.info.lock().unwrap(), *self.careers.lock().unwrap())
+    }
+}
+impl Fetcher for Counting {
+    async fn fetch(&self, endpoint: Endpoint, payload: Value) -> Result<Fetched, Failure> {
+        let value = match endpoint {
+            Endpoint::MatchList if payload["gameMode"] == "leisure" => {
+                json!({"code":0,"data":[{"matchId":"q1","matchRet":1,"beginTs":5,"gameMode":"LeisurePreset"}]})
+            }
+            Endpoint::MatchInfo => {
+                *self.info.lock().unwrap() += 1;
+                fixture("queryMatchInfo")
+            }
+            Endpoint::CareerCount if payload["token"] != "TOKEN" => {
+                *self.careers.lock().unwrap() += 1;
+                let token = payload["token"].as_str().unwrap().to_string();
+                let season = payload["season"].as_u64();
+                let row = |role: &str, score: u64| json!({"roleType":role,"lastRankInfo":{"rankScore":score}});
+                let rows = match (token.as_str(), season) {
+                    ("SECRET-1", None) => vec![row("healer", 395)],
+                    ("SECRET-2", Some(24)) => vec![row("dps", 497)],
+                    ("SECRET-3", _) => vec![row("tank", 795)],
+                    _ => vec![],
+                };
+                json!({"code":0,"data":{"guideCountData":rows}})
+            }
+            _ => json!({"code":0,"data":[]}),
+        };
+        Ok(Fetched {
+            value,
+            cached: false,
+        })
+    }
+}
+
+fn cached_plan(cache: &std::sync::Arc<dyn watch_core::StrengthCache>) -> CollectPlan {
+    CollectPlan {
+        modes: vec![Mode::Quick],
+        lobby_ratings: true,
+        hero_board: false,
+        cache: Some(cache.clone()),
+        ..CollectPlan::default()
+    }
+}
+
+fn lobby_means(ds: &PlayerDataset) -> (Option<f64>, Option<f64>) {
+    let a = analysis::analyze(ds, &AnalysisOptions::default());
+    let m = &a.lobby_strength.matches[0];
+    (m.ally.mean.support, m.ally.mean.damage)
+}
+
+#[tokio::test]
+async fn a_repeat_run_is_served_from_the_cache_with_the_same_result() {
+    let mem = std::sync::Arc::new(watch_core::MemoryCache::new());
+    let cache: std::sync::Arc<dyn watch_core::StrengthCache> = mem;
+    let fake = Counting::new();
+    let plan = cached_plan(&cache);
+    let id = json!({"bnetId":"1001"});
+
+    let first = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
+    let (info1, careers1) = fake.counts();
+    assert_eq!(info1, 1);
+    assert!(careers1 > 0, "the first run looks the players up");
+    assert_eq!(first.coverage.cache_hits, 0);
+
+    let second = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
+    assert_eq!(
+        fake.counts(),
+        (info1, careers1),
+        "the second run needs no detail or career request"
+    );
+    assert!(second.coverage.cache_hits > 0);
+    assert_eq!(lobby_means(&first), lobby_means(&second));
+    assert_eq!(
+        (first.player_ratings.len(), second.player_ratings.len()),
+        (3, 3)
+    );
+    assert!(
+        !serde_json::to_string(&second).unwrap().contains("SECRET"),
+        "tokens are never cached or returned"
+    );
+}
+
+#[tokio::test]
+async fn a_cached_match_is_fetched_again_only_when_a_rating_is_missing() {
+    let mem = std::sync::Arc::new(watch_core::MemoryCache::new());
+    let cache: std::sync::Arc<dyn watch_core::StrengthCache> = mem.clone();
+    let fake = Counting::new();
+    let plan = cached_plan(&cache);
+    let id = json!({"bnetId":"1001"});
+    let first = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
+    let (_, careers1) = fake.counts();
+
+    // The ratings are gone but the match is kept: the match is read again for the
+    // participants' tokens, then everyone is looked up again.
+    mem.clear_ratings();
+    let second = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
+    let (info2, careers2) = fake.counts();
+    assert_eq!(info2, 2);
+    assert_eq!(careers2, careers1 * 2);
+    assert_eq!(lobby_means(&first), lobby_means(&second));
+}
+
+#[tokio::test]
+async fn refreshing_ratings_looks_the_current_season_up_again() {
+    let mem = std::sync::Arc::new(watch_core::MemoryCache::new());
+    let cache: std::sync::Arc<dyn watch_core::StrengthCache> = mem;
+    let fake = Counting::new();
+    let id = json!({"bnetId":"1001"});
+    let plan = cached_plan(&cache);
+    collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
+    let (_, before) = fake.counts();
+    let refresh = CollectPlan {
+        refresh_ratings: true,
+        ..cached_plan(&cache)
+    };
+    let ds = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &refresh).await;
+    let (_, after) = fake.counts();
+    assert!(after > before, "a refresh asks the upstream again");
+    assert_eq!(lobby_means(&ds), (Some(2000.0), Some(3200.0)));
+}
+
+#[tokio::test]
+async fn the_cache_is_kept_per_queried_player() {
+    let mem = std::sync::Arc::new(watch_core::MemoryCache::new());
+    let cache: std::sync::Arc<dyn watch_core::StrengthCache> = mem;
+    let fake = Counting::new();
+    let plan = cached_plan(&cache);
+    collect::collect_player(&fake, &catalog(), "TOKEN", &json!({"bnetId":"1001"}), &plan).await;
+    let (info1, _) = fake.counts();
+    // The same match as seen by another player has its sides the other way round.
+    collect::collect_player(&fake, &catalog(), "TOKEN", &json!({"bnetId":"2001"}), &plan).await;
+    let (info2, _) = fake.counts();
+    assert_eq!(info2, info1 + 1);
+}
+
+#[tokio::test]
+async fn a_single_role_pages_and_fetches_only_that_role() {
+    struct RolePager {
+        pages: Mutex<Vec<u64>>,
+        infos: Mutex<usize>,
+    }
+    impl Fetcher for RolePager {
+        async fn fetch(&self, endpoint: Endpoint, payload: Value) -> Result<Fetched, Failure> {
+            let value = match endpoint {
+                Endpoint::MatchList => {
+                    let page = payload["page"].as_u64().unwrap();
+                    self.pages.lock().unwrap().push(page);
+                    let at = 1000 - page as i64 * 10;
+                    json!({"code":0,"data":[
+                        role_row(&format!("t{page}"), at, "tank"),
+                        role_row(&format!("d{page}"), at - 1, "dps"),
+                        role_row(&format!("s{page}"), at - 2, "healer"),
+                    ]})
+                }
+                Endpoint::MatchInfo => {
+                    *self.infos.lock().unwrap() += 1;
+                    fixture("queryMatchInfo")
+                }
+                _ => json!({"code":0,"data":{}}),
+            };
+            Ok(Fetched {
+                value,
+                cached: false,
+            })
+        }
+    }
+    let fake = RolePager {
+        pages: Mutex::new(Vec::new()),
+        infos: Mutex::new(0),
+    };
+    let plan = CollectPlan {
+        modes: vec![Mode::Quick],
+        max_pages: 20,
+        details_per_role: Some(3),
+        roles: vec![Role::Tank],
+        hero_board: false,
+        ..CollectPlan::default()
+    };
+    assert!(plan.validate().is_ok());
+    let ds =
+        collect::collect_player(&fake, &catalog(), "TOKEN", &json!({"bnetId":"1001"}), &plan).await;
+    assert_eq!(
+        *fake.pages.lock().unwrap(),
+        vec![1, 2, 3],
+        "three tank matches are on three pages; the other roles do not extend the search"
+    );
+    assert_eq!(
+        *fake.infos.lock().unwrap(),
+        3,
+        "only tank matches get a detail"
+    );
+    assert_eq!(ds.coverage.details_requested, 3);
+
+    let bad = CollectPlan {
+        roles: vec![Role::Open],
+        ..plan
+    };
+    assert!(
+        bad.validate().is_err(),
+        "only the three playable roles can be chosen"
+    );
+}
+
+#[test]
+fn selection_can_be_limited_to_some_roles() {
+    let cat = catalog();
+    let rows = json!([
+        role_row("s1", 20, "healer"),
+        role_row("t1", 19, "tank"),
+        role_row("d1", 18, "dps"),
+        role_row("t2", 17, "tank"),
+        role_row("s2", 16, "healer"),
+    ]);
+    let list = normalize::match_list(&rows, Mode::Quick, &cat);
+    let ids = |picked: Vec<usize>| {
+        picked
+            .into_iter()
+            .map(|i| list[i].id.clone())
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        ids(collect::select_per_role_for(&list, 5, &[Role::Tank])),
+        ["t1", "t2"]
+    );
+    assert_eq!(
+        ids(collect::select_per_role_for(
+            &list,
+            1,
+            &[Role::Tank, Role::Support]
+        )),
+        ["s1", "t1"]
+    );
+    assert!(collect::role_quota_met_for(&list, 2, &[Role::Tank]));
+    assert!(!collect::role_quota_met_for(
+        &list,
+        2,
+        &[Role::Tank, Role::Damage]
+    ));
+}
+
+#[tokio::test]
+async fn known_matches_are_used_without_reading_the_list_again() {
+    struct NoList {
+        lists: Mutex<usize>,
+        infos: Mutex<Vec<String>>,
+    }
+    impl Fetcher for NoList {
+        async fn fetch(&self, endpoint: Endpoint, payload: Value) -> Result<Fetched, Failure> {
+            let value = match endpoint {
+                Endpoint::MatchList => {
+                    *self.lists.lock().unwrap() += 1;
+                    json!({"code":0,"data":[]})
+                }
+                Endpoint::MatchInfo => {
+                    self.infos
+                        .lock()
+                        .unwrap()
+                        .push(payload["matchId"].as_str().unwrap_or("").to_string());
+                    fixture("queryMatchInfo")
+                }
+                _ => json!({"code":0,"data":{}}),
+            };
+            Ok(Fetched {
+                value,
+                cached: false,
+            })
+        }
+    }
+    let cat = catalog();
+    let rows = json!([
+        role_row("s1", 20, "healer"),
+        role_row("t1", 19, "tank"),
+        role_row("t2", 18, "tank"),
+    ]);
+    let known = normalize::match_list(&rows, Mode::Quick, &cat);
+    let fake = NoList {
+        lists: Mutex::new(0),
+        infos: Mutex::new(Vec::new()),
+    };
+    let plan = CollectPlan {
+        modes: vec![Mode::Quick],
+        details_per_role: Some(5),
+        roles: vec![Role::Tank],
+        known_matches: known,
+        hero_board: false,
+        ..CollectPlan::default()
+    };
+    assert!(plan.validate().is_ok());
+    let ds = collect::collect_player(&fake, &cat, "TOKEN", &json!({"bnetId":"1001"}), &plan).await;
+    assert_eq!(*fake.lists.lock().unwrap(), 0, "the list is not read again");
+    assert_eq!(
+        *fake.infos.lock().unwrap(),
+        ["s1", "t1", "t2"],
+        "every row handed in gets its detail: the caller already chose them"
+    );
+    assert_eq!(ds.matches.len(), 3, "the rows handed in are the history");
+}

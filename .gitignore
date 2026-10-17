@@ -3,6 +3,7 @@
 /data/
 /*.exe
 /*.dll
+/native_assets.json
 
 # Local working files: old build backups and downloaded archives
 /work/

@@ -148,6 +148,9 @@ class _StrengthPageState extends State<StrengthPage> {
     final chronological = lobby.matches.reversed
         .toList(); // oldest → newest for the chart
     final byId = {for (final m in r.dataset.matches) m.id: m};
+    // Only the roles this analysis covered get a coverage count.
+    final ranScope = ws.strengthRanScope[mode];
+    final coveredRoles = ranScope == null ? Role.playable : [ranScope];
     final perRole = {
       for (final role in Role.playable)
         role: lobby.matches.where((m) => m.subjectRole == role).length,
@@ -161,7 +164,7 @@ class _StrengthPageState extends State<StrengthPage> {
         children: [
           Text('${lobby.matches.length} 场', style: Ty.num(Ty.bodyStrong)),
           // Per-role coverage: the target is n each; a role with fewer is marked, not hidden.
-          for (final role in Role.playable)
+          for (final role in coveredRoles)
             Tooltip(
               message: perRole[role]! >= n
                   ? '${role.label}：取了最近 $n 场'
@@ -191,6 +194,22 @@ class _StrengthPageState extends State<StrengthPage> {
                     ],
                   ],
                 ),
+              ),
+            ),
+          if (r.dataset.coverage.cacheHits > 0)
+            Tooltip(
+              message:
+                  '这次分析里有 ${r.dataset.coverage.cacheHits} 项直接取自本机缓存，没有向上游请求',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.bolt, size: 15, color: c.textSecondary),
+                  const SizedBox(width: 4),
+                  Text(
+                    '缓存 ${r.dataset.coverage.cacheHits}',
+                    style: Ty.num(Ty.body).copyWith(color: c.textSecondary),
+                  ),
+                ],
               ),
             ),
           Tooltip(
@@ -530,24 +549,30 @@ class _Controls extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // The three role glyphs say "per role"; the number is how many matches of each.
-            Tooltip(
-              message: '每个职责各取最近多少场（$roleLegend）',
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final r in Role.playable) ...[
-                    RoleIcon(r, size: 18, tooltip: false),
-                    const SizedBox(width: 10),
-                  ],
-                  const SizedBox(width: 4),
-                  Text('各取最近', style: Ty.body),
-                ],
-              ),
+            Text('范围', style: Ty.body.copyWith(color: context.c.textSecondary)),
+            const SizedBox(width: 8),
+            SegmentedBar<Role?>(
+              semanticLabel: '分析哪个职责',
+              value: ws.scopeFor(mode),
+              onChanged: load.loading
+                  ? (_) {}
+                  : (v) => ws.setStrengthScope(mode, v),
+              segments: [
+                const Segment(null, '全部', hint: '三个职责各取最近 N 场'),
+                for (final r in Role.playable)
+                  Segment(
+                    r,
+                    r.label,
+                    hint: '只分析你打${r.label}的对局',
+                    leading: RoleIcon(r, size: 14, tooltip: false),
+                  ),
+              ],
             ),
+            const SizedBox(width: Sp.betweenGroups),
+            Text(ws.scopeFor(mode) == null ? '各取最近' : '取最近', style: Ty.body),
             const SizedBox(width: 8),
             SegmentedBar<int>(
-              semanticLabel: '每个职责取的场数',
+              semanticLabel: '取的场数',
               value: n,
               onChanged: load.loading
                   ? (_) {}
@@ -566,13 +591,23 @@ class _Controls extends StatelessWidget {
             icon: Icons.stop_circle_outlined,
             onPressed: () => ws.cancelStrength(mode),
           )
-        else
+        else ...[
           AppButton(
             load.has ? '重新分析' : '开始分析',
             primary: true,
             icon: Icons.analytics_outlined,
-            onPressed: () => ws.runStrength(mode, fresh: load.has),
+            tooltip: load.has ? '读取新的对局，已读过的直接用缓存' : null,
+            onPressed: () => ws.runStrength(mode),
           ),
+          if (load.has)
+            AppButton(
+              '强制刷新',
+              quiet: true,
+              icon: Icons.refresh,
+              tooltip: '重新查询玩家的当前段位；对局详情仍用缓存',
+              onPressed: () => ws.runStrength(mode, fresh: true),
+            ),
+        ],
         SegmentedBar<bool>(
           semanticLabel: '数值显示',
           value: tiers,
@@ -594,6 +629,7 @@ class _Intro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final ws0 = workspace;
     final n = workspace.strengthCount(mode);
     // Up to 3 roles × n matches; quick play also looks up every participant.
     final requests = mode == Mode.quick ? n * 3 * 10 + 20 : n * 3 + 20;
@@ -614,7 +650,7 @@ class _Intro extends StatelessWidget {
               children: [
                 Text('还没有分析${mode.label}', style: Ty.bodyStrong),
                 Text(
-                  '每个职责取最近 $n 场，不足就取全部。最多约 $requests 次请求${mode == Mode.quick ? '，约 1–2 分钟' : ''}；后台进行，可随时取消。',
+                  '从对局页已读取的对局里，${ws0.scopeFor(mode) == null ? '每个职责' : ws0.scopeFor(mode)!.label}取最近 $n 场（不够会自动多读）。第一次最多约 ${ws0.scopeFor(mode) == null ? requests : requests ~/ 3 + 7} 次请求${mode == Mode.quick ? '，约 1–2 分钟' : ''}，之后大多取自缓存；可随时取消。',
                   style: Ty.body.copyWith(color: c.textSecondary),
                 ),
               ],
@@ -655,8 +691,9 @@ class _Running extends StatelessWidget {
       String count = '';
       if (here != null && here.total > 0)
         count = '${here.done} / ${here.total}';
-      if (here != null && index == 0) {
-        count = '第 ${here.done} 页 · 已找到 ${here.matchesFound} 场';
+      // Step 0 is the client's own: it picks matches from those already read.
+      if (index == 0 && done) {
+        count = '已选 ${workspace.strengthSelected[mode] ?? 0} 场';
       }
       final eta = here?.remainingSeconds;
       final color = done
@@ -789,10 +826,16 @@ class _Running extends StatelessWidget {
               ],
             ),
             const SizedBox(height: Sp.withinGroup),
-            if (p == null)
-              Text('正在连接…', style: Ty.body.copyWith(color: c.textSecondary)),
-            step(0, '读取对局列表', '分页读取，直到每个职责都凑够场数'),
-            step(1, '读取对局详情', '每场一次请求，取得双方全部玩家'),
+            if ((workspace.strengthStatus[mode] ?? '').isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  workspace.strengthStatus[mode]!,
+                  style: Ty.body.copyWith(color: c.accent),
+                ),
+              ),
+            step(0, '选取对局', '从已读取的对局里，每个职责取最近 $n 场'),
+            step(1, '读取对局详情', '每场读一次，取得双方全部玩家；读过的用缓存'),
             step(
               2,
               '查询参与者段位',
@@ -804,7 +847,7 @@ class _Running extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '已发出 ${p.requests} 次请求',
+                    '已发出 ${p.requests} 次请求${p.cached > 0 ? '，${p.cached} 项取自缓存' : ''}',
                     style: Ty.meta.copyWith(color: c.textSecondary),
                   ),
                   if (p.failures > 0) ...[
@@ -934,6 +977,7 @@ class _ChartSection extends StatelessWidget {
                 values: ally,
                 lows: [for (final m in shown) m.ally.min.overall],
                 highs: [for (final m in shown) m.ally.max.overall],
+                counts: [for (final m in shown) m.ally.rated.overall],
               ),
               ChartSeries(
                 label: '对方',
@@ -942,8 +986,10 @@ class _ChartSection extends StatelessWidget {
                 dashed: true,
                 lows: [for (final m in shown) m.enemy.min.overall],
                 highs: [for (final m in shown) m.enemy.max.overall],
+                counts: [for (final m in shown) m.enemy.rated.overall],
               ),
             ],
+            countFormat: (n) => '已评定 $n 人',
             rangeMeaning:
                 '竖条：该队已评定玩家的最低到最高${tiers ? '段位' : '分'}，圆点是平均。斜线阴影：这些场没有已评定的玩家。',
             // When every match is on one day the date says nothing, so show the time instead.
@@ -955,7 +1001,7 @@ class _ChartSection extends StatelessWidget {
             ],
             pointNotes: [
               for (final m in shown)
-                '${m.outcome.label} · 你打${m.subjectRole.label.isEmpty ? '?' : m.subjectRole.label} · 已评定 ${m.ally.rated.overall}+${m.enemy.rated.overall} 人',
+                '${m.outcome.label} · 你打${m.subjectRole.label.isEmpty ? '?' : m.subjectRole.label}',
             ],
             hollow: [for (final m in shown) m.outcome == Outcome.loss],
             hollowMeaning: '实心点：胜或平；空心点：负。',

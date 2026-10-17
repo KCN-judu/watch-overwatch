@@ -597,6 +597,19 @@ pub(crate) async fn progress(
     }
 }
 
+/// What the strength cache holds.
+pub(crate) async fn cache_stats(State(s): State<AppState>) -> Response {
+    Json(json!({"strength": s.strength_cache.as_ref().map(|c| c.stats())})).into_response()
+}
+
+/// Empties the strength cache (the next analysis fetches everything again).
+pub(crate) async fn cache_clear(State(s): State<AppState>) -> Response {
+    if let Some(c) = &s.strength_cache {
+        c.clear();
+    }
+    cache_stats(State(s)).await
+}
+
 /// Full IR dataset for one player plus its analysis.
 pub(crate) async fn player_dataset(
     State(s): State<AppState>,
@@ -616,6 +629,12 @@ pub(crate) async fn player_dataset(
         fresh: input.fresh,
     };
     let mut plan = input.plan.clone();
+    plan.cache = s
+        .strength_cache
+        .clone()
+        .map(|c| c as std::sync::Arc<dyn watch_core::StrengthCache>);
+    // "Refresh" asks the upstream for current-season ranks again, not just for pages.
+    plan.refresh_ratings = input.fresh;
     let tracker = input.progress_id.as_ref().map(|id| {
         let p = std::sync::Arc::new(watch_core::Progress::default());
         if let Ok(mut m) = s.progress.lock() {

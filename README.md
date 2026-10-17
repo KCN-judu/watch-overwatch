@@ -16,7 +16,7 @@ role_id 和 token 怎么拿，见 [获取账号凭据](docs/credentials.md)。�
 
 - **对局**：以地图图为背景的列表，只显示胜负、比分、地图和英雄；点开看双方 10 人的数据和最高值。
 - **英雄**：每个英雄一行，可按场次、胜率、时长、熟练度和每 10 分钟的消灭、伤害、治疗、阻挡排序；点开是海报式的英雄详情页（赛季数据、近期对局、技能和威能）。
-- **对局强度**：每个职责各取最近 N 场，比较己方与对方的段位，逐场画出平均和最低到最高的分布。
+- **对局强度**：可以分析全部职责，也可以只分析一个职责；每个职责取最近 N 场，比较己方与对方的段位，逐场画出平均和最低到最高的分布。分析结果缓存在本机，再次分析几秒完成。
 - **赛季走势**、**档案**：往期赛季的胜率和段位，身份与近期表现。
 - **导出**：统一格式的 JSON 数据集，不含凭据。
 
@@ -71,6 +71,8 @@ cd app; flutter analyze; flutter test
 
 ```powershell
 .\watchd.exe dataset "Player#12345" --modes competitive,quick --pages 5 --details 20 --lobby
+# 只分析一个职责：每个职责取最近 5 场，只看重装
+.\watchd.exe dataset "Player#12345" --modes quick --per-role 5 --roles tank --lobby
 .\watchd.exe analyze path\to\dataset.json
 ```
 
@@ -80,6 +82,7 @@ cd app; flutter analyze; flutter test
 
 - 账号凭据：`%LOCALAPPDATA%\Watch Overwatch\secrets.json`，不会出现在界面、日志、导出或仓库里。
 - 界面状态：同目录的 `ui-state.json`。图片缓存：同目录的 `img-cache\`，可以随时删除，会重新下载。
+- 对局强度缓存：同目录的 `cache\strength.db`，含对局详情和玩家段位（有其他玩家的昵称和编号，没有任何令牌），设置页可清除。
 - 请求只发往网易大神的接口；图片取自大神和暴雪的图片地址。
 
 ## 说明

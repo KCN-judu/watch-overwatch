@@ -1,4 +1,5 @@
 pub mod analysis;
+mod cache;
 mod catalog;
 pub mod collect;
 mod credentials;
@@ -10,6 +11,7 @@ pub mod progress;
 mod report;
 mod scheduler;
 pub mod strength;
+pub use cache::{CachedDetail, MemoryCache, RATINGS_TTL, StrengthCache};
 pub use catalog::*;
 pub use credentials::*;
 pub use domain::*;

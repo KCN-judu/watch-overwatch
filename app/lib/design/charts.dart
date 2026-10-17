@@ -14,6 +14,7 @@ class ChartSeries {
     this.dashed = false,
     this.lows,
     this.highs,
+    this.counts,
   });
   final String label;
   final Color color;
@@ -24,6 +25,9 @@ class ChartSeries {
   /// Optional spread behind each value (lowest and highest of what the value
   /// averages), drawn as a vertical bar through the point.
   final List<double?>? lows, highs;
+
+  /// How many players each value averages (shown in the readout of that series).
+  final List<int?>? counts;
   bool hasRange(int i) =>
       lows != null &&
       highs != null &&
@@ -50,6 +54,7 @@ class LineChart extends StatefulWidget {
     this.rangeMeaning,
     this.axisFormat,
     this.detailFormat,
+    this.countFormat,
     this.tickStep,
     this.yMin,
     this.yMax,
@@ -78,6 +83,9 @@ class LineChart extends StatefulWidget {
   /// Exact numbers shown in the readout beside the value (e.g. the rating behind a rank).
   final String Function(double)? detailFormat;
 
+  /// How the player count is worded in the readout (e.g. `已评定 3 人`).
+  final String Function(int)? countFormat;
+
   /// Force tick spacing (e.g. 100 = one rank division); otherwise round numbers.
   final double? tickStep;
 
@@ -90,7 +98,36 @@ class LineChart extends StatefulWidget {
 
 class _LineChartState extends State<LineChart> {
   int? _index;
+
+  /// Which series the readout is about, when each series has its own detail.
+  int _series = 0;
   final _focus = FocusNode();
+
+  bool get _perSeries => widget.series.any((s) => s.counts != null);
+
+  /// The series whose point (or spread bar) is nearest to [p] at column [i]; keeps the
+  /// current one when no series has a value there.
+  int _nearestSeries(_Geom g, _Axis axis, Offset p, int i) {
+    double y(double v) =>
+        _Geom.top + g.h * (1 - (v - axis.min) / (axis.max - axis.min));
+    var best = _series, bestD = double.infinity;
+    for (final (k, s) in widget.series.indexed) {
+      final v = s.values[i];
+      if (v == null) continue;
+      final dx = (k - (widget.series.length - 1) / 2) * 11.0;
+      final top = s.hasRange(i) ? y(s.highs![i]!) : y(v);
+      final bottom = s.hasRange(i) ? y(s.lows![i]!) : y(v);
+      final ey = p.dy < top
+          ? top - p.dy
+          : (p.dy > bottom ? p.dy - bottom : 0.0);
+      final d = math.sqrt(math.pow(p.dx - (g.x(i) + dx), 2) + ey * ey);
+      if (d < bestD) {
+        bestD = d;
+        best = k;
+      }
+    }
+    return best;
+  }
 
   @override
   void dispose() {
@@ -146,6 +183,17 @@ class _LineChartState extends State<LineChart> {
                 setState(() => _index = math.min(_n - 1, (_index ?? -1) + 1));
               } else if (e.logicalKey == LogicalKeyboardKey.arrowLeft) {
                 setState(() => _index = math.max(0, (_index ?? _n) - 1));
+              } else if (_perSeries &&
+                  (e.logicalKey == LogicalKeyboardKey.arrowUp ||
+                      e.logicalKey == LogicalKeyboardKey.arrowDown)) {
+                final step = e.logicalKey == LogicalKeyboardKey.arrowDown
+                    ? 1
+                    : -1;
+                setState(
+                  () => _series =
+                      (_series + step + widget.series.length) %
+                      widget.series.length,
+                );
               } else if (e.logicalKey == LogicalKeyboardKey.escape) {
                 setState(() => _index = null);
               } else {
@@ -158,15 +206,34 @@ class _LineChartState extends State<LineChart> {
               builder: (context, box) {
                 final geom = _Geom(Size(box.maxWidth, widget.height), _n);
                 return MouseRegion(
-                  onHover: (e) =>
-                      setState(() => _index = geom.nearest(e.localPosition.dx)),
+                  onHover: (e) => setState(() {
+                    _index = geom.nearest(e.localPosition.dx);
+                    if (_perSeries) {
+                      _series = _nearestSeries(
+                        geom,
+                        axis,
+                        e.localPosition,
+                        _index!,
+                      );
+                    }
+                  }),
                   onExit: (_) =>
                       setState(() => _index = _focus.hasFocus ? _index : null),
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTapDown: (d) {
                       _focus.requestFocus();
-                      setState(() => _index = geom.nearest(d.localPosition.dx));
+                      setState(() {
+                        _index = geom.nearest(d.localPosition.dx);
+                        if (_perSeries) {
+                          _series = _nearestSeries(
+                            geom,
+                            axis,
+                            d.localPosition,
+                            _index!,
+                          );
+                        }
+                      });
                     },
                     child: Container(
                       height: widget.height,
@@ -190,6 +257,8 @@ class _LineChartState extends State<LineChart> {
                           axisFormat: axisFmt,
                           detailFormat: widget.detailFormat,
                           index: _index,
+                          seriesIndex: _perSeries ? _series : null,
+                          countFormat: widget.countFormat,
                           notes: widget.pointNotes,
                         ),
                       ),
@@ -221,7 +290,9 @@ class _LineChartState extends State<LineChart> {
                   style: Ty.meta.copyWith(color: c.textSecondary),
                 ),
               Text(
-                '点击图表或用 ←/→ 查看每个点的精确值。',
+                _perSeries
+                    ? '移到己方或对方的点上看这一队的详情；键盘用 ←/→ 换场、↑/↓ 换队。'
+                    : '点击图表或用 ←/→ 查看每个点的精确值。',
                 style: Ty.meta.copyWith(color: c.textSecondary),
               ),
             ],
@@ -307,6 +378,8 @@ class _LinePainter extends CustomPainter {
     required this.axisFormat,
     required this.detailFormat,
     required this.index,
+    required this.seriesIndex,
+    required this.countFormat,
     required this.notes,
   });
   final AppColors colors;
@@ -318,6 +391,10 @@ class _LinePainter extends CustomPainter {
   final String Function(double) axisFormat;
   final String Function(double)? detailFormat;
   final int? index;
+
+  /// When set, the readout is about this one series; otherwise it lists them all.
+  final int? seriesIndex;
+  final String Function(int)? countFormat;
   final List<String>? notes;
 
   TextPainter _text(
@@ -488,27 +565,74 @@ class _LinePainter extends CustomPainter {
           ..color = colors.textSecondary
           ..strokeWidth = 1,
       );
+      final only = seriesIndex?.clamp(0, series.length - 1);
+      final detail = detailFormat ?? valueFormat;
+      if (only != null && series[only].values[i] != null) {
+        final dx = (only - (series.length - 1) / 2) * 11.0;
+        canvas.drawCircle(
+          Offset(x + dx, y(series[only].values[i]!)),
+          8,
+          Paint()
+            ..color = series[only].color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2,
+        );
+      }
       final lines = <(String, Color?, FontWeight?)>[
         (xLabels[i], null, FontWeight.w600),
         if (notes != null && i < notes!.length && notes![i].isNotEmpty)
           (notes![i], null, null),
-        for (final s in series) ...[
-          (
-            '${s.label}  ${s.values[i] == null ? '无数据' : valueFormat(s.values[i]!)}',
-            s.color,
-            FontWeight.w600,
-          ),
-          if (s.values[i] != null)
+        // One team: its rank, how many players it rests on, the rank and score spread.
+        if (only != null) ...[
+          () {
+            final s = series[only];
+            final v = s.values[i];
+            return (
+              '${s.label}  ${v == null ? '无数据' : valueFormat(v)}',
+              s.color,
+              FontWeight.w600,
+            );
+          }(),
+          if (series[only].counts != null &&
+              i < series[only].counts!.length &&
+              series[only].counts![i] != null)
             (
-              s.hasRange(i)
-                  ? '    ${detailFormat != null ? '平均 ${detailFormat!(s.values[i]!)} · ' : ''}区间 ${(detailFormat ?? valueFormat)(s.lows![i]!)}–${(detailFormat ?? valueFormat)(s.highs![i]!)}'
-                  : (detailFormat == null
-                        ? ''
-                        : '    ${detailFormat!(s.values[i]!)}'),
+              (countFormat ?? (n) => '$n 人')(series[only].counts![i]!),
               null,
               null,
             ),
-        ],
+          if (series[only].values[i] != null && series[only].hasRange(i)) ...[
+            (
+              '段位  ${valueFormat(series[only].lows![i]!)} – ${valueFormat(series[only].highs![i]!)}',
+              null,
+              null,
+            ),
+            (
+              '分数  ${detail(series[only].lows![i]!)} – ${detail(series[only].highs![i]!)}',
+              null,
+              null,
+            ),
+          ],
+          if (series[only].values[i] != null)
+            ('平均  ${detail(series[only].values[i]!)}', null, null),
+        ] else
+          for (final s in series) ...[
+            (
+              '${s.label}  ${s.values[i] == null ? '无数据' : valueFormat(s.values[i]!)}',
+              s.color,
+              FontWeight.w600,
+            ),
+            if (s.values[i] != null)
+              (
+                s.hasRange(i)
+                    ? '    ${detailFormat != null ? '平均 ${detailFormat!(s.values[i]!)} · ' : ''}区间 ${(detailFormat ?? valueFormat)(s.lows![i]!)}–${(detailFormat ?? valueFormat)(s.highs![i]!)}'
+                    : (detailFormat == null
+                          ? ''
+                          : '    ${detailFormat!(s.values[i]!)}'),
+                null,
+                null,
+              ),
+          ],
       ];
       final painters = [
         for (final l in lines)

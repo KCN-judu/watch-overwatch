@@ -217,6 +217,8 @@ class Api {
     String session,
     Mode mode, {
     int perRole = 10,
+    Role? role,
+    List<MatchSummary> known = const [],
     bool fresh = false,
     String? progressId,
     CancelToken? cancel,
@@ -232,6 +234,9 @@ class Api {
           'max_pages': 20,
           'max_details': 0,
           'details_per_role': perRole,
+          'roles': [?role?.id],
+          // The match rows already read; the service does not read the list again.
+          if (known.isNotEmpty) 'known_matches': [for (final m in known) m.raw],
           'hero_board': false,
           'lobby_ratings': true,
           'max_rated_players': (perRole * 30).clamp(1, 600),
@@ -242,6 +247,14 @@ class Api {
     );
     return StrengthResult(j);
   }
+
+  /// What the local strength cache holds: matches, players, bytes. Null if it is unavailable.
+  Future<Json?> cacheStats() async =>
+      (await get('/api/cache'))['strength'] as Json?;
+
+  /// Empties the strength cache and returns what is left.
+  Future<Json?> clearCache() async =>
+      (await post('/api/cache/clear', const {}))['strength'] as Json?;
 
   /// Live progress of an analysis started with `progressId`; null until it exists.
   Future<Json?> progress(String id) async {

@@ -517,6 +517,9 @@ pub struct Coverage {
     pub match_lists: Vec<ListCoverage>,
     pub details_requested: usize,
     pub details_ok: usize,
+    /// Details and ratings taken from the local cache rather than fetched.
+    #[serde(default)]
+    pub cache_hits: usize,
     pub fetches: Vec<FetchRecord>,
 }
 

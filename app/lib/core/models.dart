@@ -225,7 +225,8 @@ class Highlights {
 
 class MatchSummary {
   MatchSummary(Json j)
-    : id = _s(j['id']) ?? '',
+    : raw = j,
+      id = _s(j['id']) ?? '',
       startedAtMs = _i(j['started_at_ms']),
       mode = Mode.parse(_s(_o(j['kind'])?['mode'])),
       queue = Queue.parse(_s(_o(j['kind'])?['queue'])),
@@ -240,6 +241,9 @@ class MatchSummary {
       highlights = Highlights.opt(j['highlights']),
       rank = Rank.opt(j['rank']),
       heroIconUrl = _s(j['hero_icon_url']);
+
+  /// The row as the service sent it; sent back unchanged when this match is analysed.
+  final Json raw;
   final String id;
   final int? startedAtMs;
   final Mode mode;
@@ -568,9 +572,13 @@ class Coverage {
     : matchLists = _list(j?['match_lists'], ListCoverage.new),
       detailsRequested = _i(j?['details_requested']) ?? 0,
       detailsOk = _i(j?['details_ok']) ?? 0,
+      cacheHits = _i(j?['cache_hits']) ?? 0,
       fetches = _list(j?['fetches'], FetchRecord.new);
   final List<ListCoverage> matchLists;
   final int detailsRequested, detailsOk;
+
+  /// Details and ratings taken from the local cache instead of the network.
+  final int cacheHits;
   final List<FetchRecord> fetches;
   int get failures => fetches.where((f) => !f.ok).length;
 }
@@ -713,11 +721,12 @@ class AnalysisProgress {
       total = _i(_o(j['progress'])?['total']) ?? 0,
       note = _s(_o(j['progress'])?['note']) ?? '',
       matchesFound = _i(_o(j['progress'])?['matches_found']) ?? 0,
+      cached = _i(_o(j['progress'])?['cached']) ?? 0,
       requests = _i(_o(j['progress'])?['requests']) ?? 0,
       failures = _i(_o(j['progress'])?['failures']) ?? 0,
       elapsedMs = _i(j['elapsed_ms']) ?? 0;
   final String phase, note;
-  final int done, total, matchesFound, requests, failures, elapsedMs;
+  final int done, total, matchesFound, requests, failures, cached, elapsedMs;
 
   /// When this phase was first seen by the client, for the remaining-time estimate.
   final DateTime? phaseSince;

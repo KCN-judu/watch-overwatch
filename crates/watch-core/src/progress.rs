@@ -16,6 +16,8 @@ pub struct ProgressSnapshot {
     pub matches_found: usize,
     pub requests: usize,
     pub failures: usize,
+    /// Items served from the local cache instead of the network.
+    pub cached: usize,
 }
 
 #[derive(Debug, Default)]

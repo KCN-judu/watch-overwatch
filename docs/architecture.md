@@ -63,6 +63,7 @@ Flutter 界面 (app/)  ──HTTP, 仅本机──▶  watchd (Rust)  ──HTTP
 | `POST /api/player/view` | 某个视图（资料、对局、详情等），返回 IR |
 | `POST /api/player/dataset` | 完整数据集和分析；可带 `progress_id` |
 | `GET /api/progress?id=…` | 上面那次采集的实时进度 |
+| `GET /api/cache`、`POST /api/cache/clear` | 查看、清除对局强度缓存 |
 | `POST /api/player/export`、`/api/export/file` | 导出数据集 |
 | `GET /api/catalog` | 目录 |
 | `POST /api/request` | 白名单内的原始接口转发（调试用） |
@@ -87,6 +88,13 @@ Flutter 界面 (app/)  ──HTTP, 仅本机──▶  watchd (Rust)  ──HTTP
 | 玩家库 | 同目录，由 `watchd` 维护 |
 | 导出文件 | 同目录的 `exports\` |
 | 图片缓存 | 同目录的 `img-cache\` |
+| 对局强度缓存 | 同目录的 `cache\strength.db`（SQLite） |
+
+## 对局强度缓存
+
+`strength.db` 里有两张表：对局详情（按模式、对局编号、被查询的玩家）和玩家各赛季的竞技段位。里面有其他玩家的昵称和编号（对局详情里本来就有），但没有任何令牌。规则和保留时间见 [algorithms.md](algorithms.md) 的 4.6。设置页可以查看大小和清除。
+
+采集计划（`CollectPlan`）里有四个相关字段：`roles`（只分析哪些职责，空表示全部）、`known_matches`（调用方已读取的对局记录，不空时服务不再翻列表）、`refresh_ratings`（跳过当前赛季段位的缓存）、`cache`（缓存本身，不序列化）。
 
 ## 图片
 

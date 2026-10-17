@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -49,6 +50,17 @@ class PlayerWorkspace extends ChangeNotifier {
 
   /// Latest progress of a running analysis, per mode.
   final strengthProgress = <Mode, AnalysisProgress>{};
+
+  /// Which role the next analysis covers (`null` = all three), per mode, and which the
+  /// result on screen covers.
+  final strengthScope = <Mode, Role?>{};
+  final strengthRanScope = <Mode, Role?>{};
+  Role? scopeFor(Mode m) => strengthScope[m];
+  void setStrengthScope(Mode m, Role? r) {
+    strengthScope[m] = r;
+    notifyListeners();
+  }
+
   final details = <String, Load<MatchDetail>>{};
   final pages = <Mode, int>{};
   final filters = <Mode, MatchFilters>{};
@@ -203,54 +215,187 @@ class PlayerWorkspace extends ChangeNotifier {
     ),
   );
 
+  /// What the strength analysis is doing before the service starts (reading more of the
+  /// match list), and how many matches it chose.
+  final strengthStatus = <Mode, String>{};
+  final strengthSelected = <Mode, int>{};
+
+  /// The newest [n] matches of each of [roles] among the matches already read.
+  static List<MatchSummary> pickPerRole(
+    List<MatchSummary> read,
+    int n,
+    Iterable<Role> roles,
+  ) {
+    final taken = <Role, int>{};
+    return [
+      for (final m in read)
+        if (roles.contains(m.role) &&
+            (taken[m.role] = (taken[m.role] ?? 0) + 1) <= n)
+          m,
+    ];
+  }
+
   Future<void> runStrength(Mode mode, {bool fresh = false}) async {
+    final scope = strengthScope[mode];
+    final roles = scope == null ? Role.playable : [scope];
+    final n = strengthCount(mode);
+    final before = strengthFor(mode).at;
     final token = CancelToken();
     _strengthCancel[mode] = token;
-    final id =
-        '${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}-${mode.id}';
     strengthProgress.remove(mode);
-    String? lastPhase;
-    DateTime? since;
-    var polling = false;
-    // Ask the service how far it is while the single long request runs.
-    final timer = Timer.periodic(const Duration(milliseconds: 600), (_) async {
-      if (polling) return;
-      polling = true;
-      try {
-        final j = await app.api.progress(id);
-        if (j == null) return;
-        final phase = (j['progress'] as Map?)?['phase'] as String?;
-        if (phase != lastPhase) {
-          lastPhase = phase;
-          since = DateTime.now();
-        }
-        strengthProgress[mode] = AnalysisProgress(j, phaseSince: since);
-        notifyListeners();
-      } catch (_) {
-        // Progress is a nicety; the analysis itself reports real errors.
-      } finally {
-        polling = false;
-      }
-    });
+    strengthSelected.remove(mode);
+    final result = strengthFor(mode);
+    if (result.loading) return;
+    result.loading = true;
+    result.error = null;
+    strengthStatus[mode] = '正在读取对局…';
+    notifyListeners();
+
+    StrengthResult? latest;
+    ApiError? failure;
     try {
-      await _run(
-        strengthFor(mode),
-        () => _call(
-          (s) => app.api.strength(
-            s,
-            mode,
-            perRole: strengthCount(mode),
-            fresh: fresh,
-            progressId: id,
-            cancel: token,
-          ),
-        ),
-      );
+      // The matches come from the list already read on the match page. A re-analysis
+      // reads the list again first (new matches).
+      await loadMatches(mode, fresh: result.has || fresh);
+
+      // Analyse the newest [n] matches of each role. A match in which nobody can be
+      // rated drops out of the result, so when a role ends up with fewer than [n]
+      // analysable matches, take a few more from the read list and go again: matches
+      // already looked up come from the cache, so a further round is cheap. Only when
+      // the read list has no more of that role is more of the list read.
+      final take = {for (final r in roles) r: n};
+      var rounds = 0;
+      while (!token.cancelled && rounds < 8) {
+        rounds++;
+        final read = matchesFor(mode).value?.matches ?? const <MatchSummary>[];
+        final ids = <String>{
+          for (final r in roles)
+            ...read.where((m) => m.role == r).take(take[r]!).map((m) => m.id),
+        };
+        final chosen = [
+          for (final m in read)
+            if (ids.contains(m.id)) m,
+        ];
+        strengthSelected[mode] = chosen.length;
+        if (chosen.isEmpty) {
+          // Nothing of these roles was read: show the empty answer, do not ask the
+          // service to go and find matches on its own.
+          latest = StrengthResult(const {});
+          if (!_moreToRead(mode, roles, n)) break;
+          strengthStatus[mode] = '对局不够，正在读取更多…';
+          notifyListeners();
+          final had = read.length;
+          await loadMore(mode);
+          if ((matchesFor(mode).value?.matches.length ?? 0) <= had) break;
+          continue;
+        }
+
+        strengthStatus[mode] = rounds == 1
+            ? ''
+            : '第 $rounds 轮：有对局没有可评定的玩家，再多取几场…';
+        final id =
+            '${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}-${mode.id}';
+        String? lastPhase;
+        DateTime? since;
+        var polling = false;
+        // Ask the service how far it is while the single long request runs.
+        final timer = Timer.periodic(const Duration(milliseconds: 600), (
+          _,
+        ) async {
+          if (polling) return;
+          polling = true;
+          try {
+            final j = await app.api.progress(id);
+            if (j == null) return;
+            final phase = (j['progress'] as Map?)?['phase'] as String?;
+            if (phase != lastPhase) {
+              lastPhase = phase;
+              since = DateTime.now();
+            }
+            strengthProgress[mode] = AnalysisProgress(j, phaseSince: since);
+            notifyListeners();
+          } catch (_) {
+            // Progress is a nicety; the analysis itself reports real errors.
+          } finally {
+            polling = false;
+          }
+        });
+        final StrengthResult r;
+        try {
+          r = await _call(
+            (s) => app.api.strength(
+              s,
+              mode,
+              perRole: n,
+              role: scope,
+              known: chosen,
+              fresh: fresh && rounds == 1,
+              progressId: id,
+              cancel: token,
+            ),
+          );
+        } on Cancelled {
+          break;
+        } on ApiError catch (e) {
+          failure = e;
+          break;
+        } finally {
+          timer.cancel();
+          strengthProgress.remove(mode);
+        }
+
+        latest = r;
+        // Which roles still lack analysable matches, and can take more?
+        final got = r.lobby.matches;
+        var extended = false;
+        var stillShort = false;
+        for (final r in roles) {
+          final have = got.where((m) => m.subjectRole == r).length;
+          final avail = read.where((m) => m.role == r).length;
+          if (have >= n) continue;
+          stillShort = true;
+          if (take[r]! < avail) {
+            take[r] = math.min(avail, take[r]! + (n - have));
+            extended = true;
+          }
+        }
+        if (extended) continue;
+        if (!stillShort || !_moreToRead(mode, roles, n)) break;
+        strengthStatus[mode] = '对局不够，正在读取更多…';
+        notifyListeners();
+        final had = read.length;
+        await loadMore(mode);
+        if ((matchesFor(mode).value?.matches.length ?? 0) <= had) break;
+      }
     } finally {
-      timer.cancel();
+      strengthStatus.remove(mode);
       strengthProgress.remove(mode);
-      notifyListeners();
+      result.loading = false;
     }
+
+    if (token.cancelled) {
+      notifyListeners();
+      return;
+    }
+    if (failure != null) {
+      result.error = failure;
+    } else if (latest != null) {
+      result.value = latest;
+      result.at = DateTime.now();
+    }
+    // The result on screen now covers the scope this run used.
+    if (result.at != before) strengthRanScope[mode] = scope;
+    notifyListeners();
+  }
+
+  /// Whether more of the match list could still be read for these roles.
+  bool _moreToRead(Mode mode, List<Role> roles, int n) {
+    final ds = matchesFor(mode).value;
+    if (ds == null || pagesFor(mode) >= 20) return false;
+    final exhausted = ds.coverage.matchLists.any(
+      (l) => l.mode == mode && l.exhausted,
+    );
+    return !exhausted;
   }
 
   void cancelStrength(Mode mode) {
@@ -394,6 +539,29 @@ class AppState extends ChangeNotifier {
       server = await api.state();
     } on ApiError {
       // Status bar shows the connection state; keep the last known account list.
+    }
+    await refreshCacheStats();
+    notifyListeners();
+  }
+
+  /// What the strength cache holds (`matches`, `players`, `bytes`); null when unknown.
+  Json? cacheStats;
+
+  Future<void> refreshCacheStats() async {
+    try {
+      cacheStats = await api.cacheStats();
+    } on ApiError {
+      cacheStats = null;
+    }
+    notifyListeners();
+  }
+
+  Future<void> clearStrengthCache() async {
+    try {
+      cacheStats = await api.clearCache();
+      toast?.call('已清除强度缓存');
+    } on ApiError catch (e) {
+      toast?.call('无法清除缓存：${e.message}');
     }
     notifyListeners();
   }
