@@ -3314,7 +3314,7 @@ dependencies = [
 
 [[package]]
 name = "watch-core"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -3330,7 +3330,7 @@ dependencies = [
 
 [[package]]
 name = "watchd"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "axum",

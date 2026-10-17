@@ -25,3 +25,6 @@ app/test/goldens/
 .DS_Store
 Thumbs.db
 *.log
+
+# Release packages
+/dist/
