@@ -1,0 +1,1832 @@
+[
+ {
+  "guid": "00000000005B.002",
+  "name": "阿努比斯神殿",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000000D4.002",
+  "name": "国王大道",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000165.002",
+  "name": "花村",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000184.002",
+  "name": "监测站：直布罗陀",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000001D4.002",
+  "name": "努巴尼",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000001DB.002",
+  "name": "沃斯卡娅工业区",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000002AF.002",
+  "name": "好莱坞",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000002C3.002",
+  "name": "多拉多",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000004B7.002",
+  "name": "尼泊尔",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "0000000005BB.002",
+  "name": "66号公路",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000661.002",
+  "name": "教学模式",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000662.002",
+  "name": "漓江塔",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000066D.002",
+  "name": "伊利奥斯",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000688.002",
+  "name": "训练靶场",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000068D.002",
+  "name": "艾兴瓦尔德",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000069E.002",
+  "name": "绿洲城",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "0000000006AB.002",
+  "name": "好莱坞",
+  "variant": "万圣节好莱坞",
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000006B1.002",
+  "name": "国王大道",
+  "variant": "圣诞节国王大道",
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000006B3.002",
+  "name": "弗格体育场",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "0000000006B5.002",
+  "name": "花村",
+  "variant": "圣诞节花村",
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000006B7.002",
+  "name": "漓江塔",
+  "variant": "春节漓江塔",
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "0000000006C7.002",
+  "name": "VPP Green Room",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000006C9.002",
+  "name": "怪鼠复仇",
+  "variant": null,
+  "type": "PVE"
+ },
+ {
+  "guid": "0000000006D1.002",
+  "name": "生态监测站：南极洲",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "0000000006D3.002",
+  "name": "“地平线”月球基地",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000705.002",
+  "name": "墓园",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000070C.002",
+  "name": "黑森林",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000070D.002",
+  "name": "生态监测站：南极洲",
+  "variant": "圣诞节生态监测站：南极洲",
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000710.002",
+  "name": "Menu/Busan (Lunar)",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000711.002",
+  "name": "漓江塔庭院",
+  "variant": "春节漓江塔庭院",
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000712.002",
+  "name": "漓江塔夜市",
+  "variant": "春节漓江塔夜市",
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000717.002",
+  "name": "尼泊尔圣所",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000071A.002",
+  "name": "漓江塔控制中心",
+  "variant": "春节漓江塔控制中心",
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000071C.002",
+  "name": "城堡",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000736.002",
+  "name": "尼泊尔村庄",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000738.002",
+  "name": "尼泊尔圣坛",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000073A.002",
+  "name": "伊利奥斯深井",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000073D.002",
+  "name": "伊利奥斯灯塔",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000073E.002",
+  "name": "伊利奥斯废墟",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000744.002",
+  "name": "漓江塔控制中心",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000745.002",
+  "name": "漓江塔庭院",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000746.002",
+  "name": "漓江塔夜市",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000074A.002",
+  "name": "绿洲城中心",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000074C.002",
+  "name": "绿洲城花园",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000074D.002",
+  "name": "绿洲城大学",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000756.002",
+  "name": "渣客镇",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000075E.002",
+  "name": "暴雪世界",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000007A1.002",
+  "name": "阿育陀耶",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000007A4.002",
+  "name": "吉拉德堡",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "0000000007E2.002",
+  "name": "釜山",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000007F4.002",
+  "name": "阿德勒斯布鲁恩",
+  "variant": "万圣节艾兴瓦尔德",
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000007F7.002",
+  "name": "黑森林",
+  "variant": "圣诞节黑森林",
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "0000000007FD.002",
+  "name": "圣诞节尼泊尔村庄",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000807.002",
+  "name": "Menu/BattlePass",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000827.002",
+  "name": "皇家赛道",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000836.002",
+  "name": "吉拉德堡",
+  "variant": "万圣节吉拉德堡",
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000862.002",
+  "name": "Menu/OWL",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000864.002",
+  "name": "Menu/OWL",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000871.002",
+  "name": "里阿尔托",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000890.002",
+  "name": "佩特拉",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000891.002",
+  "name": "巴黎",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000092D.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000938.002",
+  "name": "帕拉伊苏",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000A44.002",
+  "name": "哈瓦那",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000A5B.002",
+  "name": "暴雪世界",
+  "variant": "圣诞节暴雪世界",
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000A7A.002",
+  "name": "釜山寺院",
+  "variant": "春节釜山寺院",
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000A86.002",
+  "name": "釜山城区",
+  "variant": "春节釜山城区",
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000AEB.002",
+  "name": "新皇后街",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000AFC.002",
+  "name": "里约热内卢",
+  "variant": null,
+  "type": "PVE"
+ },
+ {
+  "guid": "000000000B34.002",
+  "name": "斗兽场",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000B4C.002",
+  "name": "中城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000B6B.002",
+  "name": "Menu/Cupid Hanzo",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000BC0.002",
+  "name": "多伦多",
+  "variant": null,
+  "type": "PVE"
+ },
+ {
+  "guid": "000000000BCE.002",
+  "name": "Menu/Summer Games Beach",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000BD6.002",
+  "name": "哥德堡",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000C40.002",
+  "name": "地图工坊岛屿",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000C44.002",
+  "name": "地图工坊空地",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000C48.002",
+  "name": "地图工坊室内",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000C4A.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000C85.002",
+  "name": "香巴里寺院",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000CD0.002",
+  "name": "地图工坊空地（夜间）",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000CD1.002",
+  "name": "地图工坊岛屿（夜间）",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000CD3.002",
+  "name": "铁坂",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000CD7.002",
+  "name": "马莱温多",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000CDC.002",
+  "name": "釜山体育场",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000CEB.002",
+  "name": "悉尼海港竞技场",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000CF2.002",
+  "name": "南极半岛",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000D3E.002",
+  "name": "苏拉瓦萨",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000D4C.002",
+  "name": "地图工坊绿幕",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000D53.002",
+  "name": "埃斯佩兰萨",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000D77.002",
+  "name": "Menu/Kings Row (Winter) (2020)",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000DAD.002",
+  "name": "Menu/Lijang (Lunar) (2023)",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000E13.002",
+  "name": "新渣客城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000E77.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000EB2.002",
+  "name": "鲁纳塞彼",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000EC0.002",
+  "name": "萨摩亚",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000000EF0.002",
+  "name": "Menu/Hero Gallery",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000EFB.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000000F35.002",
+  "name": "阿特利斯",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001018.002",
+  "name": "Underworld",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000102C.002",
+  "name": "霓虹枢纽",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000010D6.002",
+  "name": "南极半岛",
+  "variant": null,
+  "type": "PVE"
+ },
+ {
+  "guid": "000000001128.002",
+  "name": "庇护之地",
+  "variant": null,
+  "type": "PVE"
+ },
+ {
+  "guid": "000000001157.002",
+  "name": "花冈",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000001160.002",
+  "name": "阿努比斯王座",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "0000000011AD.002",
+  "name": "Menu/Winter Wonderland (Blizzard World Art)",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001202.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000120E.002",
+  "name": "监测站：直布罗陀",
+  "variant": "监测站：直布罗陀（黑爪）",
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001216.002",
+  "name": "Menu/Mythic Shop",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001257.002",
+  "name": "泰晤士区",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000125A.002",
+  "name": "高架车站",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000125E.002",
+  "name": "拉克瓦广场",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001260.002",
+  "name": "红杉水坝",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001271.002",
+  "name": "火药桶矿井",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001274.002",
+  "name": "塞伦扎",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000127B.002",
+  "name": "伊利奥斯 - 废墟",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "00000000127F.002",
+  "name": "绿洲城 - 花园",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000001289.002",
+  "name": "Menu/Ana Midnight Sun Mythic Weapon",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "0000000012AA.002",
+  "name": "维多利亚竞技场",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000012B0.002",
+  "name": "埃斯佩兰萨",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000012B5.002",
+  "name": "阿努比斯王座",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "0000000012B6.002",
+  "name": "花冈",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "0000000012B7.002",
+  "name": "斗兽场",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000012F1.002",
+  "name": "尼泊尔 - 圣坛",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000001318.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001355.002",
+  "name": "萨摩亚",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000001375.002",
+  "name": "五行大学 - 水学院",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000001378.002",
+  "name": "Menu/S17 Mythics Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001379.002",
+  "name": "Menu/GI Joe Collab Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001388.002",
+  "name": "釜山 - 寺院",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001389.002",
+  "name": "Menu/Nerf Collab Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000138A.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000139D.002",
+  "name": "Menu/Wuyang Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000139F.002",
+  "name": "Menu/S18 Mythics 3D",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013A2.002",
+  "name": "Menu/S18 Mythics Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013AA.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013AC.002",
+  "name": "Menu/Persona Collab Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013AD.002",
+  "name": "Menu/Anniversary Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013B2.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013B3.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013B7.002",
+  "name": "Menu/S19 Mythics 3D",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013BA.002",
+  "name": "格里姆火山",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013C2.002",
+  "name": "Menu/S19 One Punch Man Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013C4.002",
+  "name": "Menu/S19 Stadium Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013C5.002",
+  "name": "Menu/S19 Halloween Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013C9.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013CA.002",
+  "name": "Menu/S19 OWCS Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013DC.002",
+  "name": "Menu/Junkrat Mythic 3D",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013E9.002",
+  "name": "Menu/Vendetta 3D",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013EF.002",
+  "name": "英雄不朽",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013F0.002",
+  "name": "Menu/S20 Christmas Art",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013F1.002",
+  "name": "Menu/S20 Mythics 3D",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000013F8.002",
+  "name": "竞技比赛2026",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001407.002",
+  "name": "Menu/Doomfist Mythic 3D",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001436.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000144B.002",
+  "name": "漓江塔 - 夜市",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000001451.002",
+  "name": "解锁噬灭源氏！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001459.002",
+  "name": "征服之路",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000145A.002",
+  "name": "凯蒂猫和好朋友们",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000145B.002",
+  "name": "新剧情片段",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000145C.002",
+  "name": "永劫无间",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000146D.002",
+  "name": "神话商城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000014B7.002",
+  "name": "新剧情片段",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000014BA.002",
+  "name": "新剧情片段",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000014BE.002",
+  "name": "新剧情片段",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000014BF.002",
+  "name": "征服之路",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000014C0.002",
+  "name": "征服之路",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000014C3.002",
+  "name": "征服之路",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001539.002",
+  "name": "神话商城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000153D.002",
+  "name": "征服之路",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001542.002",
+  "name": "角斗领域",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000154B.002",
+  "name": "网页浏览器测试大厅",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000154C.002",
+  "name": "寄叶计划",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000154D.002",
+  "name": "特价",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000154E.002",
+  "name": "马克西米里安的秘宝",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000154F.002",
+  "name": "神话商城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001550.002",
+  "name": "守望先锋胜利",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001568.002",
+  "name": "守望先锋冠军系列赛2026",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000156B.002",
+  "name": "“狂鼠”的补给狩猎",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000156F.002",
+  "name": "守望后卫",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001574.002",
+  "name": "竞技比赛竞逐活动",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001583.002",
+  "name": "新剧情片段",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001584.002",
+  "name": "黑爪胜利",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001585.002",
+  "name": "新剧情片段",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000158B.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000158C.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000158E.002",
+  "name": "Le Sserafim",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000158F.002",
+  "name": "神话商城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001590.002",
+  "name": "憎恨的清算",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001591.002",
+  "name": "行动：格兰德台地",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001593.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001596.002",
+  "name": "绿洲城 - 大学",
+  "variant": null,
+  "type": "MirroredMap"
+ },
+ {
+  "guid": "000000001597.002",
+  "name": "新剧情片段",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000159C.002",
+  "name": "进入虚空",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015A0.002",
+  "name": "专属奖励",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015A1.002",
+  "name": "4v4进化作战",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015A9.002",
+  "name": "新剧情片段",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015B1.002",
+  "name": "蹦跳白兔",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015B2.002",
+  "name": "为你推荐",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015B3.002",
+  "name": "新剧情片段",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015B4.002",
+  "name": "周年共庆",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015B5.002",
+  "name": "神话商城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015BF.002",
+  "name": "“狂鼠”的补给狩猎",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015C8.002",
+  "name": "守望先锋世界杯来了！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015CC.002",
+  "name": "平行时空",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015CD.002",
+  "name": "心动之箭",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015CE.002",
+  "name": "极乐卫士",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015D0.002",
+  "name": "新剧情片段",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015D1.002",
+  "name": "天启降临",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015D2.002",
+  "name": "竞技比赛竞逐活动",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015D3.002",
+  "name": "新剧情片段",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015D4.002",
+  "name": "“狂鼠”的补给狩猎",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015D7.002",
+  "name": "周年共庆",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015DA.002",
+  "name": "周年共庆",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015DE.002",
+  "name": "[PH] BACKGROUND TEST MAP 1",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015DF.002",
+  "name": "[PH] BACKGROUND TEST MAP 2",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015E4.002",
+  "name": "继承者",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015E7.002",
+  "name": "YOASOBI",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015E8.002",
+  "name": "神话商城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015ED.002",
+  "name": "轰轰钻机挖宝开启",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015EE.002",
+  "name": "社区创造",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015EF.002",
+  "name": "“狂鼠”的补给狩猎",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015F2.002",
+  "name": "专属奖励",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015F3.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015F4.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015F5.002",
+  "name": "暴雪嘉年华礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015F6.002",
+  "name": "幻灵强袭",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015FA.002",
+  "name": "究极皮肤",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015FD.002",
+  "name": "幻灵强袭",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000015FF.002",
+  "name": "幻灵强袭",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001603.002",
+  "name": "竞技比赛竞逐活动",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001610.002",
+  "name": "“狂鼠”的补给狩猎",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001611.002",
+  "name": "快速比赛：黑客入侵",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001612.002",
+  "name": "神话商城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001613.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001614.002",
+  "name": "自己的路",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001617.002",
+  "name": "支持守望先锋冠军系列赛",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001618.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000161A.002",
+  "name": "杀机四伏",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000161D.002",
+  "name": "快速比赛：黑客入侵",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000161F.002",
+  "name": "蜕变之痛",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001621.002",
+  "name": "季中冠军赛群英齐聚！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001625.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001627.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001629.002",
+  "name": "我为MEKA狂",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000162B.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000162C.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000162D.002",
+  "name": "商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000162E.002",
+  "name": "商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000162F.002",
+  "name": "助威世界杯",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001630.002",
+  "name": "一走了之",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000164C.002",
+  "name": "团队竞逐",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000164D.002",
+  "name": "地图更新",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000164E.002",
+  "name": "竞技比赛更新",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000164F.002",
+  "name": "D.Mon获胜！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001650.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001651.002",
+  "name": "守望先锋世界杯来了！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001658.002",
+  "name": null,
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001659.002",
+  "name": "神话商城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000165E.002",
+  "name": "“狂鼠”的补给狩猎",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000165F.002",
+  "name": "“狂鼠”的补给狩猎",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001660.002",
+  "name": "“狂鼠”的补给狩猎",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001661.002",
+  "name": "试炼",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001662.002",
+  "name": "D.Va获胜！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001663.002",
+  "name": "“卡西诺”获胜！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001664.002",
+  "name": "“大王”获胜！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001665.002",
+  "name": "“智多星”获胜！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001668.002",
+  "name": "战令更新",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000166A.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000166E.002",
+  "name": "恭喜美洲赛区！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000166F.002",
+  "name": "恭喜亚太赛区！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001670.002",
+  "name": "恭喜欧中非赛区！",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001671.002",
+  "name": "冠军加冕",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001672.002",
+  "name": "冠军加冕",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001673.002",
+  "name": "冠军加冕",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001674.002",
+  "name": "冠军加冕",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001675.002",
+  "name": "冠军加冕",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001676.002",
+  "name": "冠军加冕",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001677.002",
+  "name": "冠军加冕",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001678.002",
+  "name": "冠军加冕",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001679.002",
+  "name": "2026暴雪嘉年华纪念典藏礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000167A.002",
+  "name": "越狱",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000167B.002",
+  "name": "生命的代价",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000167C.002",
+  "name": "神话商城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000167D.002",
+  "name": "新商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000167E.002",
+  "name": "竞技比赛竞逐活动",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001680.002",
+  "name": "LE SSERAFIM",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001681.002",
+  "name": "暴雪嘉年华神话礼物",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001682.002",
+  "name": "商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "000000001683.002",
+  "name": "暴雪嘉年华神话礼物",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "00000000168B.002",
+  "name": "越狱",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016A5.002",
+  "name": "团队竞逐",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016A6.002",
+  "name": "英雄重做",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016AC.002",
+  "name": "格里姆火山",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016AE.002",
+  "name": "战令",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016B2.002",
+  "name": "商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016B3.002",
+  "name": "商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016B5.002",
+  "name": "暗影君王",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016BE.002",
+  "name": "疯狂谜影",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016C0.002",
+  "name": "疯狂谜影",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016C1.002",
+  "name": "疯狂谜影",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016C2.002",
+  "name": "疯狂谜影",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016CF.002",
+  "name": "商城礼包",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016D1.002",
+  "name": "神话商城",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ },
+ {
+  "guid": "0000000016DE.002",
+  "name": "返场战令",
+  "variant": null,
+  "type": "OffenseDefenseMap"
+ }
+]

@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Watch Overwatch</title><link rel="stylesheet" href="/app.css"></head>
+<body>
+<div class="window">
+  <header class="toolbar"><div class="wordmark"><span class="mark">W</span> Watch Overwatch <span class="version">0.1</span></div><div class="toolbar-actions"><button id="export-json" data-icon="library" title="保存到本机 Watch Overwatch/exports 目录">保存 JSON</button><button id="copy-json">复制 JSON</button><button id="theme" title="切换明暗主题" data-icon="sun">外观</button><button id="settings-top" data-icon="settings">账号设置</button></div></header>
+  <div class="workspace">
+    <aside class="library"><div class="section-label">玩家库</div><form id="search-form"><label for="search">战网昵称</label><div class="search-row"><input id="search" placeholder="Player#12345" autocomplete="off" required maxlength="128"><button type="submit" class="primary" id="search-button">查找</button></div></form><p class="hint">使用完整 BattleTag 查找国服玩家。</p><div class="section-label recent-label">已查询玩家</div><div id="players"><p class="quiet">还没有玩家</p></div><div class="library-bottom"><span id="account-summary">正在连接…</span><button id="settings-side">管理账号 →</button></div></aside>
+    <main class="content"><div id="banner" role="alert" hidden></div><div id="page"></div></main>
+    <aside class="inspector"><div class="section-label">检查器</div><div id="inspector-content"><p class="quiet">选择玩家或对局后，详情会显示在这里。</p></div></aside>
+  </div>
+  <div class="statusbar"><span id="status">就绪</span><span id="connection">连接中</span></div>
+  <nav class="pagebar" aria-label="工作区"><button data-page="profile" class="selected"><span data-icon="user"></span><span>生涯</span></button><button data-page="matches"><span data-icon="swords"></span><span>对局</span></button><button data-page="summary"><span data-icon="chart"></span><span>复盘</span></button><button data-page="history"><span data-icon="history"></span><span>趋势</span></button><button data-page="community"><span data-icon="library"></span><span>资料库</span></button><button data-page="diagnostics"><span data-icon="activity"></span><span>请求记录</span></button><button data-page="settings"><span data-icon="settings"></span><span>设置</span></button></nav>
+</div><script src="/vendor/lucide.min.js"></script><script src="/icons.js"></script><script src="/library.js"></script><script src="/app.js"></script></body></html>

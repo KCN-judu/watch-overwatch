@@ -1,0 +1,13 @@
+{"code":0,"success":true,"traceId":"MASKED","data":{
+ "bnetId":"1001",
+ "guideCountData":[{"roleType":"healer","lastRankInfo":{"rank_name":"Platinum","rankName":"Platinum","rank_sub_tier":5,"rankSubTier":5,"rankScore":395,"ts":1777212060658},"maxRankInfo":{"rank_name":"Diamond","rankName":"Diamond","rank_sub_tier":3,"rankSubTier":3,"rankScore":497,"ts":1777000000000},"matchSum":67,"winRate":"64.18","kda":"5.80","coreCount":10176,"maxWinStreak":9}],
+ "presetsSummaryData":{"matchSum":104,"winRate":"59.62","aveHeroDamage":7023,"aveCure":6965,"aveResistDamage":4590,"aveKill":14,"aveAssist":12,"aveDeath":5,"aveIndividualKill":0,"aveFinalHit":5,"matchWinSum":62,"matchLossSum":40,"serverMapCountData":{"death":7.33,"damage":8231.6,"cure":3276.51,"resistDamage":1264.47,"kill":16.7,"maxDeath":30,"maxDamage":12000,"maxCure":12000,"maxResistDamage":12000,"maxKill":20}},
+ "recentMatchCount":{"aveDamage":3634,"aveResistDamage":106,"aveCure":9329,"aveAssist":14,"aveKill":8,"winRate":"66.67","roleType":"healer"},
+ "matchList":[{"mapGuid":"576460752303424195","matchId":"c788c713-75a8-a744-bad7-cfd08705cdf4","matchRet":1,"instanceType":"IT_RANKED","heroGuid":"207165582859043685","roleType":"healer","heroIcon":"https://example.invalid/ana.png","teamScore":3,"opponentScore":1,"kill":15,"assist":16,"death":4,"heroDamage":4631,"cure":6801,"resistDamage":0,"rankInfo":{"rank_name":"Platinum","rankName":"Platinum","rank_sub_tier":5,"rankSubTier":5,"rankScore":395,"ts":1777212060658},"beginTs":1777212060658,"gameMode":"SportPreset"}],
+ "frequentHeroIds":["207165582859043685"],
+ "presetsHeroUseSummaryList":[{"heroGuid":"207165582859043685","heroLevel":12,"matchSum":40,"winSum":25,"winRate":62.5,"kda":"6.1","gameTime":36000,"statAveCount":{"603482350067646495":12.5},"statPerTenMinCount":[{"valueGuid":"603482350067646495","value":7.1}],"heroRankInfo":{"rank":3,"rankedLevel":2082}}],
+ "openHeroUseSummaryList":[],
+ "v6HeroUseSummaryList":[],
+ "userProvinceRankList":[{"roleType":"healer","province":"北京","rankNum":321}],
+ "gameAction":{"comment":"本周表现良好","getHonorsCnt":30,"sendHonorsCnt":12,"reportedCnt":0}
+}}

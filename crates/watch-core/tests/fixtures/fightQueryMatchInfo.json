@@ -1,0 +1,7 @@
+{"code":0,"success":true,"data":{
+ "totalCount":{"mapGuid":"576460752303424195","teamScore":2,"opponentScore":3,"gameTimeSec":1200,
+  "teammateList":[{"bnetId":"1001","heroGuid":"207165582859043685","kill":30,"death":10,"endWorth":45000,"traitGuids":["920986123797276200"],"modGuids":["920986123797276300","0"],"rankInfo":{"rankName":"Elite","rankScore":2650}}],
+  "enemyList":[{"bnetId":"2001","heroGuid":"207165582859042818","kill":40,"death":8}]},
+ "roundCountList":[{"mapGuid":"576460752303424195","teamScore":1,"opponentScore":0,"gameTimeSec":200,"teammateList":[],"enemyList":[]}],
+ "nameMap":{"1001":"Me#1001","2001":"Foe#2001"}
+}}

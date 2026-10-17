@@ -1,0 +1,746 @@
+// Dart mirror of `watch-core::ir`. Field names follow the Rust serde output
+// (snake_case). Missing or malformed values become null, never zero.
+typedef Json = Map<String, dynamic>;
+
+double? _d(Object? v) => v is num
+    ? v.toDouble()
+    : v is String
+    ? double.tryParse(v)
+    : null;
+int? _i(Object? v) => _d(v)?.round();
+String? _s(Object? v) => v is String && v.isNotEmpty ? v : null;
+bool _b(Object? v) => v == true;
+Json? _o(Object? v) => v is Map<String, dynamic> ? v : null;
+List<T> _list<T>(Object? v, T Function(Json) f) => v is List
+    ? [
+        for (final e in v)
+          if (e is Map<String, dynamic>) f(e),
+      ]
+    : <T>[];
+
+enum Mode {
+  competitive('competitive', 'sport', '竞技比赛', '竞技'),
+  quick('quick', 'leisure', '快速比赛', '快速'),
+  stadium('stadium', 'SportFight', '角斗领域', '角斗');
+
+  const Mode(this.id, this.provider, this.label, this.shortLabel);
+  final String id;
+  final String provider;
+  final String label;
+
+  /// Two-character name for dense controls; [label] stays the full name.
+  final String shortLabel;
+  static Mode parse(String? v) =>
+      Mode.values.firstWhere((m) => m.id == v, orElse: () => Mode.competitive);
+}
+
+enum Role {
+  tank('tank', '重装'),
+  damage('damage', '输出'),
+  support('support', '支援'),
+  open('open', '综合'),
+  unknown('unknown', '');
+
+  const Role(this.id, this.label);
+  final String id;
+  final String label;
+  static Role parse(String? v) =>
+      Role.values.firstWhere((r) => r.id == v, orElse: () => Role.unknown);
+  static const playable = [Role.tank, Role.damage, Role.support];
+
+  /// This role if it is one a player queues as, otherwise [fallback].
+  Role playableOr(Role fallback) => playable.contains(this) ? this : fallback;
+}
+
+enum Outcome {
+  win('win', '胜'),
+  loss('loss', '负'),
+  draw('draw', '平'),
+  unknown('unknown', '—');
+
+  const Outcome(this.id, this.label);
+  final String id;
+  final String label;
+  static Outcome parse(String? v) => Outcome.values.firstWhere(
+    (o) => o.id == v,
+    orElse: () => Outcome.unknown,
+  );
+}
+
+enum Queue {
+  roleQueue('role_queue', '职责队列'),
+  openQueue('open_queue', '开放队列'),
+  sixVsSix('six_vs_six', '6v6'),
+  unknown('unknown', '');
+
+  const Queue(this.id, this.label);
+  final String id;
+  final String label;
+  static Queue parse(String? v) =>
+      Queue.values.firstWhere((q) => q.id == v, orElse: () => Queue.unknown);
+}
+
+class EntityRef {
+  const EntityRef(this.kind, this.guid, this.name, this.officialId);
+  final String kind;
+  final String guid;
+  final String? name;
+  final String? officialId;
+  factory EntityRef.fromJson(Json j) => EntityRef(
+    _s(j['kind']) ?? '',
+    _s(j['guid']) ?? '',
+    _s(j['name']),
+    _s(j['official_id']),
+  );
+  static EntityRef? opt(Object? v) =>
+      _o(v) == null ? null : EntityRef.fromJson(_o(v)!);
+  String get label =>
+      name ??
+      '未知（${guid.length > 6 ? '…${guid.substring(guid.length - 6)}' : guid}）';
+}
+
+const _tierZh = {
+  'Bronze': '青铜',
+  'Silver': '白银',
+  'Gold': '黄金',
+  'Platinum': '白金',
+  'Emerald': '翡翠',
+  'Diamond': '钻石',
+  'Master': '大师',
+  'Grandmaster': '宗师',
+  'Champion': '冠军',
+};
+const _tierBases = [
+  ('Bronze', 500),
+  ('Silver', 1000),
+  ('Gold', 1500),
+  ('Platinum', 2000),
+  ('Emerald', 2500),
+  ('Diamond', 3000),
+  ('Master', 3500),
+  ('Grandmaster', 4000),
+  ('Champion', 4500),
+];
+
+/// `2350` → `白金 2`. Null when the rating is outside the ladder.
+String? ratingLabel(num? skillRating) {
+  if (skillRating == null || skillRating < 500) return null;
+  var tier = _tierBases.first;
+  for (final t in _tierBases) {
+    if (skillRating >= t.$2) tier = t;
+  }
+  final step = ((skillRating - tier.$2) / 100).floor().clamp(0, 4);
+  return '${_tierZh[tier.$1]}${5 - step}';
+}
+
+class Rank {
+  const Rank(this.tier, this.division, this.score, this.skillRating);
+  final String? tier;
+  final int? division;
+  final int? score;
+  final int? skillRating;
+  factory Rank.fromJson(Json j) => Rank(
+    _s(j['tier']),
+    _i(j['division']),
+    _i(j['score']),
+    _i(j['skill_rating']),
+  );
+  static Rank? opt(Object? v) => _o(v) == null ? null : Rank.fromJson(_o(v)!);
+
+  /// Tier and division from the provider; falls back to the rating's own position on the ladder.
+  String get label {
+    if (tier != null && _tierZh[tier] != null) {
+      return '${_tierZh[tier]}${division ?? ''}';
+    }
+    return ratingLabel(skillRating) ?? '未定级';
+  }
+}
+
+class StatLine {
+  const StatLine({
+    this.kills,
+    this.assists,
+    this.deaths,
+    this.damage,
+    this.healing,
+    this.mitigation,
+    this.finalBlows,
+    this.soloKills,
+    this.damageTaken,
+    this.healingTaken,
+    this.objectiveTimeS,
+  });
+  final double? kills,
+      assists,
+      deaths,
+      damage,
+      healing,
+      mitigation,
+      finalBlows,
+      soloKills,
+      damageTaken,
+      healingTaken,
+      objectiveTimeS;
+  factory StatLine.fromJson(Json? j) => j == null
+      ? const StatLine()
+      : StatLine(
+          kills: _d(j['kills']),
+          assists: _d(j['assists']),
+          deaths: _d(j['deaths']),
+          damage: _d(j['damage']),
+          healing: _d(j['healing']),
+          mitigation: _d(j['mitigation']),
+          finalBlows: _d(j['final_blows']),
+          soloKills: _d(j['solo_kills']),
+          damageTaken: _d(j['damage_taken']),
+          healingTaken: _d(j['healing_taken']),
+          objectiveTimeS: _d(j['objective_time_s']),
+        );
+  double? field(String name) => switch (name) {
+    'kills' => kills,
+    'assists' => assists,
+    'deaths' => deaths,
+    'damage' => damage,
+    'healing' => healing,
+    'mitigation' => mitigation,
+    _ => null,
+  };
+}
+
+class Highlights {
+  const Highlights(this.kills, this.damage, this.healing, this.mitigation);
+  final bool kills, damage, healing, mitigation;
+  static Highlights? opt(Object? v) {
+    final j = _o(v);
+    return j == null
+        ? null
+        : Highlights(
+            _b(j['kills']),
+            _b(j['damage']),
+            _b(j['healing']),
+            _b(j['mitigation']),
+          );
+  }
+}
+
+class MatchSummary {
+  MatchSummary(Json j)
+    : id = _s(j['id']) ?? '',
+      startedAtMs = _i(j['started_at_ms']),
+      mode = Mode.parse(_s(_o(j['kind'])?['mode'])),
+      queue = Queue.parse(_s(_o(j['kind'])?['queue'])),
+      ranked = _o(j['kind'])?['ranked'] as bool?,
+      outcome = Outcome.parse(_s(j['outcome'])),
+      map = EntityRef.opt(j['map']),
+      hero = EntityRef.opt(j['hero']),
+      role = Role.parse(_s(j['role'])),
+      scoreTeam = _i(_o(j['score'])?['team']),
+      scoreOpponent = _i(_o(j['score'])?['opponent']),
+      stats = StatLine.fromJson(_o(j['stats'])),
+      highlights = Highlights.opt(j['highlights']),
+      rank = Rank.opt(j['rank']),
+      heroIconUrl = _s(j['hero_icon_url']);
+  final String id;
+  final int? startedAtMs;
+  final Mode mode;
+  final Queue queue;
+  final bool? ranked;
+  final Outcome outcome;
+  final EntityRef? map;
+  final EntityRef? hero;
+  final Role role;
+  final int? scoreTeam, scoreOpponent;
+  final StatLine stats;
+  final Highlights? highlights;
+  final Rank? rank;
+  final String? heroIconUrl;
+
+  DateTime? get startedAt => startedAtMs == null
+      ? null
+      : DateTime.fromMillisecondsSinceEpoch(startedAtMs!);
+}
+
+class StatValue {
+  StatValue(Json j)
+    : stat = EntityRef.fromJson(_o(j['stat']) ?? const {}),
+      value = _d(j['value']) ?? 0;
+  final EntityRef stat;
+  final double value;
+}
+
+class PerkPick {
+  PerkPick(Json j)
+    : perk = EntityRef.fromJson(_o(j['perk']) ?? const {}),
+      level = _i(j['level']);
+  final EntityRef perk;
+  final int? level;
+}
+
+class StadiumBuild {
+  StadiumBuild(Json j)
+    : worth = _d(j['worth']),
+      powers = _list(j['powers'], EntityRef.fromJson),
+      items = _list(j['items'], EntityRef.fromJson);
+  final double? worth;
+  final List<EntityRef> powers, items;
+}
+
+class Participant {
+  Participant(Json j)
+    : name = _s(j['name']),
+      bnetId = _s(j['bnet_id']),
+      isSubject = _b(j['is_subject']),
+      hero = EntityRef.opt(j['hero']),
+      role = Role.parse(_s(j['role'])),
+      stats = StatLine.fromJson(_o(j['stats'])),
+      rank = Rank.opt(j['rank']),
+      perks = _list(j['perks'], PerkPick.new),
+      partyBnetIds = [
+        for (final e in (j['party_bnet_ids'] as List? ?? const [])) '$e',
+      ],
+      suspended = _b(j['suspended']),
+      stadium = _o(j['stadium']) == null
+          ? null
+          : StadiumBuild(_o(j['stadium'])!);
+  final String? name, bnetId;
+  final bool isSubject;
+  final EntityRef? hero;
+  final Role role;
+  final StatLine stats;
+  final Rank? rank;
+  final List<PerkPick> perks;
+  final List<String> partyBnetIds;
+  final bool suspended;
+  final StadiumBuild? stadium;
+}
+
+class HeroSegment {
+  HeroSegment(Json j)
+    : hero = EntityRef.fromJson(_o(j['hero']) ?? const {}),
+      playTimeS = _d(j['play_time_s']),
+      share = _d(j['share']),
+      stats = _list(j['stats'], StatValue.new);
+  final EntityRef hero;
+  final double? playTimeS, share;
+  final List<StatValue> stats;
+}
+
+class Round {
+  Round(Json j)
+    : index = _i(j['index']) ?? 0,
+      scoreTeam = _i(_o(j['score'])?['team']),
+      scoreOpponent = _i(_o(j['score'])?['opponent']),
+      durationS = _d(j['duration_s']);
+  final int index;
+  final int? scoreTeam, scoreOpponent;
+  final double? durationS;
+}
+
+class MatchDetail {
+  MatchDetail(Json j)
+    : id = _s(j['id']) ?? '',
+      mode = Mode.parse(_s(j['mode'])),
+      map = EntityRef.opt(j['map']),
+      outcome = Outcome.parse(_s(j['outcome'])),
+      outcomeFromScore = _s(j['outcome_source']) == 'score',
+      startedAtMs = _i(j['started_at_ms']),
+      durationS = _d(j['duration_s']),
+      scoreTeam = _i(_o(j['score'])?['team']),
+      scoreOpponent = _i(_o(j['score'])?['opponent']),
+      bansAlly = _list(_o(j['bans'])?['ally'], EntityRef.fromJson),
+      bansEnemy = _list(_o(j['bans'])?['enemy'], EntityRef.fromJson),
+      subjectHeroes = _list(j['subject_heroes'], HeroSegment.new),
+      allies = _list(j['allies'], Participant.new),
+      enemies = _list(j['enemies'], Participant.new),
+      rounds = _list(j['rounds'], Round.new);
+  final String id;
+  final Mode mode;
+  final EntityRef? map;
+  final Outcome outcome;
+  final bool outcomeFromScore;
+  final int? startedAtMs;
+  final double? durationS;
+  final int? scoreTeam, scoreOpponent;
+  final List<EntityRef> bansAlly, bansEnemy;
+  final List<HeroSegment> subjectHeroes;
+  final List<Participant> allies, enemies;
+  final List<Round> rounds;
+}
+
+class PlayerProfile {
+  PlayerProfile(Json j)
+    : name = _s(j['name']),
+      bnetId = _s(j['bnet_id']),
+      avatarUrl = _s(j['avatar_url']),
+      title = _s(j['title']),
+      endorsementLevel = _i(j['endorsement_level']),
+      playTimeHours = _d(j['play_time_hours']),
+      totalMatches = _i(j['total_matches']),
+      suspensionStatus = _s(_o(j['suspension'])?['status']),
+      suspensionExpiresMs = _i(_o(j['suspension'])?['expires_at_ms']),
+      suspended = _o(j['suspension']) != null;
+  final String? name, bnetId, avatarUrl, title;
+  final int? endorsementLevel, totalMatches;
+  final double? playTimeHours;
+  final bool suspended;
+  final String? suspensionStatus;
+  final int? suspensionExpiresMs;
+}
+
+class RoleCareer {
+  RoleCareer(Json j)
+    : role = Role.parse(_s(j['role'])),
+      current = Rank.opt(j['current_rank']),
+      peak = Rank.opt(j['peak_rank']),
+      matches = _i(j['matches']),
+      winRatePct = _d(j['win_rate_pct']),
+      kda = _d(j['kda']),
+      maxWinStreak = _i(j['max_win_streak']);
+  final Role role;
+  final Rank? current, peak;
+  final int? matches, maxWinStreak;
+  final double? winRatePct, kda;
+}
+
+class HeroUsage {
+  HeroUsage(Json j)
+    : queue = Queue.parse(_s(j['queue'])),
+      hero = EntityRef.fromJson(_o(j['hero']) ?? const {}),
+      heroLevel = _i(j['hero_level']),
+      matches = _i(j['matches']),
+      wins = _i(j['wins']),
+      winRatePct = _d(j['win_rate_pct']),
+      kda = _d(j['kda']),
+      playTimeS = _d(j['play_time_s']),
+      perMatch = _list(j['per_match'], StatValue.new),
+      per10min = _list(j['per_10min'], StatValue.new);
+  final Queue queue;
+  final EntityRef hero;
+  final int? heroLevel, matches, wins;
+  final double? winRatePct, kda, playTimeS;
+  final List<StatValue> perMatch, per10min;
+
+  /// Average length of one match on this hero, in seconds.
+  double? get avgMatchSeconds {
+    for (final v in perMatch) {
+      if (v.stat.name == '累计游戏时间' && v.value > 0) return v.value;
+    }
+    final t = playTimeS, n = matches;
+    return t != null && n != null && n > 0 ? t / n : null;
+  }
+
+  /// Rates, times and flags do not scale to "per 10 minutes".
+  static bool scalesPer10(String name) =>
+      !name.endsWith('率') &&
+      !name.contains('游戏时间') &&
+      !name.contains('英雄获胜') &&
+      !name.contains('平均');
+
+  /// Per-10-minute value of the stat the provider reports per match as [perMatchValue]:
+  /// the provider's own figure when it gave one (they supply only a handful),
+  /// otherwise average × 600 ÷ average match length. `derived` marks the second case.
+  ({double value, bool derived})? per10For(StatValue perMatchValue) {
+    for (final v in per10min) {
+      if (v.stat.guid == perMatchValue.stat.guid) {
+        return (value: v.value, derived: false);
+      }
+    }
+    final name = perMatchValue.stat.name, secs = avgMatchSeconds;
+    if (name == null || secs == null || secs <= 0 || !scalesPer10(name)) {
+      return null;
+    }
+    return (value: perMatchValue.value * 600 / secs, derived: true);
+  }
+
+  /// Per-10-minute value by stat name (provider's, else derived), for table columns.
+  double? per10ByName(bool Function(String) match) {
+    for (final v in per10min) {
+      final n = v.stat.name;
+      if (n != null && match(n)) return v.value;
+    }
+    for (final v in perMatch) {
+      final n = v.stat.name;
+      if (n != null && match(n)) return per10For(v)?.value;
+    }
+    return null;
+  }
+}
+
+class Behavior {
+  Behavior(Json j)
+    : comment = _s(j['comment']),
+      honorsReceived = _i(j['honors_received']),
+      honorsSent = _i(j['honors_sent']),
+      reports = _i(j['reports']);
+  final String? comment;
+  final int? honorsReceived, honorsSent, reports;
+}
+
+class ProvinceRank {
+  ProvinceRank(Json j)
+    : role = Role.parse(_s(j['role'])),
+      province = _s(j['province']),
+      rank = _i(j['rank']);
+  final Role role;
+  final String? province;
+  final int? rank;
+}
+
+class CareerSnapshot {
+  CareerSnapshot(Json j)
+    : mode = Mode.parse(_s(j['mode'])),
+      season = _i(j['season']),
+      roles = _list(j['roles'], RoleCareer.new),
+      heroes = _list(j['heroes'], HeroUsage.new),
+      provinceRanks = _list(j['province_ranks'], ProvinceRank.new),
+      behavior = _o(j['behavior']) == null
+          ? null
+          : Behavior(_o(j['behavior'])!);
+  final Mode mode;
+  final int? season;
+  final List<RoleCareer> roles;
+  final List<HeroUsage> heroes;
+  final List<ProvinceRank> provinceRanks;
+  final Behavior? behavior;
+  RoleCareer? role(Role r) {
+    for (final c in roles) {
+      if (c.role == r) return c;
+    }
+    return null;
+  }
+}
+
+class SeasonPoint {
+  SeasonPoint(Json j)
+    : mode = Mode.parse(_s(j['mode'])),
+      season = _i(j['season']),
+      role = Role.parse(_s(j['role'])),
+      matches = _i(j['matches']),
+      winRatePct = _d(j['win_rate_pct']),
+      kda = _d(j['kda']),
+      current = Rank.opt(j['current_rank']),
+      peak = Rank.opt(j['peak_rank']);
+  final Mode mode;
+  final int? season, matches;
+  final Role role;
+  final double? winRatePct, kda;
+  final Rank? current, peak;
+}
+
+class HeroBoardEntry {
+  HeroBoardEntry(Json j)
+    : queue = Queue.parse(_s(j['queue'])),
+      hero = EntityRef.opt(j['hero']),
+      province = _s(j['province']),
+      rank = _i(j['rank']),
+      rankedLevel = _i(j['ranked_level']),
+      matches = _i(j['matches']),
+      winRatePct = _d(j['win_rate_pct']);
+  final Queue queue;
+  final EntityRef? hero;
+  final String? province;
+  final int? rank, rankedLevel, matches;
+  final double? winRatePct;
+}
+
+class ListCoverage {
+  ListCoverage(Json j)
+    : mode = Mode.parse(_s(j['mode'])),
+      pagesFetched = _i(j['pages_fetched']) ?? 0,
+      exhausted = _b(j['exhausted']);
+  final Mode mode;
+  final int pagesFetched;
+  final bool exhausted;
+}
+
+class FetchRecord {
+  FetchRecord(Json j)
+    : endpoint = _s(j['endpoint']) ?? '',
+      ok = _b(j['ok']),
+      errorKind = _s(j['error_kind']);
+  final String endpoint;
+  final bool ok;
+  final String? errorKind;
+}
+
+class Coverage {
+  Coverage(Json? j)
+    : matchLists = _list(j?['match_lists'], ListCoverage.new),
+      detailsRequested = _i(j?['details_requested']) ?? 0,
+      detailsOk = _i(j?['details_ok']) ?? 0,
+      fetches = _list(j?['fetches'], FetchRecord.new);
+  final List<ListCoverage> matchLists;
+  final int detailsRequested, detailsOk;
+  final List<FetchRecord> fetches;
+  int get failures => fetches.where((f) => !f.ok).length;
+}
+
+class PlayerRating {
+  PlayerRating(Json j)
+    : bnetId = _s(j['bnet_id']) ?? '',
+      hasRoles = (j['roles'] as List? ?? const []).isNotEmpty;
+  final String bnetId;
+  final bool hasRoles;
+}
+
+class PlayerDataset {
+  PlayerDataset(Json j)
+    : generatedAtMs = _i(j['generated_at_ms']) ?? 0,
+      profile = PlayerProfile(_o(j['profile']) ?? const {}),
+      careers = _list(j['careers'], CareerSnapshot.new),
+      matches = _list(j['matches'], MatchSummary.new),
+      heroBoards = _list(j['hero_boards'], HeroBoardEntry.new),
+      ratings = _list(j['player_ratings'], PlayerRating.new),
+      coverage = Coverage(_o(j['coverage']));
+  final int generatedAtMs;
+  final PlayerProfile profile;
+  final List<CareerSnapshot> careers;
+  final List<MatchSummary> matches;
+  final List<HeroBoardEntry> heroBoards;
+  final List<PlayerRating> ratings;
+  final Coverage coverage;
+  DateTime get generatedAt =>
+      DateTime.fromMillisecondsSinceEpoch(generatedAtMs);
+  CareerSnapshot? career(Mode m) {
+    for (final c in careers) {
+      if (c.mode == m && c.season == null) return c;
+    }
+    return null;
+  }
+}
+
+// ---- Lobby strength -------------------------------------------------------
+
+class RoleMeans {
+  RoleMeans(Json? j)
+    : overall = _d(j?['overall']),
+      tank = _d(j?['tank']),
+      damage = _d(j?['damage']),
+      support = _d(j?['support']);
+  final double? overall, tank, damage, support;
+
+  /// `null` selects the overall slot.
+  double? slot(Role? r) => switch (r) {
+    null => overall,
+    Role.tank => tank,
+    Role.damage => damage,
+    Role.support => support,
+    _ => null,
+  };
+}
+
+class RoleCounts {
+  RoleCounts(Json? j)
+    : overall = _i(j?['overall']) ?? 0,
+      tank = _i(j?['tank']) ?? 0,
+      damage = _i(j?['damage']) ?? 0,
+      support = _i(j?['support']) ?? 0;
+  final int overall, tank, damage, support;
+}
+
+class SideStrength {
+  SideStrength(Json? j)
+    : mean = RoleMeans(_o(j?['mean'])),
+      min = RoleMeans(_o(j?['min'])),
+      max = RoleMeans(_o(j?['max'])),
+      rated = RoleCounts(_o(j?['rated'])),
+      players = _i(j?['players']) ?? 0;
+
+  /// Lowest and highest rated player per slot: the spread behind [mean].
+  final RoleMeans mean, min, max;
+  final RoleCounts rated;
+  final int players;
+}
+
+class MatchStrength {
+  MatchStrength(Json j)
+    : matchId = _s(j['match_id']) ?? '',
+      startedAtMs = _i(j['started_at_ms']),
+      mode = Mode.parse(_s(j['mode'])),
+      outcome = Outcome.parse(_s(j['outcome'])),
+      subjectRole = Role.parse(_s(j['subject_role'])),
+      source = _s(j['source']) ?? 'none',
+      ally = SideStrength(_o(j['ally'])),
+      enemy = SideStrength(_o(j['enemy'])),
+      lobby = RoleMeans(_o(j['lobby'])),
+      diff = RoleMeans(_o(j['diff']));
+  final String matchId;
+  final int? startedAtMs;
+  final Mode mode;
+  final Outcome outcome;
+  final Role subjectRole;
+  final String source;
+  final SideStrength ally, enemy;
+  final RoleMeans lobby, diff;
+}
+
+class StrengthGroup {
+  StrengthGroup(Json j)
+    : mode = Mode.parse(_s(j['mode'])),
+      subjectRole = _s(j['subject_role']) == null
+          ? null
+          : Role.parse(_s(j['subject_role'])),
+      matches = _i(_o(j['record'])?['matches']) ?? 0,
+      wins = _i(_o(j['record'])?['wins']) ?? 0,
+      losses = _i(_o(j['record'])?['losses']) ?? 0,
+      winRatePct = _d(_o(j['record'])?['win_rate_pct']),
+      lobby = RoleMeans(_o(j['lobby'])),
+      ally = RoleMeans(_o(j['ally'])),
+      enemy = RoleMeans(_o(j['enemy'])),
+      diff = RoleMeans(_o(j['diff']));
+  final Mode mode;
+  final Role? subjectRole;
+  final int matches, wins, losses;
+  final double? winRatePct;
+  final RoleMeans lobby, ally, enemy, diff;
+}
+
+class LobbyStrength {
+  LobbyStrength(Json? j)
+    : matches = _list(j?['matches'], MatchStrength.new),
+      byMode = _list(j?['by_mode'], StrengthGroup.new),
+      bySubjectRole = _list(j?['by_subject_role'], StrengthGroup.new);
+  final List<MatchStrength> matches;
+  final List<StrengthGroup> byMode, bySubjectRole;
+}
+
+/// Where a running analysis is, as reported by the local service.
+/// `phase` is list, details, ratings, finish or done.
+class AnalysisProgress {
+  AnalysisProgress(Json j, {this.phaseSince})
+    : phase = _s(_o(j['progress'])?['phase']) ?? 'list',
+      done = _i(_o(j['progress'])?['done']) ?? 0,
+      total = _i(_o(j['progress'])?['total']) ?? 0,
+      note = _s(_o(j['progress'])?['note']) ?? '',
+      matchesFound = _i(_o(j['progress'])?['matches_found']) ?? 0,
+      requests = _i(_o(j['progress'])?['requests']) ?? 0,
+      failures = _i(_o(j['progress'])?['failures']) ?? 0,
+      elapsedMs = _i(j['elapsed_ms']) ?? 0;
+  final String phase, note;
+  final int done, total, matchesFound, requests, failures, elapsedMs;
+
+  /// When this phase was first seen by the client, for the remaining-time estimate.
+  final DateTime? phaseSince;
+
+  static const phases = ['list', 'details', 'ratings', 'finish'];
+  int get phaseIndex => phase == 'done'
+      ? phases.length
+      : phases.indexOf(phase).clamp(0, phases.length - 1);
+
+  /// Seconds left in the current phase, once a few items are done.
+  int? get remainingSeconds {
+    if (total <= 0 || done < 2 || done >= total || phaseSince == null)
+      return null;
+    final spent = DateTime.now().difference(phaseSince!).inMilliseconds;
+    return (spent / done * (total - done) / 1000).round();
+  }
+}
+
+/// Result of `/api/player/dataset` with lobby ratings enabled.
+class StrengthResult {
+  StrengthResult(Json j)
+    : dataset = PlayerDataset(_o(j['dataset']) ?? const {}),
+      lobby = LobbyStrength(_o(_o(j['analysis'])?['lobby_strength']));
+  final PlayerDataset dataset;
+  final LobbyStrength lobby;
+}

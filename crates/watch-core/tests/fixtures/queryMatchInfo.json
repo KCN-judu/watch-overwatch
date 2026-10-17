@@ -1,0 +1,11 @@
+{"code":0,"success":true,"traceId":"MASKED","data":{
+ "matchRet":1,"mapGuid":"576460752303424195","gameTimeSec":955,"startTime":1777212060,"teamScore":3,"opponentScore":1,
+ "heroList":[{"heroId":"207165582859043685","userTimeSec":690,"useTimeRate":"100.00","statMap":{"603482350067647492":6.0,"603482350067647671":4630.619554758072}}],
+ "teammateList":[
+  {"name":"Me#1001","bnetId":"1001","customerToken":"SECRET-1","heroGuid":"207165582859043685","kill":15,"assist":16,"death":4,"heroDamage":4631,"cure":6801,"resistDamage":0,"healingTaken":2715.0,"damageTaken":4966.0,"finalHit":3,"targetCompetingTime":9,"perks":[{"guid":"920986123797276132","perkLevel":1}],"friendBnetIds":["1002"],"beginTs":1777212060658},
+  {"name":"Pal#1002","bnetId":"1002","customerToken":"SECRET-2","heroGuid":"207165582859042818","kill":25,"assist":3,"death":6,"heroDamage":9000,"cure":0,"resistDamage":0,"friendBnetIds":["1001"]},
+  {"name":"Tank#1003","bnetId":"1003","heroGuid":"207165582859042819","kill":20,"assist":10,"death":5,"heroDamage":7000,"cure":0,"resistDamage":8000,"perks":"[{\"guid\":\"920986123797276133\",\"perkLevel\":2}]"}
+ ],
+ "enemyList":[{"name":"Foe#2001","bnetId":"2001","customerToken":"SECRET-3","heroGuid":"207165582859042820","kill":10,"assist":5,"death":9,"heroDamage":6000,"cure":0,"resistDamage":0,"riskStatus":{"status":"SUSPENDED","expireTime":1787127797000}}],
+ "teamBanHeroGuids":["207165582859043119","0"],"enemyBanHeroGuids":["207165582859044118"]
+}}

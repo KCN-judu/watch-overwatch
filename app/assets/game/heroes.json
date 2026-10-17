@@ -1,0 +1,3866 @@
+[
+ {
+  "guid": "000000000002.075",
+  "name": "死神",
+  "class": "Damage",
+  "subrole": {
+   "name": "奇袭",
+   "passive": "提高急救包恢复的生命值"
+  },
+  "abilities": [
+   {
+    "name": "死亡绽放",
+    "category": "UltimateAbility",
+    "description": "对附近所有敌人造成伤害",
+    "icon": "icons/heroes/死神/abilities/死亡绽放.png"
+   },
+   {
+    "name": "地狱火霰弹枪",
+    "category": "Weapon",
+    "description": "近距离散射武器",
+    "icon": "icons/heroes/死神/abilities/地狱火霰弹枪.png"
+   },
+   {
+    "name": "暗影步",
+    "category": "Ability",
+    "description": "传送至指定位置",
+    "icon": "icons/heroes/死神/abilities/暗影步.png"
+   },
+   {
+    "name": "收割",
+    "category": "PassiveAbility",
+    "description": "造成伤害可治疗自己",
+    "icon": "icons/heroes/死神/abilities/收割.png"
+   },
+   {
+    "name": "幽灵形态",
+    "category": "Ability",
+    "description": "移动更快且变为无敌状态，但无法射击",
+    "icon": "icons/heroes/死神/abilities/幽灵形态.png"
+   },
+   {
+    "name": "恐怖扳机",
+    "category": "Ability",
+    "description": "用两把地狱火霰弹枪打出具有远距离精准度的齐射",
+    "icon": "icons/heroes/死神/abilities/恐怖扳机.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "暗影闪现",
+    "description": "暗影步的施放速度和冷却时间刷新速度加快25%%，冷却时间缩短，但射程缩小25%%",
+    "icon": "icons/heroes/死神/perks/暗影闪现.png"
+   },
+   {
+    "name": "灵魂收割",
+    "description": "从阵亡敌人身上收集灵魂之球可以恢复50点生命值",
+    "icon": "icons/heroes/死神/perks/灵魂收割.png"
+   },
+   {
+    "name": "开火冲动",
+    "description": "使用技能或装填会刷新恐怖扳机的冷却时间",
+    "icon": "icons/heroes/死神/perks/开火冲动.png"
+   },
+   {
+    "name": "萦绕幽灵",
+    "description": "离开幽灵形态后移动速度加快30%%，持续2秒",
+    "icon": "icons/heroes/死神/perks/萦绕幽灵.png"
+   }
+  ],
+  "description": "关于这个黑衣人的传闻并不多，只知道大家都称他为“死神”。虽然没人知道他的真实身份和动机，但有一点是可以肯定的，他的出现意味着死亡",
+  "color": "#A3005AFF"
+ },
+ {
+  "guid": "000000000003.075",
+  "name": "猎空",
+  "class": "Damage",
+  "subrole": {
+   "name": "奇袭",
+   "passive": "提高急救包恢复的生命值"
+  },
+  "abilities": [
+   {
+    "name": "闪现",
+    "category": "Ability",
+    "description": "传送至移动方向",
+    "icon": "icons/heroes/猎空/abilities/闪现.png"
+   },
+   {
+    "name": "闪回",
+    "category": "Ability",
+    "description": "回到传送前的位置并恢复至当时的生命值",
+    "icon": "icons/heroes/猎空/abilities/闪回.png"
+   },
+   {
+    "name": "脉冲炸弹",
+    "category": "UltimateAbility",
+    "description": "扔出一枚威力巨大的\n粘性炸弹",
+    "icon": "icons/heroes/猎空/abilities/脉冲炸弹.png"
+   },
+   {
+    "name": "脉冲双枪",
+    "category": "Weapon",
+    "description": "近距离全自动武器",
+    "icon": "icons/heroes/猎空/abilities/脉冲双枪.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "时空恢复",
+    "description": "被动生命值恢复触发速度加快100%%",
+    "icon": "icons/heroes/猎空/perks/时空恢复.png"
+   },
+   {
+    "name": "动能装填",
+    "description": "近身攻击命中会装填12发弹药",
+    "icon": "icons/heroes/猎空/perks/动能装填.png"
+   },
+   {
+    "name": "闪现急救包",
+    "description": "急救包会为闪现恢复1次充能",
+    "icon": "icons/heroes/猎空/perks/闪现急救包.png"
+   },
+   {
+    "name": "量子纠缠",
+    "description": "闪回提供会持续衰减的50点过量生命值和20发弹药",
+    "icon": "icons/heroes/猎空/perks/量子纠缠.png"
+   }
+  ],
+  "description": "前守望先锋成员“猎空”是一位可以进行时间跳跃的冒险家，为了正义而不懈努力着",
+  "color": "#F0B800FF"
+ },
+ {
+  "guid": "000000000004.075",
+  "name": "天使",
+  "class": "Support",
+  "subrole": {
+   "name": "医疗",
+   "passive": "使用武器治疗盟友也会治疗自己"
+  },
+  "abilities": [
+   {
+    "name": "天使之杖",
+    "category": "Weapon",
+    "description": "长按可以治疗队友",
+    "icon": "icons/heroes/天使/abilities/天使之杖.png"
+   },
+   {
+    "name": "守护天使",
+    "category": "Ability",
+    "description": "飞向一名队友。在飞行时，按跳跃可以向前飞，按下蹲可以向上飞",
+    "icon": "icons/heroes/天使/abilities/守护天使.png"
+   },
+   {
+    "name": "天使之杖",
+    "category": "Weapon",
+    "description": "长按可以增加队友造成的伤害",
+    "icon": "icons/heroes/天使/abilities/天使之杖.png"
+   },
+   {
+    "name": "重生",
+    "category": "Ability",
+    "description": "复活一名阵亡的队友",
+    "icon": "icons/heroes/天使/abilities/重生.png"
+   },
+   {
+    "name": "快速治疗",
+    "category": "Ability",
+    "description": "治疗天使之杖的激活目标，对生命值低于一半盟友的治疗量翻倍",
+    "icon": "icons/heroes/天使/abilities/快速治疗.png"
+   },
+   {
+    "name": "天使冲击枪",
+    "category": "Weapon",
+    "description": "自动武器",
+    "icon": "icons/heroes/天使/abilities/天使冲击枪.png"
+   },
+   {
+    "name": "天使降临",
+    "category": "PassiveAbility",
+    "description": "减缓下降速度",
+    "icon": "icons/heroes/天使/abilities/天使降临.png"
+   },
+   {
+    "name": "迅捷恢复",
+    "category": "PassiveAbility",
+    "description": "快速激活生命恢复效果",
+    "icon": "icons/heroes/天使/abilities/迅捷恢复.png"
+   },
+   {
+    "name": "女武神",
+    "category": "UltimateAbility",
+    "description": "获得飞行能力并强化各技能",
+    "icon": "icons/heroes/天使/abilities/女武神.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "天使重生",
+    "description": "使用重生后，“天使”获得100点过量生命值",
+    "icon": "icons/heroes/天使/perks/天使重生.png"
+   },
+   {
+    "name": "展翅飞翔",
+    "description": "守护天使的范围扩大30%%",
+    "icon": "icons/heroes/天使/perks/展翅飞翔.png"
+   },
+   {
+    "name": "连锁强化",
+    "description": "天使之杖的伤害强化提高5%%且会连接周围的第二个盟友",
+    "icon": "icons/heroes/天使/perks/连锁强化.png"
+   },
+   {
+    "name": "双倍剂量",
+    "description": "快速治疗获得一次额外充能，但基础治疗量降低10点",
+    "icon": "icons/heroes/天使/perks/双倍剂量.png"
+   }
+  ],
+  "description": "对那些在她照料下的人来说，“天使”是名副其实的守护天使。她是一位顶尖的治疗者、天才科学家以及坚定的和平使者",
+  "color": "#FDF9D7FF"
+ },
+ {
+  "guid": "000000000005.075",
+  "name": "半藏",
+  "class": "Damage",
+  "subrole": {
+   "name": "神准",
+   "passive": "造成暴击会缩短位移技能的冷却时间"
+  },
+  "abilities": [
+   {
+    "name": "竜",
+    "category": "UltimateAbility",
+    "description": "召唤致命的天竜之魂吞噬遇到的所有敌人",
+    "icon": "icons/heroes/半藏/abilities/竜.png"
+   },
+   {
+    "name": "音",
+    "category": "Ability",
+    "description": "击中后短时间内显示\n敌人位置",
+    "icon": "icons/heroes/半藏/abilities/音.png"
+   },
+   {
+    "name": "岚",
+    "category": "Ability",
+    "description": "接下来的5发箭矢可以弹射\n瞬间发出但伤害降低",
+    "icon": "icons/heroes/半藏/abilities/岚.png"
+   },
+   {
+    "name": "风",
+    "category": "Weapon",
+    "description": "长按鼠标左键然后放开可以射得更远",
+    "icon": "icons/heroes/半藏/abilities/风.png"
+   },
+   {
+    "name": "攀",
+    "category": "PassiveAbility",
+    "description": "跃上并沿着墙壁攀爬",
+    "icon": "icons/heroes/半藏/abilities/攀.png"
+   },
+   {
+    "name": "跃",
+    "category": "Ability",
+    "description": "二段跳",
+    "icon": "icons/heroes/半藏/abilities/跃.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "干扰之音",
+    "description": "“音”会侵入附近的急救包，持续30秒",
+    "icon": "icons/heroes/半藏/perks/干扰之音.png"
+   },
+   {
+    "name": "霜冻之箭",
+    "description": "按下 %1$s 换上一支霜冻爆炸箭，使被命中的敌人减速35%%，持续2秒",
+    "icon": "icons/heroes/半藏/perks/霜冻之箭.png"
+   },
+   {
+    "name": "神竜之怒",
+    "description": "主要攻击模式命中敌人后，获得20%%攻击速度，持续1.5秒",
+    "icon": "icons/heroes/半藏/perks/神竜之怒.png"
+   },
+   {
+    "name": "狂岚尽散",
+    "description": "第一次弹射时，“岚”的箭矢会分散成5支能造成33%%伤害的小箭头并额外反弹1次",
+    "icon": "icons/heroes/半藏/perks/狂岚尽散.png"
+   }
+  ],
+  "description": "作为箭术和忍术大师，岛田半藏一直都在追求极致完美的技艺以证明自己是最强大的武士",
+  "color": "#DAD4A9FF"
+ },
+ {
+  "guid": "000000000006.075",
+  "name": "托比昂",
+  "class": "Damage",
+  "subrole": {
+   "name": "专业",
+   "passive": "消灭敌人后在短时间内加快装弹速度"
+  },
+  "abilities": [
+   {
+    "name": "部署炮台",
+    "category": "Ability",
+    "description": "部署一个自动建造的炮台",
+    "icon": "icons/heroes/托比昂/abilities/部署炮台.png"
+   },
+   {
+    "name": "热力过载",
+    "category": "Ability",
+    "description": "获得额外生命值，同时提高攻击、移动\n及装弹速度",
+    "icon": "icons/heroes/托比昂/abilities/热力过载.png"
+   },
+   {
+    "name": "熔火核心",
+    "category": "UltimateAbility",
+    "description": "在地上制造熔渣池，对敌人造成伤害。对护甲造成额外伤害",
+    "icon": "icons/heroes/托比昂/abilities/熔火核心.png"
+   },
+   {
+    "name": "铆钉枪",
+    "category": "Weapon",
+    "description": "慢射速的远距离武器",
+    "icon": "icons/heroes/托比昂/abilities/铆钉枪.png"
+   },
+   {
+    "name": "辅助攻击模式",
+    "category": "Weapon",
+    "description": "火力强大但命中率不佳的近距离武器",
+    "icon": "icons/heroes/托比昂/abilities/辅助攻击模式.png"
+   },
+   {
+    "name": "锻造锤",
+    "category": "Weapon",
+    "description": "挥动锻造锤可以修理炮台或攻击敌人",
+    "icon": "icons/heroes/托比昂/abilities/锻造锤.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "铁锤快抡",
+    "description": "装备锻造锤时移动速度加快20%%",
+    "icon": "icons/heroes/托比昂/perks/铁锤快抡.png"
+   },
+   {
+    "name": "核心预热",
+    "description": "熔火核心会激活热力过载",
+    "icon": "icons/heroes/托比昂/perks/核心预热.png"
+   },
+   {
+    "name": "锚固螺栓",
+    "description": "部署炮台的投掷范围扩大25%%且炮台可以固定在墙壁和天花板上",
+    "icon": "icons/heroes/托比昂/perks/锚固螺栓.png"
+   },
+   {
+    "name": "过载炮台",
+    "description": "热力过载会升级炮台，持续5秒，提高其生命值和伤害",
+    "icon": "icons/heroes/托比昂/perks/过载炮台.png"
+   }
+  ],
+  "description": "巅峰时期的守望先锋，拥有世界上最为顶尖的武器设备，而这些武器都出自一位名叫托比昂·林德霍姆的天才工程师之手",
+  "color": "#DE9488FF"
+ },
+ {
+  "guid": "000000000007.075",
+  "name": "莱因哈特",
+  "class": "Tank",
+  "subrole": {
+   "name": "铁壁",
+   "passive": "获得击退和减速抗性"
+  },
+  "abilities": [
+   {
+    "name": "冲锋",
+    "category": "Ability",
+    "description": "向前冲锋并将一名敌人重击到墙上",
+    "icon": "icons/heroes/莱因哈特/abilities/冲锋.png"
+   },
+   {
+    "name": "裂地猛击",
+    "category": "UltimateAbility",
+    "description": "击倒前方所有敌人",
+    "icon": "icons/heroes/莱因哈特/abilities/裂地猛击.png"
+   },
+   {
+    "name": "烈焰打击",
+    "category": "Ability",
+    "description": "射出一道炽热能量波",
+    "icon": "icons/heroes/莱因哈特/abilities/烈焰打击.png"
+   },
+   {
+    "name": "火箭重锤",
+    "category": "Weapon",
+    "description": "毁灭性的近战武器",
+    "icon": "icons/heroes/莱因哈特/abilities/火箭重锤.png"
+   },
+   {
+    "name": "屏障力场",
+    "category": "Ability",
+    "description": "长按 %1$s 可以展开一道正面能量屏障",
+    "icon": "icons/heroes/莱因哈特/abilities/屏障力场.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/莱因哈特/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "十字军的烈焰",
+    "description": "击晕敌人时返还一次烈焰打击充能，可过量充能至3次",
+    "icon": "icons/heroes/莱因哈特/perks/十字军的烈焰.png"
+   },
+   {
+    "name": "十字军的决心",
+    "description": "使用屏障力场时，你的被动生命值恢复触发速度加快75%%",
+    "icon": "icons/heroes/莱因哈特/perks/十字军的决心.png"
+   },
+   {
+    "name": "盾牌猛击",
+    "description": "屏障力场激活时，使用 %1$s 可以击退敌人并对其造成伤害",
+    "icon": "icons/heroes/莱因哈特/perks/盾牌猛击.png"
+   },
+   {
+    "name": "盛燃怒火",
+    "description": "用烈焰打击命中敌人会使攻击速度加快25%%，命中的每名敌人都会使效果延长2秒",
+    "icon": "icons/heroes/莱因哈特/perks/盛燃怒火.png"
+   }
+  ],
+  "description": "莱因哈特•威尔海姆的行事作风就像一个属于过去的勇士，时刻铭记着骑士的信条：无畏、公正、勇敢",
+  "color": "#B9C3C4FF"
+ },
+ {
+  "guid": "000000000008.075",
+  "name": "法老之鹰",
+  "class": "Damage",
+  "subrole": {
+   "name": "侦察",
+   "passive": "对生命值低于一半的敌人造成伤害会显示其位置"
+  },
+  "abilities": [
+   {
+    "name": "火箭弹幕",
+    "category": "UltimateAbility",
+    "description": "发射一连串致命的迷你火箭",
+    "icon": "icons/heroes/法老之鹰/abilities/火箭弹幕.png"
+   },
+   {
+    "name": "推进背包",
+    "category": "Ability",
+    "description": "快速向上飞行\n补充部分燃料",
+    "icon": "icons/heroes/法老之鹰/abilities/推进背包.png"
+   },
+   {
+    "name": "震荡冲击",
+    "category": "Ability",
+    "description": "射出爆炸性冲击击退敌人",
+    "icon": "icons/heroes/法老之鹰/abilities/震荡冲击.png"
+   },
+   {
+    "name": "火箭发射器",
+    "category": "Weapon",
+    "description": "远距离爆炸式弹道武器",
+    "icon": "icons/heroes/法老之鹰/abilities/火箭发射器.png"
+   },
+   {
+    "name": "悬浮背包",
+    "category": "PassiveAbility",
+    "description": "长按可以悬浮在空中\n燃料消耗完后会缓慢降落\n落地时才能恢复燃料",
+    "icon": "icons/heroes/法老之鹰/abilities/悬浮背包.png"
+   },
+   {
+    "name": "疾冲背包",
+    "category": "Ability",
+    "description": "沿水平方向推进",
+    "icon": "icons/heroes/法老之鹰/abilities/疾冲背包.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "震荡爆冲",
+    "description": "震荡冲击会造成最多30点爆炸伤害",
+    "icon": "icons/heroes/法老之鹰/perks/震荡爆冲.png"
+   },
+   {
+    "name": "海力士护盾",
+    "description": "将125点生命值转化为护盾。火箭发射器直接命中会触发被动护盾恢复",
+    "icon": "icons/heroes/法老之鹰/perks/海力士护盾.png"
+   },
+   {
+    "name": "燃油储备",
+    "description": "使用疾冲背包时获得50%%燃料。过量燃料上限提高100%%",
+    "icon": "icons/heroes/法老之鹰/perks/燃油储备.png"
+   },
+   {
+    "name": "火箭齐射",
+    "description": "使用位移技能后，下一次主要攻击模式还会发射两发螺旋迷你火箭，每发造成30点爆炸伤害",
+    "icon": "icons/heroes/法老之鹰/perks/火箭齐射.png"
+   }
+  ],
+  "description": "法芮尔•艾玛莉骨子里就是一个恪守岗位的人。她来自一个军功卓越的军人世家，贡献与荣耀就是她最高的追求",
+  "color": "#009FDFFF"
+ },
+ {
+  "guid": "000000000009.075",
+  "name": "温斯顿",
+  "class": "Tank",
+  "subrole": {
+   "name": "先锋",
+   "passive": "使用特定位移技能后获得持续治疗"
+  },
+  "abilities": [
+   {
+    "name": "喷射背包",
+    "category": "Ability",
+    "description": "向前跃向空中，着陆后对附近的敌人造成伤害",
+    "icon": "icons/heroes/温斯顿/abilities/喷射背包.png"
+   },
+   {
+    "name": "原始暴怒",
+    "category": "UltimateAbility",
+    "description": "额外获得大量生命值\n但只能跳跃和拳击敌人",
+    "icon": "icons/heroes/温斯顿/abilities/原始暴怒.png"
+   },
+   {
+    "name": "屏障发射器",
+    "category": "Ability",
+    "description": "部署一个保护性能量罩",
+    "icon": "icons/heroes/温斯顿/abilities/屏障发射器.png"
+   },
+   {
+    "name": "特斯拉炮",
+    "category": "Weapon",
+    "description": "可攻击前方锥形范围的电能武器",
+    "icon": "icons/heroes/温斯顿/abilities/特斯拉炮.png"
+   },
+   {
+    "name": "辅助攻击模式",
+    "category": "Weapon",
+    "description": "长按充能，松开后射出集束电击",
+    "icon": "icons/heroes/温斯顿/abilities/辅助攻击模式.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/温斯顿/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "电能快充",
+    "description": "特斯拉炮主要攻击模式每对一名敌人造成伤害，自身移动速度加快10%%，最多30%%",
+    "icon": "icons/heroes/温斯顿/perks/电能快充.png"
+   },
+   {
+    "name": "天降巨猩",
+    "description": "原始暴怒期间，在空中时，喷射背包的伤害和范围最多提高75%%",
+    "icon": "icons/heroes/温斯顿/perks/天降巨猩.png"
+   },
+   {
+    "name": "连锁闪电",
+    "description": "完全充能的辅助攻击模式命中后会弹跳向最多2个额外目标",
+    "icon": "icons/heroes/温斯顿/perks/连锁闪电.png"
+   },
+   {
+    "name": "复苏屏障",
+    "description": "屏障发射器会为效果范围内的盟友每秒治疗35点生命值",
+    "icon": "icons/heroes/温斯顿/perks/复苏屏障.png"
+   }
+  ],
+  "description": "作为一个拥有高等智慧并被基因改造的大猩猩，温斯顿无疑是一位出色的科学家和代表着人类潜力的勇士",
+  "color": "#C5C7D7FF"
+ },
+ {
+  "guid": "00000000000A.075",
+  "name": "黑百合",
+  "class": "Damage",
+  "subrole": {
+   "name": "神准",
+   "passive": "造成暴击会缩短位移技能的冷却时间"
+  },
+  "abilities": [
+   {
+    "name": "抓钩",
+    "category": "Ability",
+    "description": "射出抓钩并把自己拉向目标位置",
+    "icon": "icons/heroes/黑百合/abilities/抓钩.png"
+   },
+   {
+    "name": "红外侦测",
+    "category": "UltimateAbility",
+    "description": "为队友提供敌方位置情报",
+    "icon": "icons/heroes/黑百合/abilities/红外侦测.png"
+   },
+   {
+    "name": "剧毒诡雷",
+    "category": "Ability",
+    "description": "射出一个剧毒陷阱",
+    "icon": "icons/heroes/黑百合/abilities/剧毒诡雷.png"
+   },
+   {
+    "name": "黑百合之吻",
+    "category": "Weapon",
+    "description": "全自动突击武器",
+    "icon": "icons/heroes/黑百合/abilities/黑百合之吻.png"
+   },
+   {
+    "name": "瞄准射击",
+    "category": "Weapon",
+    "description": "长按可以进行远距离狙击",
+    "icon": "icons/heroes/黑百合/abilities/瞄准射击.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "高效开镜",
+    "description": "开镜射击消耗的弹药从5发变为3发",
+    "icon": "icons/heroes/黑百合/perks/高效开镜.png"
+   },
+   {
+    "name": "狙击手的直觉",
+    "description": "使用抓钩后，开镜射击充能加快100%%，持续2秒",
+    "icon": "icons/heroes/黑百合/perks/狙击手的直觉.png"
+   },
+   {
+    "name": "寻敌诡雷",
+    "description": "剧毒诡雷会对10米内的所有敌人发射剧毒镖，且触发后依然处于激活状态",
+    "icon": "icons/heroes/黑百合/perks/寻敌诡雷.png"
+   },
+   {
+    "name": "黑百合之噬",
+    "description": "开镜射击充能上限提升至125%%，完全充能时可贯穿敌人",
+    "icon": "icons/heroes/黑百合/perks/黑百合之噬.png"
+   }
+  ],
+  "description": "“黑百合”是一位完美的刺客：耐心、果断、无情。没有任何情感且事后毫无悔意",
+  "color": "#C388C5FF"
+ },
+ {
+  "guid": "000000000015.075",
+  "name": "堡垒",
+  "class": "Damage",
+  "subrole": {
+   "name": "专业",
+   "passive": "消灭敌人后在短时间内加快装弹速度"
+  },
+  "abilities": [
+   {
+    "name": "A-36战术榴弹",
+    "category": "Ability",
+    "description": "发射一枚炸弹，能在墙壁间反弹\n并在击中敌人或地面时爆炸",
+    "icon": "icons/heroes/堡垒/abilities/A-36战术榴弹.png"
+   },
+   {
+    "name": "切换模式",
+    "category": "Ability",
+    "description": "切换不同的作战模式",
+    "icon": "icons/heroes/堡垒/abilities/切换模式.png"
+   },
+   {
+    "name": "侦察模式",
+    "category": "Weapon",
+    "description": "配有轻型高精度武器的机动模式",
+    "icon": "icons/heroes/堡垒/abilities/侦察模式.png"
+   },
+   {
+    "name": "强攻模式",
+    "category": "Weapon",
+    "description": "配有大火力轮转机枪的慢速\n坦克模式",
+    "icon": "icons/heroes/堡垒/abilities/强攻模式.png"
+   },
+   {
+    "name": "火炮模式",
+    "category": "UltimateAbility",
+    "description": "进入固定状态，发射最多3枚火力强大的炮弹",
+    "icon": "icons/heroes/堡垒/abilities/火炮模式.png"
+   },
+   {
+    "name": "抗击装甲",
+    "category": "PassiveAbility",
+    "description": "降低切换模式后受到的伤害",
+    "icon": "icons/heroes/堡垒/abilities/抗击装甲.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "智能炸弹",
+    "description": "A-36战术榴弹的自身击退效果提高25%%且不再对自己造成伤害",
+    "icon": "icons/heroes/堡垒/perks/智能炸弹.png"
+   },
+   {
+    "name": "装弹模式",
+    "description": "切换模式时A-36战术榴弹的冷却时间缩短4秒",
+    "icon": "icons/heroes/堡垒/perks/装弹模式.png"
+   },
+   {
+    "name": "林德霍姆炸药",
+    "description": "强攻模式的武器从旋转机枪变为慢速发射的爆炸火炮",
+    "icon": "icons/heroes/堡垒/perks/林德霍姆炸药.png"
+   },
+   {
+    "name": "自我修复",
+    "description": "按下 %1$s 可快速自我恢复",
+    "icon": "icons/heroes/堡垒/perks/自我修复.png"
+   }
+  ],
+  "description": "曾在智械危机中身为前线战斗单位，充满好奇心的“堡垒”现在成为了一名探险者，被自然之美深深吸引的同时也警惕着人性之恶",
+  "color": "#A1B399FF"
+ },
+ {
+  "guid": "000000000016.075",
+  "name": "秩序之光",
+  "class": "Damage",
+  "subrole": {
+   "name": "专业",
+   "passive": "消灭敌人后在短时间内加快装弹速度"
+  },
+  "abilities": [
+   {
+    "name": "光子发射器",
+    "category": "Weapon",
+    "description": "威力逐渐增强的近距离光束武器",
+    "icon": "icons/heroes/秩序之光/abilities/光子发射器.png"
+   },
+   {
+    "name": "辅助攻击模式",
+    "category": "Weapon",
+    "description": "长按充能，松开后射出会爆炸的能量球",
+    "icon": "icons/heroes/秩序之光/abilities/辅助攻击模式.png"
+   },
+   {
+    "name": "哨戒炮",
+    "category": "Ability",
+    "description": "部署一个小型炮台对敌人造成伤害并使其减速",
+    "icon": "icons/heroes/秩序之光/abilities/哨戒炮.png"
+   },
+   {
+    "name": "光子屏障",
+    "category": "UltimateAbility",
+    "description": "部署一个大型能量屏障",
+    "icon": "icons/heroes/秩序之光/abilities/光子屏障.png"
+   },
+   {
+    "name": "传送面板",
+    "category": "Ability",
+    "description": "制造两个临时传送面板，可以在它们之间进行瞬间传送",
+    "icon": "icons/heroes/秩序之光/abilities/传送面板.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "哨戒容限",
+    "description": "哨戒炮获得一次额外充能",
+    "icon": "icons/heroes/秩序之光/perks/哨戒容限.png"
+   },
+   {
+    "name": "完美协同",
+    "description": "光子发射器的主要攻击模式射程扩大20%%",
+    "icon": "icons/heroes/秩序之光/perks/完美协同.png"
+   },
+   {
+    "name": "悬浮屏障",
+    "description": "使用传送面板时可选择改为制造一面向前移动的屏障。再次按下 %1$s 可减慢屏障的移动速度",
+    "icon": "icons/heroes/秩序之光/perks/悬浮屏障.png"
+   },
+   {
+    "name": "护盾充能",
+    "description": "位于自己的传送面板10米内时，“秩序之光”每秒恢复20点护盾",
+    "icon": "icons/heroes/秩序之光/perks/护盾充能.png"
+   }
+  ],
+  "description": "“秩序之光”可以在真正意义上扭曲现实。通过控制高强度光束，她可以将世界改造成自己想象中的模样，实现一个完美、有序的社会",
+  "color": "#B5DBE6FF"
+ },
+ {
+  "guid": "000000000020.075",
+  "name": "禅雅塔",
+  "class": "Support",
+  "subrole": {
+   "name": "战术",
+   "passive": "可过量储存终极技能充能"
+  },
+  "abilities": [
+   {
+    "name": "灭",
+    "category": "Weapon",
+    "description": "弹道能量武器",
+    "icon": "icons/heroes/禅雅塔/abilities/灭.png"
+   },
+   {
+    "name": "辅助攻击模式",
+    "category": "Weapon",
+    "description": "蓄力后可以射出一连串法球",
+    "icon": "icons/heroes/禅雅塔/abilities/辅助攻击模式.png"
+   },
+   {
+    "name": "乱",
+    "category": "Ability",
+    "description": "将纷乱法球射向一个敌人可以增加其受到的伤害",
+    "icon": "icons/heroes/禅雅塔/abilities/乱.png"
+   },
+   {
+    "name": "谐",
+    "category": "Ability",
+    "description": "将和谐法球射向盟友可以为其恢复生命值",
+    "icon": "icons/heroes/禅雅塔/abilities/谐.png"
+   },
+   {
+    "name": "圣",
+    "category": "UltimateAbility",
+    "description": "变为无敌状态，加速\n并治疗附近的盟友",
+    "icon": "icons/heroes/禅雅塔/abilities/圣.png"
+   },
+   {
+    "name": "蹬",
+    "category": "PassiveAbility",
+    "description": "快速近身攻击伤害提高50%%\n击退效果大幅提高",
+    "icon": "icons/heroes/禅雅塔/abilities/蹬.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "乱中求存",
+    "description": "攻击带有“乱”法球的敌人时，自身获得15%%生命汲取",
+    "icon": "icons/heroes/禅雅塔/perks/乱中求存.png"
+   },
+   {
+    "name": "悬空参禅",
+    "description": "跳起时长按跳跃可悬浮最多3秒",
+    "icon": "icons/heroes/禅雅塔/perks/悬空参禅.png"
+   },
+   {
+    "name": "凝神寂灭",
+    "description": "辅助攻击模式蓄力速度提高20%%并可以额外蓄力一发“灭”法球",
+    "icon": "icons/heroes/禅雅塔/perks/凝神寂灭.png"
+   },
+   {
+    "name": "双音谐奏",
+    "description": "获得第二颗“谐”法球，但两颗法球的治疗效果均为70%%",
+    "icon": "icons/heroes/禅雅塔/perks/双音谐奏.png"
+   }
+  ],
+  "description": "禅雅塔是一位游走于世界寻找灵魂升华之道的智械僧侣。据说任何有幸遇到他的人，其生命轨迹也会发生改变",
+  "color": "#FEF7A0FF"
+ },
+ {
+  "guid": "000000000029.075",
+  "name": "源氏",
+  "class": "Damage",
+  "subrole": {
+   "name": "奇袭",
+   "passive": "提高急救包恢复的生命值"
+  },
+  "abilities": [
+   {
+    "name": "斩",
+    "category": "UltimateAbility",
+    "description": "致命的近战武器",
+    "icon": "icons/heroes/源氏/abilities/斩.png"
+   },
+   {
+    "name": "闪",
+    "category": "Ability",
+    "description": "招架向你射来的飞弹并将其向你瞄准方向反弹回去，同时还能格挡近战攻击",
+    "icon": "icons/heroes/源氏/abilities/闪.png"
+   },
+   {
+    "name": "影",
+    "category": "Ability",
+    "description": "快速向前冲刺，对遇到的敌人造成伤害。消灭敌人可以重置冷却时间",
+    "icon": "icons/heroes/源氏/abilities/影.png"
+   },
+   {
+    "name": "镖",
+    "category": "Weapon",
+    "description": "扔出3发精准的手里剑",
+    "icon": "icons/heroes/源氏/abilities/镖.png"
+   },
+   {
+    "name": "辅助攻击模式",
+    "category": "Weapon",
+    "description": "向前方弧形范围扔出3发手里剑",
+    "icon": "icons/heroes/源氏/abilities/辅助攻击模式.png"
+   },
+   {
+    "name": "灵",
+    "category": "PassiveAbility",
+    "description": "可以爬墙和二段跳",
+    "icon": "icons/heroes/源氏/abilities/灵.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "刃至影随",
+    "description": "快速近身攻击会使“影”的冷却时间缩短3秒",
+    "icon": "icons/heroes/源氏/perks/刃至影随.png"
+   },
+   {
+    "name": "神竜之渴",
+    "description": "“斩”的挥击获得30%%生命汲取效果",
+    "icon": "icons/heroes/源氏/perks/神竜之渴.png"
+   },
+   {
+    "name": "扭转刃影",
+    "description": "对生命值低于一半的敌人使用“影”可额外造成25点持续伤害",
+    "icon": "icons/heroes/源氏/perks/扭转刃影.png"
+   },
+   {
+    "name": "冥思一闪",
+    "description": "“闪”激活时，每秒恢复50点生命值",
+    "icon": "icons/heroes/源氏/perks/冥思一闪.png"
+   }
+  ],
+  "description": "半机械忍者岛田源氏已经接受了他曾经排斥的强化躯体，并因此发现了更高境界的人性",
+  "color": "#BCFD00FF"
+ },
+ {
+  "guid": "000000000040.075",
+  "name": "路霸",
+  "class": "Tank",
+  "subrole": {
+   "name": "斗士",
+   "passive": "获得暴击伤害抗性。生命值低于一半时移动速度加快"
+  },
+  "abilities": [
+   {
+    "name": "鸡飞狗跳",
+    "category": "UltimateAbility",
+    "description": "对面前的敌人造成伤害并将他们击退",
+    "icon": "icons/heroes/路霸/abilities/鸡飞狗跳.png"
+   },
+   {
+    "name": "爆裂枪",
+    "category": "Weapon",
+    "description": "近距离二连发霰弹枪",
+    "icon": "icons/heroes/路霸/abilities/爆裂枪.png"
+   },
+   {
+    "name": "废品压缩器",
+    "category": "Ability",
+    "description": "吸收敌方射弹，压缩成一发废品爆裂弹",
+    "icon": "icons/heroes/路霸/abilities/废品压缩器.png"
+   },
+   {
+    "name": "链钩",
+    "category": "Ability",
+    "description": "将一个目标拉向身边",
+    "icon": "icons/heroes/路霸/abilities/链钩.png"
+   },
+   {
+    "name": "呼吸器",
+    "category": "Ability",
+    "description": "治疗自己并降低受到的伤害",
+    "icon": "icons/heroes/路霸/abilities/呼吸器.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/路霸/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "废料链钩",
+    "description": "链钩命中会装填4发弹药",
+    "icon": "icons/heroes/路霸/perks/废料链钩.png"
+   },
+   {
+    "name": "小猪快来",
+    "description": "鸡飞狗跳期间，链钩的冷却时间缩短80%%",
+    "icon": "icons/heroes/路霸/perks/小猪快来.png"
+   },
+   {
+    "name": "氢气暴露",
+    "description": "呼吸器还可治疗周围盟友，治疗量为对自身治疗量的50%%",
+    "icon": "icons/heroes/路霸/perks/氢气暴露.png"
+   },
+   {
+    "name": "剧毒废气",
+    "description": "废品压缩器激活时，“路霸”面前的敌人减速30%%，每秒受到20点伤害",
+    "icon": "icons/heroes/路霸/perks/剧毒废气.png"
+   }
+  ],
+  "description": "“路霸”是一个心狠手辣的暴徒，因残忍和肆意破坏而臭名昭著",
+  "color": "#D7B05DFF"
+ },
+ {
+  "guid": "000000000042.075",
+  "name": "卡西迪",
+  "class": "Damage",
+  "subrole": {
+   "name": "神准",
+   "passive": "造成暴击会缩短位移技能的冷却时间"
+  },
+  "abilities": [
+   {
+    "name": "神射手",
+    "category": "UltimateAbility",
+    "description": "面对你的敌人。按下 %1$s 锁定目标\n随后按下 %1$s 或 %2$s 开枪",
+    "icon": "icons/heroes/卡西迪/abilities/神射手.png"
+   },
+   {
+    "name": "战术翻滚",
+    "category": "Ability",
+    "description": "向移动方向翻滚，降低所受伤害\n并装填子弹",
+    "icon": "icons/heroes/卡西迪/abilities/战术翻滚.png"
+   },
+   {
+    "name": "闪光弹",
+    "category": "Ability",
+    "description": "限制前方的敌人\n减速并禁用敌人的位移技能",
+    "icon": "icons/heroes/卡西迪/abilities/闪光弹.png"
+   },
+   {
+    "name": "维和者",
+    "category": "Weapon",
+    "description": "准确致命的左轮枪",
+    "icon": "icons/heroes/卡西迪/abilities/维和者.png"
+   },
+   {
+    "name": "连射",
+    "category": "Weapon",
+    "description": "射光剩余的所有子弹",
+    "icon": "icons/heroes/卡西迪/abilities/连射.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "双发连闪",
+    "description": "卡西迪会扔出第二枚飞得更远的闪光弹，但两枚闪光弹造成的伤害都降低40%%",
+    "icon": "icons/heroes/卡西迪/perks/双发连闪.png"
+   },
+   {
+    "name": "得儿驾",
+    "description": "使用战术翻滚后，卡西迪获得60%%移动速度加成，会在1.5秒内衰减",
+    "icon": "icons/heroes/卡西迪/perks/得儿驾.png"
+   },
+   {
+    "name": "翻身愈合",
+    "description": "每用战术翻滚装填一颗子弹，还会治疗15点生命值",
+    "icon": "icons/heroes/卡西迪/perks/翻身愈合.png"
+   },
+   {
+    "name": "银质子弹",
+    "description": "维和者的辅助攻击模式变为一次能施加流血的贯穿射击。战术翻滚和神射手可重置其冷却时间",
+    "icon": "icons/heroes/卡西迪/perks/银质子弹.png"
+   }
+  ],
+  "description": "科尔·卡西迪依靠手中值得信赖的“维和者”四处亡命，以自己的方式伸张正义",
+  "color": "#D3706DFF"
+ },
+ {
+  "guid": "000000000065.075",
+  "name": "狂鼠",
+  "class": "Damage",
+  "subrole": {
+   "name": "专业",
+   "passive": "消灭敌人后在短时间内加快装弹速度"
+  },
+  "abilities": [
+   {
+    "name": "榴弹发射器",
+    "category": "Weapon",
+    "description": "弹跳爆炸式弹道武器",
+    "icon": "icons/heroes/狂鼠/abilities/榴弹发射器.png"
+   },
+   {
+    "name": "震荡地雷",
+    "category": "Ability",
+    "description": "按下 %1$s 扔出一个可以击退敌人的地雷然后按下 %2$s 引爆",
+    "icon": "icons/heroes/狂鼠/abilities/震荡地雷.png"
+   },
+   {
+    "name": "捕兽夹",
+    "category": "Ability",
+    "description": "放置一个可暂时使敌人失去行动能力的陷阱",
+    "icon": "icons/heroes/狂鼠/abilities/捕兽夹.png"
+   },
+   {
+    "name": "炸弹轮胎",
+    "category": "UltimateAbility",
+    "description": "操控并引爆一个\n会爆炸的轮胎",
+    "icon": "icons/heroes/狂鼠/abilities/炸弹轮胎.png"
+   },
+   {
+    "name": "临别礼物",
+    "category": "PassiveAbility",
+    "description": "爆炸不会对自己造成伤害\n阵亡后丢下炸弹",
+    "icon": "icons/heroes/狂鼠/abilities/临别礼物.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "地雷回收",
+    "description": "使用震荡地雷造成消灭会恢复一次充能",
+    "icon": "icons/heroes/狂鼠/perks/地雷回收.png"
+   },
+   {
+    "name": "氮气推进",
+    "description": "炸弹轮胎施放期间，使用 %1$s 可在短时间内加速。加速会使炸弹轮胎的伤害降低50%%",
+    "icon": "icons/heroes/狂鼠/perks/氮气推进.png"
+   },
+   {
+    "name": "一炸冲天",
+    "description": "使用震荡地雷炸飞自己后，“狂鼠”的攻击速度加快35%%，持续3秒",
+    "icon": "icons/heroes/狂鼠/perks/一炸冲天.png"
+   },
+   {
+    "name": "榴弹火炮",
+    "description": "榴弹发射器的弹道速度加快25%%",
+    "icon": "icons/heroes/狂鼠/perks/榴弹火炮.png"
+   }
+  ],
+  "description": "“狂鼠”是一个满脑子都是爆炸的渣客，只为了混乱和破坏而活",
+  "color": "#FBDA55FF"
+ },
+ {
+  "guid": "000000000068.075",
+  "name": "查莉娅",
+  "class": "Tank",
+  "subrole": {
+   "name": "斗士",
+   "passive": "获得暴击伤害抗性。生命值低于一半时移动速度加快"
+  },
+  "abilities": [
+   {
+    "name": "重力喷涌",
+    "category": "UltimateAbility",
+    "description": "生成重力漩涡\n将敌人拉向中心",
+    "icon": "icons/heroes/查莉娅/abilities/重力喷涌.png"
+   },
+   {
+    "name": "粒子屏障",
+    "category": "Ability",
+    "description": "在你周围生成\n伤害吸收屏障",
+    "icon": "icons/heroes/查莉娅/abilities/粒子屏障.png"
+   },
+   {
+    "name": "投射屏障",
+    "category": "Ability",
+    "description": "在盟友周围生成伤害\n吸收屏障",
+    "icon": "icons/heroes/查莉娅/abilities/投射屏障.png"
+   },
+   {
+    "name": "粒子炮",
+    "category": "Weapon",
+    "description": "近距离线性光束武器",
+    "icon": "icons/heroes/查莉娅/abilities/粒子炮.png"
+   },
+   {
+    "name": "辅助攻击模式",
+    "category": "Weapon",
+    "description": "可以射出能量炸弹的武器",
+    "icon": "icons/heroes/查莉娅/abilities/辅助攻击模式.png"
+   },
+   {
+    "name": "能量转换",
+    "category": "PassiveAbility",
+    "description": "阻挡伤害可以提高粒子炮的伤害",
+    "icon": "icons/heroes/查莉娅/abilities/能量转换.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/查莉娅/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "能量加码",
+    "description": "屏障激活时，使用粒子炮的光束造成伤害会产生能量",
+    "icon": "icons/heroes/查莉娅/perks/能量加码.png"
+   },
+   {
+    "name": "弹跳训练",
+    "description": "辅助攻击模式的自身击退效果提高75%%",
+    "icon": "icons/heroes/查莉娅/perks/弹跳训练.png"
+   },
+   {
+    "name": "能量长枪",
+    "description": "粒子炮的光束会贯穿敌人",
+    "icon": "icons/heroes/查莉娅/perks/能量长枪.png"
+   },
+   {
+    "name": "前线哨兵",
+    "description": "投射屏障会激活盟友的生命值自动恢复效果，并使其移动速度提高20%%",
+    "icon": "icons/heroes/查莉娅/perks/前线哨兵.png"
+   }
+  ],
+  "description": "查莉娅是世界上最强壮的女运动员之一。在战争期间，为了家人、朋友和祖国，毅然放弃了个人荣誉",
+  "color": "#FBA3D3FF"
+ },
+ {
+  "guid": "00000000006E.075",
+  "name": "士兵：76",
+  "class": "Damage",
+  "subrole": {
+   "name": "专业",
+   "passive": "消灭敌人后在短时间内加快装弹速度"
+  },
+  "abilities": [
+   {
+    "name": "疾跑",
+    "category": "Ability",
+    "description": "快速向前移动",
+    "icon": "icons/heroes/士兵：76/abilities/疾跑.png"
+   },
+   {
+    "name": "生物力场",
+    "category": "Ability",
+    "description": "部署一个可以治疗自己和\n盟友的力场",
+    "icon": "icons/heroes/士兵：76/abilities/生物力场.png"
+   },
+   {
+    "name": "重型脉冲步枪",
+    "category": "Weapon",
+    "description": "全自动突击武器",
+    "icon": "icons/heroes/士兵：76/abilities/重型脉冲步枪.png"
+   },
+   {
+    "name": "螺旋飞弹",
+    "category": "Ability",
+    "description": "射出一连串高爆飞弹",
+    "icon": "icons/heroes/士兵：76/abilities/螺旋飞弹.png"
+   },
+   {
+    "name": "战术目镜",
+    "category": "UltimateAbility",
+    "description": "自动瞄准视野范围内的敌人",
+    "icon": "icons/heroes/士兵：76/abilities/战术目镜.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "螺旋推进",
+    "description": "螺旋飞弹的弹道速度加快50%%",
+    "icon": "icons/heroes/士兵：76/perks/螺旋推进.png"
+   },
+   {
+    "name": "战术齐射",
+    "description": "战术目镜持续期间，螺旋飞弹的冷却时间缩短80%%且不会打断重型脉冲步枪射击",
+    "icon": "icons/heroes/士兵：76/perks/战术齐射.png"
+   },
+   {
+    "name": "全速疾奔",
+    "description": "疾跑的移动速度加成在2秒内逐渐额外提高25%%",
+    "icon": "icons/heroes/士兵：76/perks/全速疾奔.png"
+   },
+   {
+    "name": "强化药剂",
+    "description": "强化药剂会替代生物力场。使用后，“士兵：76”每秒治疗30点生命值，攻击速度提高20%%，持续5秒",
+    "icon": "icons/heroes/士兵：76/perks/强化药剂.png"
+   }
+  ],
+  "description": "被全球通缉的独行侠“士兵：76”独自一人发动了一场旨在查出守望先锋解散真相的战争",
+  "color": "#8D9AB4FF"
+ },
+ {
+  "guid": "000000000079.075",
+  "name": "卢西奥",
+  "class": "Support",
+  "subrole": {
+   "name": "战术",
+   "passive": "可过量储存终极技能充能"
+  },
+  "abilities": [
+   {
+    "name": "切歌",
+    "category": "Ability",
+    "description": "在两种音效之间切换：\n治愈音效可治疗附近盟友\n加速音效可让附近盟友\n更快地移动",
+    "icon": "icons/heroes/卢西奥/abilities/切歌.png"
+   },
+   {
+    "name": "强音",
+    "category": "Ability",
+    "description": "强化当前歌曲的效果",
+    "icon": "icons/heroes/卢西奥/abilities/强音.png"
+   },
+   {
+    "name": "音速扩音器",
+    "category": "Weapon",
+    "description": "超音速飞弹发射器",
+    "icon": "icons/heroes/卢西奥/abilities/音速扩音器.png"
+   },
+   {
+    "name": "音波",
+    "category": "Ability",
+    "description": "射出近距离冲击波\n击退敌人",
+    "icon": "icons/heroes/卢西奥/abilities/音波.png"
+   },
+   {
+    "name": "音障",
+    "category": "UltimateAbility",
+    "description": "为附近盟友提供临时的额外生命值",
+    "icon": "icons/heroes/卢西奥/abilities/音障.png"
+   },
+   {
+    "name": "滑墙",
+    "category": "PassiveAbility",
+    "description": "跳向墙壁并在其表面滑行",
+    "icon": "icons/heroes/卢西奥/abilities/滑墙.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "音波滑手",
+    "description": "滑墙会强化下一次音波，使其击退效果提高25%%，伤害提高50%%",
+    "icon": "icons/heroes/卢西奥/perks/音波滑手.png"
+   },
+   {
+    "name": "来点节拍",
+    "description": "施放音障后，强音激活4秒",
+    "icon": "icons/heroes/卢西奥/perks/来点节拍.png"
+   },
+   {
+    "name": "违规噪音",
+    "description": "强音激活时，切歌的范围扩大150%%",
+    "icon": "icons/heroes/卢西奥/perks/违规噪音.png"
+   },
+   {
+    "name": "急速乐章",
+    "description": "卢西奥的加速音乐激活时，攻击速度加快15%%，强音激活时，此效果变为三倍",
+    "icon": "icons/heroes/卢西奥/perks/急速乐章.png"
+   }
+  ],
+  "description": "卢西奥是一位国际名人，通过音乐和巡演激发社会正能量",
+  "color": "#AAE458FF"
+ },
+ {
+  "guid": "00000000007A.075",
+  "name": "D.Va",
+  "class": "Tank",
+  "subrole": {
+   "name": "先锋",
+   "passive": "使用特定位移技能后获得持续治疗"
+  },
+  "abilities": [
+   {
+    "name": "推进器",
+    "category": "Ability",
+    "description": "向你的正前方突进",
+    "icon": "icons/heroes/D.Va/abilities/推进器.png"
+   },
+   {
+    "name": "防御矩阵",
+    "category": "Ability",
+    "description": "挡住前方射来的飞射物",
+    "icon": "icons/heroes/D.Va/abilities/防御矩阵.png"
+   },
+   {
+    "name": "自毁",
+    "category": "UltimateAbility",
+    "description": "使机甲过载并将自己弹射出去，机甲会在短时间后爆炸",
+    "icon": "icons/heroes/D.Va/abilities/自毁.png"
+   },
+   {
+    "name": "聚变机炮",
+    "category": "Weapon",
+    "description": "全自动近距离散射\n武器",
+    "icon": "icons/heroes/D.Va/abilities/聚变机炮.png"
+   },
+   {
+    "name": "微型飞弹",
+    "category": "Ability",
+    "description": "射出一连串高爆飞弹",
+    "icon": "icons/heroes/D.Va/abilities/微型飞弹.png"
+   },
+   {
+    "name": "弹射！",
+    "category": "PassiveAbility",
+    "description": "当机甲被摧毁时\nD.Va从中弹出",
+    "icon": "icons/heroes/D.Va/abilities/弹射！.png"
+   },
+   {
+    "name": "呼叫机甲",
+    "category": "UltimateAbility",
+    "description": "呼叫一台全新的机甲",
+    "icon": "icons/heroes/D.Va/abilities/呼叫机甲.png"
+   },
+   {
+    "name": "光枪",
+    "category": "Weapon",
+    "description": "自动武器",
+    "icon": "icons/heroes/D.Va/abilities/光枪.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/D.Va/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "小兔之力",
+    "description": "弹射提供75点临时过量生命值，且呼叫机甲的伤害半径扩大50%%",
+    "icon": "icons/heroes/D.Va/perks/小兔之力.png"
+   },
+   {
+    "name": "延时推进器",
+    "description": "使用推进器撞击一名敌人会使造成的伤害提高40%%并使推进器持续时间延长0.5秒",
+    "icon": "icons/heroes/D.Va/perks/延时推进器.png"
+   },
+   {
+    "name": "护盾系统",
+    "description": "将100点生命值转化为护盾。防御矩阵会恢复护盾，恢复量为防御矩阵吸收伤害量的25%%",
+    "icon": "icons/heroes/D.Va/perks/护盾系统.png"
+   },
+   {
+    "name": "精准聚变",
+    "description": "按下 %1$s 可使聚变机炮的散布降低75%%，持续3秒",
+    "icon": "icons/heroes/D.Va/perks/精准聚变.png"
+   }
+  ],
+  "description": "D.Va曾经是一名职业玩家，而现在则利用自己的技巧驾驶一台尖端机甲保卫国家",
+  "color": "#FEB7DFFF"
+ },
+ {
+  "guid": "0000000000DD.075",
+  "name": "美",
+  "class": "Damage",
+  "subrole": {
+   "name": "专业",
+   "passive": "消灭敌人后在短时间内加快装弹速度"
+  },
+  "abilities": [
+   {
+    "name": "暴雪",
+    "category": "UltimateAbility",
+    "description": "发射一台气候控制无人机，可以冰冻大范围内的敌人",
+    "icon": "icons/heroes/美/abilities/暴雪.png"
+   },
+   {
+    "name": "急冻",
+    "category": "Ability",
+    "description": "变为无敌并恢复生命值",
+    "icon": "icons/heroes/美/abilities/急冻.png"
+   },
+   {
+    "name": "冰墙",
+    "category": "Ability",
+    "description": "在前方生成一堵冰墙",
+    "icon": "icons/heroes/美/abilities/冰墙.png"
+   },
+   {
+    "name": "冰霜冲击枪",
+    "category": "Weapon",
+    "description": "可以减速敌人的近距离\n范围喷射武器",
+    "icon": "icons/heroes/美/abilities/冰霜冲击枪.png"
+   },
+   {
+    "name": "冰锥",
+    "category": "Weapon",
+    "description": "射出远距离冰锥",
+    "icon": "icons/heroes/美/abilities/冰锥.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "冰上畅滑",
+    "description": "在暴雪内的盟友移动速度提高25%%，且每秒治疗50点生命值",
+    "icon": "icons/heroes/美/perks/冰上畅滑.png"
+   },
+   {
+    "name": "寒冰疾涌",
+    "description": "二段跳会生成一根小型冰柱将美推至空中",
+    "icon": "icons/heroes/美/perks/寒冰疾涌.png"
+   },
+   {
+    "name": "深度冰冻",
+    "description": "主要攻击模式持续命中敌人会使其在短时间内冰冻",
+    "icon": "icons/heroes/美/perks/深度冰冻.png"
+   },
+   {
+    "name": "急冻风暴",
+    "description": "急冻会对附近的敌人造成每秒70点伤害并使其减速",
+    "icon": "icons/heroes/美/perks/急冻风暴.png"
+   }
+  ],
+  "description": "美是一名为了保护环境而选择战斗的科学家",
+  "color": "#8FCCF8FF"
+ },
+ {
+  "guid": "00000000012E.075",
+  "name": "黑影",
+  "class": "Support",
+  "subrole": {
+   "name": "战术",
+   "passive": "可过量储存终极技能充能"
+  },
+  "abilities": [
+   {
+    "name": "自动手枪",
+    "category": "Weapon",
+    "description": "近距离自动武器",
+    "icon": "icons/heroes/黑影/abilities/自动手枪.png"
+   },
+   {
+    "name": "在线修复",
+    "category": "Ability",
+    "description": "为一名盟友持续治疗定量生命值。还可随意侵入急救包和大部分敌方可部署物",
+    "icon": "icons/heroes/黑影/abilities/在线修复.png"
+   },
+   {
+    "name": "赛博空间",
+    "category": "Ability",
+    "description": "扔出一枚智能体，击中时爆炸并生成一片赛博空间，削弱其中的敌人，治疗其中的盟友",
+    "icon": "icons/heroes/黑影/abilities/赛博空间.png"
+   },
+   {
+    "name": "位移传动",
+    "category": "Ability",
+    "description": "扔出一个信标并传送至信标位置\n传送完成后隐身，隐身状态持续片刻",
+    "icon": "icons/heroes/黑影/abilities/位移传动.png"
+   },
+   {
+    "name": "电磁脉冲",
+    "category": "UltimateAbility",
+    "description": "对周围所有敌人造成相当于其当前\n生命值一定比例的伤害，侵入敌人\n并摧毁附近的敌方屏障",
+    "icon": "icons/heroes/黑影/abilities/电磁脉冲.png"
+   },
+   {
+    "name": "运筹帷幄",
+    "category": "PassiveAbility",
+    "description": "敌方充能完毕的终极技能会显示给你",
+    "icon": "icons/heroes/黑影/abilities/运筹帷幄.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "黑你血条",
+    "description": "电磁脉冲会为附近的所有盟友施加在线修复",
+    "icon": "icons/heroes/黑影/perks/黑你血条.png"
+   },
+   {
+    "name": "CTRL+ALT+ESC",
+    "description": "在生命值低于一半时使用位移传动，可激活被动生命值恢复",
+    "icon": "icons/heroes/黑影/perks/CTRL+ALT+ESC.png"
+   },
+   {
+    "name": "数据包",
+    "description": "使用在线修复侵入急救包可使其主要冷却时间缩短4秒",
+    "icon": "icons/heroes/黑影/perks/数据包.png"
+   },
+   {
+    "name": "赛博安保",
+    "description": "赛博空间对生命值低于一半盟友的治疗量翻倍",
+    "icon": "icons/heroes/黑影/perks/赛博安保.png"
+   }
+  ],
+  "description": "作为全球最臭名昭著的黑客，“黑影”利用信息与情报操控权贵",
+  "color": "#996ED5FF"
+ },
+ {
+  "guid": "00000000012F.075",
+  "name": "末日铁拳",
+  "class": "Tank",
+  "subrole": {
+   "name": "先锋",
+   "passive": "使用特定位移技能后获得持续治疗"
+  },
+  "abilities": [
+   {
+    "name": "裂地重拳",
+    "category": "Ability",
+    "description": "跃起并重击地面",
+    "icon": "icons/heroes/末日铁拳/abilities/裂地重拳.png"
+   },
+   {
+    "name": "悍猛格挡",
+    "category": "Ability",
+    "description": "格挡前方的攻击\n格挡大量伤害后，强化火箭重拳",
+    "icon": "icons/heroes/末日铁拳/abilities/悍猛格挡.png"
+   },
+   {
+    "name": "火箭重拳",
+    "category": "Ability",
+    "description": "长按可蓄力向前冲锋并将一名敌人击退。将敌人拳击至墙面可造成更大伤害",
+    "icon": "icons/heroes/末日铁拳/abilities/火箭重拳.png"
+   },
+   {
+    "name": "毁天灭地",
+    "category": "UltimateAbility",
+    "description": "按下 %1$s 跃向空中。移动瞄准圈随后按下 %2$s 发动攻击",
+    "icon": "icons/heroes/末日铁拳/abilities/毁天灭地.png"
+   },
+   {
+    "name": "手炮",
+    "category": "Weapon",
+    "description": "可自动装弹的近距离散射武器",
+    "icon": "icons/heroes/末日铁拳/abilities/手炮.png"
+   },
+   {
+    "name": "最佳防守……",
+    "category": "PassiveAbility",
+    "description": "技能造成伤害后，自身可生成临时生命值",
+    "icon": "icons/heroes/末日铁拳/abilities/最佳防守…….png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/末日铁拳/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "左右开攻",
+    "description": "用火箭重拳将一名敌人重击至墙面上会为手炮装填弹药并过量装填2发弹药",
+    "icon": "icons/heroes/末日铁拳/perks/左右开攻.png"
+   },
+   {
+    "name": "优胜劣汰",
+    "description": "造成消灭时，最佳防守提供25点过量生命值，且最佳防守的过量生命值上限提高50点",
+    "icon": "icons/heroes/末日铁拳/perks/优胜劣汰.png"
+   },
+   {
+    "name": "地震余波",
+    "description": "被裂地重拳命中的敌人会被减速40%%，持续2秒",
+    "icon": "icons/heroes/末日铁拳/perks/地震余波.png"
+   },
+   {
+    "name": "悍猛矩阵",
+    "description": "悍猛格挡会在持续期间的前0.8秒内吸收飞弹",
+    "icon": "icons/heroes/末日铁拳/perks/悍猛矩阵.png"
+   }
+  ],
+  "description": "",
+  "color": "#AA6045FF"
+ },
+ {
+  "guid": "00000000013B.075",
+  "name": "安娜",
+  "class": "Support",
+  "subrole": {
+   "name": "战术",
+   "passive": "可过量储存终极技能充能"
+  },
+  "abilities": [
+   {
+    "name": "麻醉镖",
+    "category": "Ability",
+    "description": "射出飞镖让敌人入眠",
+    "icon": "icons/heroes/安娜/abilities/麻醉镖.png"
+   },
+   {
+    "name": "生物步枪",
+    "category": "Weapon",
+    "description": "可以治疗盟友并对敌人造成伤害的远距离步枪",
+    "icon": "icons/heroes/安娜/abilities/生物步枪.png"
+   },
+   {
+    "name": "生物手雷",
+    "category": "Ability",
+    "description": "扔出一枚手雷，治疗盟友并提高其受到的治疗量，同时还可以对敌人造成伤害并使其无法受到治疗",
+    "icon": "icons/heroes/安娜/abilities/生物手雷.png"
+   },
+   {
+    "name": "纳米激素",
+    "category": "UltimateAbility",
+    "description": "提高一名队友造成的伤害，同时降低其受到的伤害",
+    "icon": "icons/heroes/安娜/abilities/纳米激素.png"
+   },
+   {
+    "name": "瞄准射击",
+    "category": "Weapon",
+    "description": "长按可以开镜瞄准",
+    "icon": "icons/heroes/安娜/abilities/瞄准射击.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "局部麻醉",
+    "description": "麻醉镖击中时爆炸，在3秒内使敌人减速并造成45点伤害",
+    "icon": "icons/heroes/安娜/perks/局部麻醉.png"
+   },
+   {
+    "name": "加速血清",
+    "description": "纳米激素会为安娜和激素目标提供30%%移动速度加成",
+    "icon": "icons/heroes/安娜/perks/加速血清.png"
+   },
+   {
+    "name": "弹跳手雷",
+    "description": "生物手雷爆炸后会反弹并再次爆炸，造成60点伤害量和治疗量",
+    "icon": "icons/heroes/安娜/perks/弹跳手雷.png"
+   },
+   {
+    "name": "猎头精英",
+    "description": "生物步枪可对敌人造成暴击",
+    "icon": "icons/heroes/安娜/perks/猎头精英.png"
+   }
+  ],
+  "description": "作为守望先锋的副指挥官，安娜·艾玛莉利用她的技巧和专长保护家园和最亲密的人",
+  "color": "#91ACCEFF"
+ },
+ {
+  "guid": "00000000013E.075",
+  "name": "奥丽莎",
+  "class": "Tank",
+  "subrole": {
+   "name": "斗士",
+   "passive": "获得暴击伤害抗性。生命值低于一半时移动速度加快"
+  },
+  "abilities": [
+   {
+    "name": "能量标枪",
+    "category": "Ability",
+    "description": "投出标枪，击晕并击退敌人\n敌人撞墙时效果提升",
+    "icon": "icons/heroes/奥丽莎/abilities/能量标枪.png"
+   },
+   {
+    "name": "强固防御",
+    "category": "Ability",
+    "description": "获得临时生命值，降低受到的伤害\n并且不可阻挡",
+    "icon": "icons/heroes/奥丽莎/abilities/强固防御.png"
+   },
+   {
+    "name": "标枪旋击",
+    "category": "Ability",
+    "description": "旋转标枪，可摧毁飞射物\n招架近身攻击，击退敌人\n并提高前进速度",
+    "icon": "icons/heroes/奥丽莎/abilities/标枪旋击.png"
+   },
+   {
+    "name": "撼地猛刺",
+    "category": "UltimateAbility",
+    "description": "困住并横扫敌人\n获得强固防御效果\n猛刺伤害随蓄力提升\n按下 %1$s 可提前施放猛刺",
+    "icon": "icons/heroes/奥丽莎/abilities/撼地猛刺.png"
+   },
+   {
+    "name": "强化聚变驱动器",
+    "category": "Weapon",
+    "description": "全自动热量式武器",
+    "icon": "icons/heroes/奥丽莎/abilities/强化聚变驱动器.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/奥丽莎/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "防御协议",
+    "description": "撼地猛刺蓄力时每秒恢复100点生命值",
+    "icon": "icons/heroes/奥丽莎/perks/防御协议.png"
+   },
+   {
+    "name": "机动强固",
+    "description": "强固防御激活时，奥丽莎的移动速度不会降低且不会产生热量",
+    "icon": "icons/heroes/奥丽莎/perks/机动强固.png"
+   },
+   {
+    "name": "重型标枪",
+    "description": "能量标枪的击退效果提高25%%，撞墙伤害提高15点",
+    "icon": "icons/heroes/奥丽莎/perks/重型标枪.png"
+   },
+   {
+    "name": "防护屏障",
+    "description": "标枪旋击变为发射一面屏障",
+    "icon": "icons/heroes/奥丽莎/perks/防护屏障.png"
+   }
+  ],
+  "description": "奥丽莎是用一台在努巴尼昙花一现的OR15系列防御机器人的零件组装而成的。尽管她还有很多要学，但现在的奥丽莎已经成为了这座城市的守护者",
+  "color": "#47B022FF"
+ },
+ {
+  "guid": "000000000195.075",
+  "name": "布丽吉塔",
+  "class": "Support",
+  "subrole": {
+   "name": "生存",
+   "passive": "位移技能会激活被动生命值恢复"
+  },
+  "abilities": [
+   {
+    "name": "集结号令",
+    "category": "UltimateAbility",
+    "description": "获得护甲，强化屏障护盾，并为周围的盟友提供额外生命值",
+    "icon": "icons/heroes/布丽吉塔/abilities/集结号令.png"
+   },
+   {
+    "name": "鼓舞士气",
+    "category": "PassiveAbility",
+    "description": "对敌人造成伤害会为周围的盟友恢复生命",
+    "icon": "icons/heroes/布丽吉塔/abilities/鼓舞士气.png"
+   },
+   {
+    "name": "恢复包",
+    "category": "Ability",
+    "description": "较短的时间内持续治疗一名盟友。",
+    "icon": "icons/heroes/布丽吉塔/abilities/恢复包.png"
+   },
+   {
+    "name": "流星飞锤",
+    "category": "Ability",
+    "description": "向前方甩出连枷，将一名敌人击退",
+    "icon": "icons/heroes/布丽吉塔/abilities/流星飞锤.png"
+   },
+   {
+    "name": "火箭连枷",
+    "category": "Weapon",
+    "description": "较大范围的近战攻击",
+    "icon": "icons/heroes/布丽吉塔/abilities/火箭连枷.png"
+   },
+   {
+    "name": "屏障护盾",
+    "category": "Ability",
+    "description": "按住 %1$s 可以在前方展开一道能量屏障",
+    "icon": "icons/heroes/布丽吉塔/abilities/屏障护盾.png"
+   },
+   {
+    "name": "能量盾击",
+    "category": "Ability",
+    "description": "展开屏障护盾后可以向前疾冲\n击退一名敌人",
+    "icon": "icons/heroes/布丽吉塔/abilities/能量盾击.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "战地医疗兵",
+    "description": "对敌人近身攻击使恢复包的冷却时间缩短0.75秒",
+    "icon": "icons/heroes/布丽吉塔/perks/战地医疗兵.png"
+   },
+   {
+    "name": "士气高昂",
+    "description": "由流星飞锤激活的鼓舞士气持续时间延长3秒",
+    "icon": "icons/heroes/布丽吉塔/perks/士气高昂.png"
+   },
+   {
+    "name": "鼓舞盾击",
+    "description": "能量盾击使移动速度加快30%%，持续2秒。使用能量盾击触发的鼓舞士气会立刻治疗",
+    "icon": "icons/heroes/布丽吉塔/perks/鼓舞盾击.png"
+   },
+   {
+    "name": "流星重鞭",
+    "description": "流星飞锤的击退可将敌人重击至墙面上，额外造成60点伤害",
+    "icon": "icons/heroes/布丽吉塔/perks/流星重鞭.png"
+   }
+  ],
+  "description": "布丽吉塔·林德霍姆是莱因哈特·威尔海姆的追随者，她曾经是一名机械工程师，现在则穿上盔甲踏上战场，保卫这个世界",
+  "color": "#B27C71FF"
+ },
+ {
+  "guid": "0000000001A2.075",
+  "name": "莫伊拉",
+  "class": "Support",
+  "subrole": {
+   "name": "医疗",
+   "passive": "使用武器治疗盟友也会治疗自己"
+  },
+  "abilities": [
+   {
+    "name": "生化之触",
+    "category": "Weapon",
+    "description": "长按治疗前方所有队友。会消耗生化能量",
+    "icon": "icons/heroes/莫伊拉/abilities/生化之触.png"
+   },
+   {
+    "name": "辅助攻击模式",
+    "category": "Weapon",
+    "description": "远程光束武器。造成伤害时为你恢复生命并加速恢复生化能量",
+    "icon": "icons/heroes/莫伊拉/abilities/辅助攻击模式.png"
+   },
+   {
+    "name": "生化之球",
+    "category": "Ability",
+    "description": "发射来回弹射的能量球，为附近的盟友恢复生命，或对附近的敌人造成伤害",
+    "icon": "icons/heroes/莫伊拉/abilities/生化之球.png"
+   },
+   {
+    "name": "消散",
+    "category": "Ability",
+    "description": "消失，移动速度加快并变为无敌状态，但无法射击",
+    "icon": "icons/heroes/莫伊拉/abilities/消散.png"
+   },
+   {
+    "name": "聚合射线",
+    "category": "UltimateAbility",
+    "description": "发射一道光束，为盟友恢复生命并对敌人造成伤害",
+    "icon": "icons/heroes/莫伊拉/abilities/聚合射线.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "魔球逆动",
+    "description": "再次激活生化之球会逆转其飞行方向",
+    "icon": "icons/heroes/莫伊拉/perks/魔球逆动.png"
+   },
+   {
+    "name": "毁灭分界",
+    "description": "聚合射线可以完全造成治疗或伤害，此时效果提高30%%",
+    "icon": "icons/heroes/莫伊拉/perks/毁灭分界.png"
+   },
+   {
+    "name": "合德滋养",
+    "description": "生化之球的前30点治疗量会立即治疗其遇到的每一名盟友",
+    "icon": "icons/heroes/莫伊拉/perks/合德滋养.png"
+   },
+   {
+    "name": "幽影幻步",
+    "description": "消散持续时间延长0.5秒并使跳跃高度提高50%%",
+    "icon": "icons/heroes/莫伊拉/perks/幽影幻步.png"
+   }
+  ],
+  "description": "黑爪的科学家莫伊拉·奥德莱恩有着杰出的才华，但她的工作也引起了诸多争议。她是基因工程方面的顶尖专家，研究的方向是如何对生命最基本的单元加以改进",
+  "color": "#BC94F3FF"
+ },
+ {
+  "guid": "0000000001CA.075",
+  "name": "破坏球",
+  "class": "Tank",
+  "subrole": {
+   "name": "先锋",
+   "passive": "使用特定位移技能后获得持续治疗"
+  },
+  "abilities": [
+   {
+    "name": "四联火炮",
+    "category": "Weapon",
+    "description": "全自动冲锋武器",
+    "icon": "icons/heroes/破坏球/abilities/四联火炮.png"
+   },
+   {
+    "name": "地雷禁区",
+    "category": "UltimateAbility",
+    "description": "部署一大片感应地雷",
+    "icon": "icons/heroes/破坏球/abilities/地雷禁区.png"
+   },
+   {
+    "name": "工程抓钩",
+    "category": "Ability",
+    "description": "发射抓钩令铁球在所处区域内高速摆动。可高速撞击敌人造成伤害和击退效果",
+    "icon": "icons/heroes/破坏球/abilities/工程抓钩.png"
+   },
+   {
+    "name": "动力铁球",
+    "category": "Ability",
+    "description": "变成球形，提高最大移动速度",
+    "icon": "icons/heroes/破坏球/abilities/动力铁球.png"
+   },
+   {
+    "name": "重力坠击",
+    "category": "Ability",
+    "description": "从空中向下发动猛击，将敌人击飞",
+    "icon": "icons/heroes/破坏球/abilities/重力坠击.png"
+   },
+   {
+    "name": "感应护盾",
+    "category": "Ability",
+    "description": "产生临时的额外生命值，附近敌人越多增加的生命值越多。可将部分额外生命值转移给盟友",
+    "icon": "icons/heroes/破坏球/abilities/感应护盾.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/破坏球/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "重装压路机",
+    "description": "动力铁球对重装英雄造成的撞击伤害提高100%%",
+    "icon": "icons/heroes/破坏球/perks/重装压路机.png"
+   },
+   {
+    "name": "多重地雷",
+    "description": "使用地雷禁区后的5秒内按下 %1$s 可额外部署7颗地雷",
+    "icon": "icons/heroes/破坏球/perks/多重地雷.png"
+   },
+   {
+    "name": "滞空时间",
+    "description": "重力坠击滞空时间延长，可在空中控制，造成的伤害最多提高50%%",
+    "icon": "icons/heroes/破坏球/perks/滞空时间.png"
+   },
+   {
+    "name": "感应屏障",
+    "description": "感应护盾激活时生成一道持续1秒的屏障",
+    "icon": "icons/heroes/破坏球/perks/感应屏障.png"
+   }
+  ],
+  "description": "“破坏球”的驾驶员哈蒙德是一只仓鼠，经过基因改造，他的智力发生了突变式进化。哈蒙德在世界各地探索，不断寻求着新的冒险",
+  "color": "#F2B738FF"
+ },
+ {
+  "guid": "0000000001EC.075",
+  "name": "索杰恩",
+  "class": "Damage",
+  "subrole": {
+   "name": "神准",
+   "passive": "造成暴击会缩短位移技能的冷却时间"
+  },
+  "abilities": [
+   {
+    "name": "机动滑铲",
+    "category": "Ability",
+    "description": "贴地滑铲猛冲\n可提前高高跳起结束滑铲",
+    "icon": "icons/heroes/索杰恩/abilities/机动滑铲.png"
+   },
+   {
+    "name": "干扰弹",
+    "category": "Ability",
+    "description": "发射一道能量冲击波\n对其中的敌人造成伤害",
+    "icon": "icons/heroes/索杰恩/abilities/干扰弹.png"
+   },
+   {
+    "name": "电磁炮",
+    "category": "Weapon",
+    "description": "快速射击子弹\n命中后产生能量",
+    "icon": "icons/heroes/索杰恩/abilities/电磁炮.png"
+   },
+   {
+    "name": "充能射击",
+    "category": "Weapon",
+    "description": "消耗存储的能量\n射出可以穿透敌人的强力一击",
+    "icon": "icons/heroes/索杰恩/abilities/充能射击.png"
+   },
+   {
+    "name": "机体超频",
+    "category": "UltimateAbility",
+    "description": "电磁炮在短时间内自动充能",
+    "icon": "icons/heroes/索杰恩/abilities/机体超频.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "摩擦供能",
+    "description": "机动滑铲最多产生75点能量",
+    "icon": "icons/heroes/索杰恩/perks/摩擦供能.png"
+   },
+   {
+    "name": "机体过载",
+    "description": "机体超频激活时，电磁炮最大能量提高50点",
+    "icon": "icons/heroes/索杰恩/perks/机体过载.png"
+   },
+   {
+    "name": "双重推进器",
+    "description": "机动滑铲获得一次额外充能，且跳跃高度转为横向位移",
+    "icon": "icons/heroes/索杰恩/perks/双重推进器.png"
+   },
+   {
+    "name": "减速力场",
+    "description": "被干扰弹命中的敌人减速25%%",
+    "icon": "icons/heroes/索杰恩/perks/减速力场.png"
+   }
+  ],
+  "description": "“索杰恩”的躯体几乎均由机械强化部件组成，她是一位杰出的战术家，疾恶好善不曾动摇。战场之上，她是不可或缺的盟友……亦或是令人胆寒的敌人",
+  "color": "#ED8773FF"
+ },
+ {
+  "guid": "000000000200.075",
+  "name": "艾什",
+  "class": "Damage",
+  "subrole": {
+   "name": "神准",
+   "passive": "造成暴击会缩短位移技能的冷却时间"
+  },
+  "abilities": [
+   {
+    "name": "短筒猎枪",
+    "category": "Ability",
+    "description": "轰击你前方的敌人，同时使你自己后退",
+    "icon": "icons/heroes/艾什/abilities/短筒猎枪.png"
+   },
+   {
+    "name": "召唤鲍勃",
+    "category": "UltimateAbility",
+    "description": "派出鲍勃向前冲锋，将敌人击飞到空中，然后用手臂上的火炮攻击他们",
+    "icon": "icons/heroes/艾什/abilities/召唤鲍勃.png"
+   },
+   {
+    "name": "延时雷管",
+    "category": "Ability",
+    "description": "投出一捆炸药，在短暂的延迟后爆炸，或者射击炸药立即将其引爆",
+    "icon": "icons/heroes/艾什/abilities/延时雷管.png"
+   },
+   {
+    "name": "毒蛇",
+    "category": "Weapon",
+    "description": "半自动步枪",
+    "icon": "icons/heroes/艾什/abilities/毒蛇.png"
+   },
+   {
+    "name": "瞄准射击",
+    "category": "Weapon",
+    "description": "长按可以开镜瞄准，提高射击的伤害与精度，但射速会变慢",
+    "icon": "icons/heroes/艾什/abilities/瞄准射击.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "远程引爆器",
+    "description": "使用延时雷管后，再次按下 %1$s 可使其在0.5秒延迟后引爆",
+    "icon": "icons/heroes/艾什/perks/远程引爆器.png"
+   },
+   {
+    "name": "双筒猎枪",
+    "description": "用短筒猎枪击退敌人后，可在2秒内再次使用该技能",
+    "icon": "icons/heroes/艾什/perks/双筒猎枪.png"
+   },
+   {
+    "name": "毒蛇之刺",
+    "description": "开镜射击对一名目标连续命中2次时会额外造成25点伤害",
+    "icon": "icons/heroes/艾什/perks/毒蛇之刺.png"
+   },
+   {
+    "name": "空爆雷管",
+    "description": "延时雷管在空中引爆时，爆炸半径扩大40%%，投出时返还6发弹药",
+    "icon": "icons/heroes/艾什/perks/空爆雷管.png"
+   }
+  ],
+  "description": "艾什是死局帮的领袖，这个帮派在美国西南部非常有影响",
+  "color": "#878583FF"
+ },
+ {
+  "guid": "000000000206.075",
+  "name": "回声",
+  "class": "Damage",
+  "subrole": {
+   "name": "侦察",
+   "passive": "对生命值低于一半的敌人造成伤害会显示其位置"
+  },
+  "abilities": [
+   {
+    "name": "黏性炸弹",
+    "category": "Ability",
+    "description": "发射出一连串黏性炸弹，一段时间之后爆炸",
+    "icon": "icons/heroes/回声/abilities/黏性炸弹.png"
+   },
+   {
+    "name": "人格复制",
+    "category": "UltimateAbility",
+    "description": "选择一个英雄，成为其复制。技能持续期间该目标无法更换英雄",
+    "icon": "icons/heroes/回声/abilities/人格复制.png"
+   },
+   {
+    "name": "三角射击",
+    "category": "Weapon",
+    "description": "同时发射三发子弹，以三角形分布",
+    "icon": "icons/heroes/回声/abilities/三角射击.png"
+   },
+   {
+    "name": "飞行",
+    "category": "Ability",
+    "description": "迅速向前飞行，然后可以在一小段时间内自由飞行",
+    "icon": "icons/heroes/回声/abilities/飞行.png"
+   },
+   {
+    "name": "聚焦光线",
+    "category": "Ability",
+    "description": "引导一道光束，持续数秒时间，对生命值低于一半的敌人造成大量伤害",
+    "icon": "icons/heroes/回声/abilities/聚焦光线.png"
+   },
+   {
+    "name": "滑翔",
+    "category": "PassiveAbility",
+    "description": "下落时按下跳跃键可以滑翔",
+    "icon": "icons/heroes/回声/abilities/滑翔.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "空战火力",
+    "description": "飞行持续期间，“回声”具有无限弹药",
+    "icon": "icons/heroes/回声/perks/空战火力.png"
+   },
+   {
+    "name": "局部扫描",
+    "description": "使用人格复制时具有30%%初始终极技能充能",
+    "icon": "icons/heroes/回声/perks/局部扫描.png"
+   },
+   {
+    "name": "炸弹齐射",
+    "description": "黏性炸弹额外发射2发炸弹",
+    "icon": "icons/heroes/回声/perks/炸弹齐射.png"
+   },
+   {
+    "name": "聚焦机动",
+    "description": "聚焦光线的射程扩大8米，且使用时移动速度加快25%%",
+    "icon": "icons/heroes/回声/perks/聚焦机动.png"
+   }
+  ],
+  "description": "“回声”是守望先锋成员米娜·廖博士设计制造的机器人，搭载了可以高速学习适应的先进人工智能程序",
+  "color": "#C2E5FFFF"
+ },
+ {
+  "guid": "000000000221.075",
+  "name": "巴蒂斯特",
+  "class": "Support",
+  "subrole": {
+   "name": "战术",
+   "passive": "可过量储存终极技能充能"
+  },
+  "abilities": [
+   {
+    "name": "愈合冲击",
+    "category": "Ability",
+    "description": "激活后立即治疗自己和周围盟友，并额外提供持续治疗效果\n对生命值低于一半的目标，瞬间治疗量翻倍",
+    "icon": "icons/heroes/巴蒂斯特/abilities/愈合冲击.png"
+   },
+   {
+    "name": "维生力场",
+    "category": "Ability",
+    "description": "投出力场装置，使周围盟友不会死亡。此装置可被摧毁",
+    "icon": "icons/heroes/巴蒂斯特/abilities/维生力场.png"
+   },
+   {
+    "name": "增幅矩阵",
+    "category": "UltimateAbility",
+    "description": "投出一面矩阵，友方弹药穿过矩阵后伤害和治疗翻倍",
+    "icon": "icons/heroes/巴蒂斯特/abilities/增幅矩阵.png"
+   },
+   {
+    "name": "生化榴弹枪",
+    "category": "Weapon",
+    "description": "三连发冲锋枪",
+    "icon": "icons/heroes/巴蒂斯特/abilities/生化榴弹枪.png"
+   },
+   {
+    "name": "辅助攻击模式",
+    "category": "Weapon",
+    "description": "发射医疗飞弹，治疗落点周围的盟友",
+    "icon": "icons/heroes/巴蒂斯特/abilities/辅助攻击模式.png"
+   },
+   {
+    "name": "动力战靴",
+    "category": "PassiveAbility",
+    "description": "按住下蹲键可以跳得更高",
+    "icon": "icons/heroes/巴蒂斯特/abilities/动力战靴.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "广域力场",
+    "description": "维生力场半径扩大30%%",
+    "icon": "icons/heroes/巴蒂斯特/perks/广域力场.png"
+   },
+   {
+    "name": "强攻冲击",
+    "description": "愈合冲击会使巴蒂斯特的攻击速度加快20%%，持续3秒",
+    "icon": "icons/heroes/巴蒂斯特/perks/强攻冲击.png"
+   },
+   {
+    "name": "自动治疗",
+    "description": "使用任意技能会触发巴蒂斯特的肩负炮台，周期性对盟友发射最多3发治疗弹，每发恢复40点生命值",
+    "icon": "icons/heroes/巴蒂斯特/perks/自动治疗.png"
+   },
+   {
+    "name": "火箭战靴",
+    "description": "用动力战靴跳到空中时，使用 %1$s 可沿水平方向疾冲",
+    "icon": "icons/heroes/巴蒂斯特/perks/火箭战靴.png"
+   }
+  ],
+  "description": "巴蒂斯特是一位精英战地医疗兵，曾担任黑爪特工，但现在的他致力于使用自己的能力去帮助那些饱受战火袭扰的人们",
+  "color": "#6ED2E3FF"
+ },
+ {
+  "guid": "000000000231.075",
+  "name": "雾子",
+  "class": "Support",
+  "subrole": {
+   "name": "医疗",
+   "passive": "使用武器治疗盟友也会治疗自己"
+  },
+  "abilities": [
+   {
+    "name": "狐",
+    "category": "UltimateAbility",
+    "description": "召唤一只灵狐冲向前方，为置身路径中的盟友提高移动速度、攻击速度和技能冷却速度",
+    "icon": "icons/heroes/雾子/abilities/狐.png"
+   },
+   {
+    "name": "符",
+    "category": "Weapon",
+    "description": "引导一串能自动飞向目标\n盟友的治疗护身符",
+    "icon": "icons/heroes/雾子/abilities/符.png"
+   },
+   {
+    "name": "锥",
+    "category": "Weapon",
+    "description": "投出能远距离攻击的苦无",
+    "icon": "icons/heroes/雾子/abilities/锥.png"
+   },
+   {
+    "name": "瞬",
+    "category": "Ability",
+    "description": "瞬移至一名盟友身旁",
+    "icon": "icons/heroes/雾子/abilities/瞬.png"
+   },
+   {
+    "name": "铃",
+    "category": "Ability",
+    "description": "投出一枚护身铃铛，使盟友在短时间内\n变为无敌状态，并净化大部分负面效果",
+    "icon": "icons/heroes/雾子/abilities/铃.png"
+   },
+   {
+    "name": "攀",
+    "category": "PassiveAbility",
+    "description": "跃上并沿着墙壁攀爬",
+    "icon": "icons/heroes/雾子/abilities/攀.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "救死急符",
+    "description": "“符”追踪生命值低于一半的盟友时，符纸速度提高50%%",
+    "icon": "icons/heroes/雾子/perks/救死急符.png"
+   },
+   {
+    "name": "灵利卜师",
+    "description": "“锥”命中时会对面前的一名盟友贴出2张“符”",
+    "icon": "icons/heroes/雾子/perks/灵利卜师.png"
+   },
+   {
+    "name": "备战瞬步",
+    "description": "“瞬”会使雾子的攻击速度和装填速度加快40%%，持续3秒",
+    "icon": "icons/heroes/雾子/perks/备战瞬步.png"
+   },
+   {
+    "name": "狐步漫舞",
+    "description": "“铃”会使盟友的移动速度加快30%%，持续4秒",
+    "icon": "icons/heroes/雾子/perks/狐步漫舞.png"
+   }
+  ],
+  "description": "岛田家族衰亡后，雾子便开始为恢复铁坂的和平而战",
+  "color": "#E98F9DFF"
+ },
+ {
+  "guid": "000000000236.075",
+  "name": "渣客女王",
+  "class": "Tank",
+  "subrole": {
+   "name": "铁壁",
+   "passive": "获得击退和减速抗性"
+  },
+  "abilities": [
+   {
+    "name": "锯齿利刃（格雷西）",
+    "category": "Ability",
+    "description": "主动：投掷飞刀。再次使用可将其召回，\n并拉回被穿刺的敌人\n被动：快速近身攻击或投掷会创伤\n敌人，造成持续伤害",
+    "icon": "icons/heroes/渣客女王/abilities/锯齿利刃（格雷西）.png"
+   },
+   {
+    "name": "命令怒吼",
+    "category": "Ability",
+    "description": "为你和盟友提供临时生命值\n并提高移动速度",
+    "icon": "icons/heroes/渣客女王/abilities/命令怒吼.png"
+   },
+   {
+    "name": "散弹枪",
+    "category": "Weapon",
+    "description": "泵动式霰弹枪",
+    "icon": "icons/heroes/渣客女王/abilities/散弹枪.png"
+   },
+   {
+    "name": "血斩",
+    "category": "Ability",
+    "description": "创伤前方的所有敌人，造成持续伤害\n每命中一名敌人都会缩短冷却时间",
+    "icon": "icons/heroes/渣客女王/abilities/血斩.png"
+   },
+   {
+    "name": "轰翻天",
+    "category": "UltimateAbility",
+    "description": "向前冲锋。创伤敌人，造成持续伤害\n并使其无法受到治疗",
+    "icon": "icons/heroes/渣客女王/abilities/轰翻天.png"
+   },
+   {
+    "name": "狂血奔涌",
+    "category": "PassiveAbility",
+    "description": "创伤效果的持续伤害会治疗你",
+    "icon": "icons/heroes/渣客女王/abilities/狂血奔涌.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/渣客女王/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "轰翻爆冲",
+    "description": "使用轰翻天时获得不可阻挡并使各项技能冷却时间缩短6秒",
+    "icon": "icons/heroes/渣客女王/perks/轰翻爆冲.png"
+   },
+   {
+    "name": "战斗怒吼",
+    "description": "命令怒吼会完全装填散弹枪，并使盟友的装填速度加快50%%",
+    "icon": "icons/heroes/渣客女王/perks/战斗怒吼.png"
+   },
+   {
+    "name": "飞沙利刃",
+    "description": "召回锯齿利刃时，其半径扩大100%%并额外造成30点击中伤害",
+    "icon": "icons/heroes/渣客女王/perks/飞沙利刃.png"
+   },
+   {
+    "name": "凶残狂噬",
+    "description": "血斩的击中伤害获得100%%生命汲取",
+    "icon": "icons/heroes/渣客女王/perks/凶残狂噬.png"
+   }
+  ],
+  "description": "曾经的废民奥代萨·“代斯”·斯通用她辛辣的笑容和无情的铁腕统治着渣客镇",
+  "color": "#9ECFE9FF"
+ },
+ {
+  "guid": "00000000023B.075",
+  "name": "西格玛",
+  "class": "Tank",
+  "subrole": {
+   "name": "铁壁",
+   "passive": "获得击退和减速抗性"
+  },
+  "abilities": [
+   {
+    "name": "动能俘获",
+    "category": "Ability",
+    "description": "阻挡从前方飞向你的子弹，并将它们转化成额外生命值",
+    "icon": "icons/heroes/西格玛/abilities/动能俘获.png"
+   },
+   {
+    "name": "质量吸附",
+    "category": "Ability",
+    "description": "汇聚一团物质投向敌人，将对方击倒",
+    "icon": "icons/heroes/西格玛/abilities/质量吸附.png"
+   },
+   {
+    "name": "引力乱流",
+    "category": "UltimateAbility",
+    "description": "操控引力，将敌人先举到空中然后砸向地面",
+    "icon": "icons/heroes/西格玛/abilities/引力乱流.png"
+   },
+   {
+    "name": "超能之球",
+    "category": "Weapon",
+    "description": "发射两团引力电荷，在一小段时间后爆炸，造成范围伤害",
+    "icon": "icons/heroes/西格玛/abilities/超能之球.png"
+   },
+   {
+    "name": "实验屏障",
+    "category": "Ability",
+    "description": "按下按键可以制造出悬浮的屏障向外飞出，松开按键使其停止。再次按下会将屏障召回到你身边",
+    "icon": "icons/heroes/西格玛/abilities/实验屏障.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/西格玛/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "动能循环",
+    "description": "使用动能俘获吸收子弹还会缩短质量吸附的冷却时间",
+    "icon": "icons/heroes/西格玛/perks/动能循环.png"
+   },
+   {
+    "name": "超能恢复",
+    "description": "超能之球会为实验屏障恢复生命值，数值为超能之球伤害量的30%%",
+    "icon": "icons/heroes/西格玛/perks/超能恢复.png"
+   },
+   {
+    "name": "超能打击",
+    "description": "超能之球每5次直接命中后，下一次成功命中的快速近身攻击会击退敌人并使其漂浮",
+    "icon": "icons/heroes/西格玛/perks/超能打击.png"
+   },
+   {
+    "name": "空间漂浮",
+    "description": "跳起时长按跳跃可在短时间内向上漂浮",
+    "icon": "icons/heroes/西格玛/perks/空间漂浮.png"
+   }
+  ],
+  "description": "希尔伯伦·德·柯伊伯博士是一位成就不凡的天体物理学家，在一场实验事故后，他获得了操控引力的力量。目前他正在黑爪的操纵下为他们效力",
+  "color": "#B9C3C4FF"
+ },
+ {
+  "guid": "00000000028D.075",
+  "name": "拉玛刹",
+  "class": "Tank",
+  "subrole": {
+   "name": "铁壁",
+   "passive": "获得击退和减速抗性"
+  },
+  "abilities": [
+   {
+    "name": "虚空加速器（智械形态）",
+    "category": "Weapon",
+    "description": "发射一串粒子",
+    "icon": "icons/heroes/拉玛刹/abilities/虚空加速器（智械形态）.png"
+   },
+   {
+    "name": "猛拳（天罚形态）",
+    "category": "Weapon",
+    "description": "出拳捶击，每次挥拳都会产生一道贯穿能量波",
+    "icon": "icons/heroes/拉玛刹/abilities/猛拳（天罚形态）.png"
+   },
+   {
+    "name": "虚空屏障（智械形态）",
+    "category": "Ability",
+    "description": "在目标位置制造一面屏障",
+    "icon": "icons/heroes/拉玛刹/abilities/虚空屏障（智械形态）.png"
+   },
+   {
+    "name": "天罚形态",
+    "category": "Ability",
+    "description": "变为天罚形态，改变攻击方式并获得额外护甲",
+    "icon": "icons/heroes/拉玛刹/abilities/天罚形态.png"
+   },
+   {
+    "name": "铁臂（天罚形态）",
+    "category": "Ability",
+    "description": "大幅降低来自前方的伤害并降低自身移动速度",
+    "icon": "icons/heroes/拉玛刹/abilities/铁臂（天罚形态）.png"
+   },
+   {
+    "name": "吞噬漩涡",
+    "category": "Ability",
+    "description": "发射一枚能量球，在地面上爆炸，减速敌人并将其拽向地面。再次激活可提前引爆",
+    "icon": "icons/heroes/拉玛刹/abilities/吞噬漩涡.png"
+   },
+   {
+    "name": "诛",
+    "category": "UltimateAbility",
+    "description": "进入天罚形态并生成致命的粒子簇，痛击周围的敌人，只要敌人受到此效果伤害，效果持续时间就会延长",
+    "icon": "icons/heroes/拉玛刹/abilities/诛.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/拉玛刹/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "虚空涌动",
+    "description": "虚空加速器持续射击时，周期性额外发射一簇包含6枚粒子的连射",
+    "icon": "icons/heroes/拉玛刹/perks/虚空涌动.png"
+   },
+   {
+    "name": "铁血形态",
+    "description": "天罚形态激活时，造成消灭会使其持续时间延长2秒。在“诛”期间延长的持续时间减半",
+    "icon": "icons/heroes/拉玛刹/perks/铁血形态.png"
+   },
+   {
+    "name": "纳米修复",
+    "description": "拉玛刹在吞噬漩涡内每秒恢复100点生命值",
+    "icon": "icons/heroes/拉玛刹/perks/纳米修复.png"
+   },
+   {
+    "name": "持久屏障",
+    "description": "虚空屏障的持续时间延长25%%，尺寸增大25%%",
+    "icon": "icons/heroes/拉玛刹/perks/持久屏障.png"
+   }
+  ],
+  "description": "拉玛刹有过很多身份：士兵、僧侣、革命者。如今身为“归零者”领袖的他为智械而战，不惜一切代价",
+  "color": "#BA9CE5FF"
+ },
+ {
+  "guid": "000000000291.075",
+  "name": "生命之梭",
+  "class": "Support",
+  "subrole": {
+   "name": "医疗",
+   "passive": "使用武器治疗盟友也会治疗自己"
+  },
+  "abilities": [
+   {
+    "name": "愈疗灵花",
+    "category": "Weapon",
+    "description": "长按充能治疗冲击，\n松开后治疗目标盟友\n不使用时会缓慢被动充能",
+    "icon": "icons/heroes/生命之梭/abilities/愈疗灵花.png"
+   },
+   {
+    "name": "棘刺箭雨",
+    "category": "Weapon",
+    "description": "快速发射成对棘刺",
+    "icon": "icons/heroes/生命之梭/abilities/棘刺箭雨.png"
+   },
+   {
+    "name": "花瓣平台",
+    "category": "Ability",
+    "description": "扔出一个平台，踩上后会向上升起\n未使用时会归于原位",
+    "icon": "icons/heroes/生命之梭/abilities/花瓣平台.png"
+   },
+   {
+    "name": "回春疾行",
+    "category": "Ability",
+    "description": "向行进方向疾冲，并轻微治疗自己",
+    "icon": "icons/heroes/生命之梭/abilities/回春疾行.png"
+   },
+   {
+    "name": "生命之握",
+    "category": "Ability",
+    "description": "把一名盟友拉到你的位置，\n在飞行过程中提供保护",
+    "icon": "icons/heroes/生命之梭/abilities/生命之握.png"
+   },
+   {
+    "name": "生命之树",
+    "category": "UltimateAbility",
+    "description": "种植一棵树，发芽时立即治疗盟友，\n树木存活时会持续产生周期性治疗",
+    "icon": "icons/heroes/生命之梭/abilities/生命之树.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "守护花瓣",
+    "description": "盟友站在花瓣平台上时每秒治疗20点生命值",
+    "icon": "icons/heroes/生命之梭/perks/守护花瓣.png"
+   },
+   {
+    "name": "疾行脱身",
+    "description": "回春疾行距离扩大30%%",
+    "icon": "icons/heroes/生命之梭/perks/疾行脱身.png"
+   },
+   {
+    "name": "愈疗播种",
+    "description": "在愈疗灵花状态下使用快速近身攻击会扔出一颗种子。其他盟友拾取种子会获得过量生命值和移动速度",
+    "icon": "icons/heroes/生命之梭/perks/愈疗播种.png"
+   },
+   {
+    "name": "超然盛放",
+    "description": "棘刺在2.5秒内命中足够多次会爆炸，额外造成40点伤害",
+    "icon": "icons/heroes/生命之梭/perks/超然盛放.png"
+   }
+  ],
+  "description": "身为科学家、艺术家、活动家，“生命之梭”将自然的美感与科学的实用融为一体。治愈世界是他的梦想",
+  "color": "#F1D2DEFF"
+ },
+ {
+  "guid": "00000000030A.075",
+  "name": "毛加",
+  "class": "Tank",
+  "subrole": {
+   "name": "斗士",
+   "passive": "获得暴击伤害抗性。生命值低于一半时移动速度加快"
+  },
+  "abilities": [
+   {
+    "name": "蛮力冲撞",
+    "category": "Ability",
+    "description": "向前冲锋，重踏击飞敌人\n冲锋时不可阻挡",
+    "icon": "icons/heroes/毛加/abilities/蛮力冲撞.png"
+   },
+   {
+    "name": "心脏过载",
+    "category": "Ability",
+    "description": "获得受伤减免，周围盟友造成伤害会为其恢复生命值",
+    "icon": "icons/heroes/毛加/abilities/心脏过载.png"
+   },
+   {
+    "name": "笼中斗",
+    "category": "UltimateAbility",
+    "description": "部署一面屏障将自己和敌人困在其中",
+    "icon": "icons/heroes/毛加/abilities/笼中斗.png"
+   },
+   {
+    "name": "燃火链式机枪（老枪）",
+    "category": "Weapon",
+    "description": "自动武器，多次命中可点燃敌人",
+    "icon": "icons/heroes/毛加/abilities/燃火链式机枪（老枪）.png"
+   },
+   {
+    "name": "爆烈链式机枪（恰恰）",
+    "category": "Weapon",
+    "description": "自动武器，可对被点燃的敌人造成暴击伤害",
+    "icon": "icons/heroes/毛加/abilities/爆烈链式机枪（恰恰）.png"
+   },
+   {
+    "name": "狂战士",
+    "category": "PassiveAbility",
+    "description": "造成暴击伤害会获得临时生命值",
+    "icon": "icons/heroes/毛加/abilities/狂战士.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/毛加/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "动力弹带",
+    "description": "蛮力冲撞会在冲锋的第一秒内装填最多150发弹药",
+    "icon": "icons/heroes/毛加/perks/动力弹带.png"
+   },
+   {
+    "name": "纵情燃烧",
+    "description": "用燃火链式机枪点燃敌人会获得50点过量生命值",
+    "icon": "icons/heroes/毛加/perks/纵情燃烧.png"
+   },
+   {
+    "name": "烈火奔踏",
+    "description": "蛮力冲撞会点燃被击中的敌人",
+    "icon": "icons/heroes/毛加/perks/烈火奔踏.png"
+   },
+   {
+    "name": "战斗燃料",
+    "description": "暴击会使下一次心脏过载为毛加提供4点临时过量生命值，可叠加150点过量生命值",
+    "icon": "icons/heroes/毛加/perks/战斗燃料.png"
+   }
+  ],
+  "description": "毛加是一名魅力十足且行事狡黠的萨摩亚战士，他在混乱的战场上如鱼得水，仿佛每一天都是他生命的最后一天",
+  "color": "#EE8B53FF"
+ },
+ {
+  "guid": "00000000031C.075",
+  "name": "伊拉锐",
+  "class": "Support",
+  "subrole": {
+   "name": "生存",
+   "passive": "位移技能会激活被动生命值恢复"
+  },
+  "abilities": [
+   {
+    "name": "烈日冲击",
+    "category": "Ability",
+    "description": "向移动方向弹射而出，同时击退敌人。按住跳跃键弹射高度更高",
+    "icon": "icons/heroes/伊拉锐/abilities/烈日冲击.png"
+   },
+   {
+    "name": "治疗光塔",
+    "category": "Ability",
+    "description": "部署一个可以治疗盟友的光塔",
+    "icon": "icons/heroes/伊拉锐/abilities/治疗光塔.png"
+   },
+   {
+    "name": "桎梏灼日",
+    "category": "UltimateAbility",
+    "description": "发射一颗会爆炸的太阳能量球\n被击中的敌人会减速，并在受到大量伤害后爆炸",
+    "icon": "icons/heroes/伊拉锐/abilities/桎梏灼日.png"
+   },
+   {
+    "name": "阳焰步枪",
+    "category": "Weapon",
+    "description": "远距离自动充能步枪",
+    "icon": "icons/heroes/伊拉锐/abilities/阳焰步枪.png"
+   },
+   {
+    "name": "辅助攻击模式",
+    "category": "Weapon",
+    "description": "消耗太阳能的中距离治疗光束",
+    "icon": "icons/heroes/伊拉锐/abilities/辅助攻击模式.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "快速建造",
+    "description": "治疗光塔的建造速度加快300%%，冷却时间缩短2秒",
+    "icon": "icons/heroes/伊拉锐/perks/快速建造.png"
+   },
+   {
+    "name": "夏至骄阳",
+    "description": "桎梏灼日会使伊拉锐的飞行速度和攻击速度加快20%%，并额外获得3秒飞行时间",
+    "icon": "icons/heroes/伊拉锐/perks/夏至骄阳.png"
+   },
+   {
+    "name": "太阳耀斑",
+    "description": "使用阳焰步枪的治疗光束时，按下 %1$s 会为伊拉锐面前的盟友治疗100点生命值",
+    "icon": "icons/heroes/伊拉锐/perks/太阳耀斑.png"
+   },
+   {
+    "name": "烈日燎灼",
+    "description": "烈日冲击会点燃敌人，额外造成50点伤害，持续3秒",
+    "icon": "icons/heroes/伊拉锐/perks/烈日燎灼.png"
+   }
+  ],
+  "description": "接受过太阳丝线强化改造的伊拉锐会用太阳之力瓦解敌人",
+  "color": "#D2C49BFF"
+ },
+ {
+  "guid": "00000000032A.075",
+  "name": "弗蕾娅",
+  "class": "Damage",
+  "subrole": {
+   "name": "侦察",
+   "passive": "对生命值低于一半的敌人造成伤害会显示其位置"
+  },
+  "abilities": [
+   {
+    "name": "速射弩",
+    "category": "Weapon",
+    "description": "快速发射自动弩箭",
+    "icon": "icons/heroes/弗蕾娅/abilities/速射弩.png"
+   },
+   {
+    "name": "瞄准射击",
+    "category": "Weapon",
+    "description": "减缓动势仔细瞄准，射出一支高速爆炸弩箭\n使用疾冲可刷新瞄准射击",
+    "icon": "icons/heroes/弗蕾娅/abilities/瞄准射击.png"
+   },
+   {
+    "name": "疾冲",
+    "category": "Ability",
+    "description": "向移动方向疾冲并刷新瞄准射击",
+    "icon": "icons/heroes/弗蕾娅/abilities/疾冲.png"
+   },
+   {
+    "name": "上升气流",
+    "category": "Ability",
+    "description": "乘风向上飞起",
+    "icon": "icons/heroes/弗蕾娅/abilities/上升气流.png"
+   },
+   {
+    "name": "流星索",
+    "category": "UltimateAbility",
+    "description": "发射一枚爆炸流星索，击中敌人后将其束缚并拖拽周围的其他敌人",
+    "icon": "icons/heroes/弗蕾娅/abilities/流星索.png"
+   },
+   {
+    "name": "赏金狩猎",
+    "category": "PassiveAbility",
+    "description": "每造成3次最后一击会额外获得终极技能充能",
+    "icon": "icons/heroes/弗蕾娅/abilities/赏金狩猎.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "无情弹幕",
+    "description": "瞄准射击直接命中返还5发自动弩箭弹药",
+    "icon": "icons/heroes/弗蕾娅/perks/无情弹幕.png"
+   },
+   {
+    "name": "疾奔之势",
+    "description": "疾冲距离扩大20%%",
+    "icon": "icons/heroes/弗蕾娅/perks/疾奔之势.png"
+   },
+   {
+    "name": "飞空愈疗",
+    "description": "使用上升气流后，在落地前每秒为弗蕾娅治疗30点生命值",
+    "icon": "icons/heroes/弗蕾娅/perks/飞空愈疗.png"
+   },
+   {
+    "name": "劲风再起",
+    "description": "上升气流获得一次额外充能",
+    "icon": "icons/heroes/弗蕾娅/perks/劲风再起.png"
+   }
+  ],
+  "description": "过去的搜救干员，如今的赏金猎手，只要价钱到位，没有弗蕾娅找不到的人",
+  "color": "#88C8FFFF"
+ },
+ {
+  "guid": "00000000032B.075",
+  "name": "探奇",
+  "class": "Damage",
+  "subrole": {
+   "name": "奇袭",
+   "passive": "提高急救包恢复的生命值"
+  },
+  "abilities": [
+   {
+    "name": "智能挖掘钻",
+    "category": "Weapon",
+    "description": "发射一枚震波弹，前进一小段距离后爆炸",
+    "icon": "icons/heroes/探奇/abilities/智能挖掘钻.png"
+   },
+   {
+    "name": "钻地",
+    "category": "Ability",
+    "description": "钻入地下，变为无敌状态\n按下或长按 %1$s 钻出并伤害敌人",
+    "icon": "icons/heroes/探奇/abilities/钻地.png"
+   },
+   {
+    "name": "钻头突刺",
+    "category": "Ability",
+    "description": "在地上或地下向前突刺击退敌人\n钻地激活时加快冷却速度",
+    "icon": "icons/heroes/探奇/abilities/钻头突刺.png"
+   },
+   {
+    "name": "地壳震击",
+    "category": "UltimateAbility",
+    "description": "发射能造成伤害的冲击波",
+    "icon": "icons/heroes/探奇/abilities/地壳震击.png"
+   },
+   {
+    "name": "猛钻",
+    "category": "PassiveAbility",
+    "description": "快速近身攻击造成更高伤害",
+    "icon": "icons/heroes/探奇/abilities/猛钻.png"
+   },
+   {
+    "name": "探险家的决心",
+    "category": "PassiveAbility",
+    "description": "使用技能会提供临时护盾",
+    "icon": "icons/heroes/探奇/abilities/探险家的决心.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "深岩掘地",
+    "description": "钻地时，钻头突刺距离扩大75%%",
+    "icon": "icons/heroes/探奇/perks/深岩掘地.png"
+   },
+   {
+    "name": "轰轰钻机汹汹来袭",
+    "description": "地壳震击激活时，各项冷却刷新速度加快300%%",
+    "icon": "icons/heroes/探奇/perks/轰轰钻机汹汹来袭.png"
+   },
+   {
+    "name": "智能延展器",
+    "description": "按下 %1$s 强化智能挖掘钻，使其最大弹道射程扩大100%%，持续4秒",
+    "icon": "icons/heroes/探奇/perks/智能延展器.png"
+   },
+   {
+    "name": "尘土满身",
+    "description": "使用猛钻造成伤害可提供最多40点探险家的决心护盾",
+    "icon": "icons/heroes/探奇/perks/尘土满身.png"
+   }
+  ],
+  "description": "身为一名对历史谜团极富热情的考古学家，“探奇”凭借精良的挖掘工具，既要让过去重见天日，还得保护古迹免遭破坏",
+  "color": "#B7A696FF"
+ },
+ {
+  "guid": "000000000362.075",
+  "name": "骇灾",
+  "class": "Tank",
+  "subrole": {
+   "name": "先锋",
+   "passive": "使用特定位移技能后获得持续治疗"
+  },
+  "abilities": [
+   {
+    "name": "千针雨",
+    "category": "UltimateAbility",
+    "description": "降下一片尖刺雨，定身敌人",
+    "icon": "icons/heroes/骇灾/abilities/千针雨.png"
+   },
+   {
+    "name": "骨刺",
+    "category": "Weapon",
+    "description": "发射一簇尖刺",
+    "icon": "icons/heroes/骇灾/abilities/骨刺.png"
+   },
+   {
+    "name": "尖刺护体",
+    "category": "Ability",
+    "description": "格挡前方的攻击，向附近敌人发射追踪尖刺\n激活时降低受到的伤害并恢复弹药",
+    "icon": "icons/heroes/骇灾/abilities/尖刺护体.png"
+   },
+   {
+    "name": "狂跃",
+    "category": "Ability",
+    "description": "跃向前方。再次激活可劈砍敌人并将其击退",
+    "icon": "icons/heroes/骇灾/abilities/狂跃.png"
+   },
+   {
+    "name": "尖刺墙",
+    "category": "Ability",
+    "description": "发射一堵尖刺墙，对附近的敌人造成伤害并将其击退",
+    "icon": "icons/heroes/骇灾/abilities/尖刺墙.png"
+   },
+   {
+    "name": "翻越",
+    "category": "PassiveAbility",
+    "description": "攀爬矮墙并扒住边缘登上",
+    "icon": "icons/heroes/骇灾/abilities/翻越.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/骇灾/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "强劲狂跃",
+    "description": "狂跃的范围扩大20%%",
+    "icon": "icons/heroes/骇灾/perks/强劲狂跃.png"
+   },
+   {
+    "name": "尖刺重构",
+    "description": "尖刺墙命中会为尖刺护体过量充能25%%额外能量",
+    "icon": "icons/heroes/骇灾/perks/尖刺重构.png"
+   },
+   {
+    "name": "激进狂热",
+    "description": "尖刺护体的尖刺获得40%%生命汲取",
+    "icon": "icons/heroes/骇灾/perks/激进狂热.png"
+   },
+   {
+    "name": "爆炸穿刺",
+    "description": "骨刺命中后会在目标身上留下尖刺。快速近身攻击和狂跃的劈砍会引爆尖刺，造成30点爆炸伤害",
+    "icon": "icons/heroes/骇灾/perks/爆炸穿刺.png"
+   }
+  ],
+  "description": "“骇灾”是地下反叛界中一颗冉冉升起的新星，他是激进的破坏分子，是不可阻挡的武器，他的战斗要把秩序拆个粉碎",
+  "color": "#CBA3E1FF"
+ },
+ {
+  "guid": "000000000365.075",
+  "name": "朱诺",
+  "class": "Support",
+  "subrole": {
+   "name": "生存",
+   "passive": "位移技能会激活被动生命值恢复"
+  },
+  "abilities": [
+   {
+    "name": "医疗冲击枪",
+    "category": "Weapon",
+    "description": "可以治疗盟友并对敌人造成伤害的连发武器",
+    "icon": "icons/heroes/朱诺/abilities/医疗冲击枪.png"
+   },
+   {
+    "name": "脉冲星飞雷",
+    "category": "Ability",
+    "description": "按下 %1$s 锁定目标，随后按下 %2$s 发射追踪飞雷\n持续治疗盟友并对敌人造成伤害",
+    "icon": "icons/heroes/朱诺/abilities/脉冲星飞雷.png"
+   },
+   {
+    "name": "滑翔推进",
+    "category": "Ability",
+    "description": "提高移动速度并沿水平方向滑翔",
+    "icon": "icons/heroes/朱诺/abilities/滑翔推进.png"
+   },
+   {
+    "name": "超能环域",
+    "category": "Ability",
+    "description": "部署一道环域\n盟友穿过环域后，移动速度提升",
+    "icon": "icons/heroes/朱诺/abilities/超能环域.png"
+   },
+   {
+    "name": "轨道射线",
+    "category": "UltimateAbility",
+    "description": "召唤一道射线向前移动\n治疗盟友并提高其造成的伤害",
+    "icon": "icons/heroes/朱诺/abilities/轨道射线.png"
+   },
+   {
+    "name": "火星套靴",
+    "category": "PassiveAbility",
+    "description": "在空中时，按下 %1$s 可以二段跳\n按住 %1$s 可以悬浮在空中",
+    "icon": "icons/heroes/朱诺/abilities/火星套靴.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "急救优先",
+    "description": "脉冲星飞雷对盟友的锁定速度加快35%%",
+    "icon": "icons/heroes/朱诺/perks/急救优先.png"
+   },
+   {
+    "name": "飞上新高",
+    "description": "火星套靴现在可以三段跳",
+    "icon": "icons/heroes/朱诺/perks/飞上新高.png"
+   },
+   {
+    "name": "锁定打击",
+    "description": "脉冲星飞雷每命中一名敌人，冷却时间缩短1秒",
+    "icon": "icons/heroes/朱诺/perks/锁定打击.png"
+   },
+   {
+    "name": "高速冲击枪",
+    "description": "滑翔推进激活时，医疗冲击枪可以连续射击",
+    "icon": "icons/heroes/朱诺/perks/高速冲击枪.png"
+   }
+  ],
+  "description": "每当问题进入朱诺的轨道，她都会用太空时代的科技将其一一化解",
+  "color": "#B262D1FF"
+ },
+ {
+  "guid": "0000000003C3.075",
+  "name": "无漾",
+  "class": "Support",
+  "subrole": {
+   "name": "生存",
+   "passive": "位移技能会激活被动生命值恢复"
+  },
+  "abilities": [
+   {
+    "name": "玄武杖",
+    "category": "Weapon",
+    "description": "发射一颗伤害性水珠\n按住可控制水珠轨迹并强化其爆炸",
+    "icon": "icons/heroes/无漾/abilities/玄武杖.png"
+   },
+   {
+    "name": "翻江浪",
+    "category": "Ability",
+    "description": "劈出一道向前的波浪，提高盟友\n受到的治疗量并击退敌人",
+    "icon": "icons/heroes/无漾/abilities/翻江浪.png"
+   },
+   {
+    "name": "飞流步",
+    "category": "Ability",
+    "description": "乘波而行，提高移动速度和跳跃高度",
+    "icon": "icons/heroes/无漾/abilities/飞流步.png"
+   },
+   {
+    "name": "养神泉",
+    "category": "Weapon",
+    "description": "用一股可以被动治疗的泉水环绕一名盟友。对目标按住会消耗资源并手动快速治疗",
+    "icon": "icons/heroes/无漾/abilities/养神泉.png"
+   },
+   {
+    "name": "惊涛破",
+    "category": "UltimateAbility",
+    "description": "水流聚合成球，保护一名盟友或自身，一小段时间后水球爆炸，击倒敌人并为受保护的目标提供大量治疗",
+    "icon": "icons/heroes/无漾/abilities/惊涛破.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "水满则溢",
+    "description": "飞流步激活时，获得10发弹药和50%%治疗资源",
+    "icon": "icons/heroes/无漾/perks/水满则溢.png"
+   },
+   {
+    "name": "阴阳平衡",
+    "description": "用水珠造成伤害时，养神泉的被动治疗量提高30%%，持续2秒",
+    "icon": "icons/heroes/无漾/perks/阴阳平衡.png"
+   },
+   {
+    "name": "潮涨潮落",
+    "description": "翻江浪会回流至出发点",
+    "icon": "icons/heroes/无漾/perks/潮涨潮落.png"
+   },
+   {
+    "name": "暴雨倾盆",
+    "description": "可同时控制3颗水珠，每颗水珠造成的伤害降低60%%，爆炸范围强化缩小25%%",
+    "icon": "icons/heroes/无漾/perks/暴雨倾盆.png"
+   }
+  ],
+  "description": "无漾来自五行大学的水学院，掌握水愈技术的他随时准备在战场上力挽狂澜",
+  "color": "#94BBF8FF"
+ },
+ {
+  "guid": "000000000472.075",
+  "name": "斩仇",
+  "class": "Damage",
+  "subrole": {
+   "name": "奇袭",
+   "passive": "提高急救包恢复的生命值"
+  },
+  "abilities": [
+   {
+    "name": "旋风疾步",
+    "category": "Ability",
+    "description": "向前猛冲并回旋劈斩",
+    "icon": "icons/heroes/斩仇/abilities/旋风疾步.png"
+   },
+   {
+    "name": "飞空斩击",
+    "category": "Ability",
+    "description": "向面朝方向扔出大剑，接着飞到剑旁",
+    "icon": "icons/heroes/斩仇/abilities/飞空斩击.png"
+   },
+   {
+    "name": "帕拉蒂尼之牙",
+    "category": "Weapon",
+    "description": "高强度光束巨剑\n连击会以一记势大力沉的竖直劈斩收尾",
+    "icon": "icons/heroes/斩仇/abilities/帕拉蒂尼之牙.png"
+   },
+   {
+    "name": "招架姿态",
+    "category": "Weapon",
+    "description": "举剑格挡，降低前方受到的伤害并招架近身攻击。格挡伤害会消耗能量",
+    "icon": "icons/heroes/斩仇/abilities/招架姿态.png"
+   },
+   {
+    "name": "锋锐剑气",
+    "category": "Ability",
+    "description": "可在招架姿态激活时使用\n消耗能量，发射一道宽幅能量波",
+    "icon": "icons/heroes/斩仇/abilities/锋锐剑气.png"
+   },
+   {
+    "name": "斩地巨剑",
+    "category": "UltimateAbility",
+    "description": "蓄势猛劈，击破大部分防御，对前方的敌人造成巨量伤害",
+    "icon": "icons/heroes/斩仇/abilities/斩地巨剑.png"
+   },
+   {
+    "name": "越战越勇",
+    "category": "PassiveAbility",
+    "description": "斩击敌人会加快移动速度和攻击速度",
+    "icon": "icons/heroes/斩仇/abilities/越战越勇.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "虹吸斩击",
+    "description": "竖直劈斩获得40%%生命汲取",
+    "icon": "icons/heroes/斩仇/perks/虹吸斩击.png"
+   },
+   {
+    "name": "无情君威",
+    "description": "越战越勇可额外叠加3次，每次会使攻击速度加快5%%，移动速度加快3%%",
+    "icon": "icons/heroes/斩仇/perks/无情君威.png"
+   },
+   {
+    "name": "充盈剑气",
+    "description": "锋锐剑气的能量消耗降低25%%",
+    "icon": "icons/heroes/斩仇/perks/充盈剑气.png"
+   },
+   {
+    "name": "狂怒风暴",
+    "description": "旋风疾步会持续旋转，在大范围内额外攻击3次，每次伤害量为30点",
+    "icon": "icons/heroes/斩仇/perks/狂怒风暴.png"
+   }
+  ],
+  "description": "“斩仇”是斗兽场的冠军，也是意大利的上层精英。为了夺回由自己家族一手建立的犯罪帝国，付出任何代价她都在所不惜",
+  "color": "#CA5A5DFF"
+ },
+ {
+  "guid": "0000000004C4.075",
+  "name": "金驭",
+  "class": "Tank",
+  "subrole": {
+   "name": "铁壁",
+   "passive": "获得击退和减速抗性"
+  },
+  "abilities": [
+   {
+    "name": "光子马格南",
+    "category": "Weapon",
+    "description": "能汇聚为强力一击的中距离光束",
+    "icon": "icons/heroes/金驭/abilities/光子马格南.png"
+   },
+   {
+    "name": "屏障阵列",
+    "category": "Ability",
+    "description": "构造一道分段式屏障",
+    "icon": "icons/heroes/金驭/abilities/屏障阵列.png"
+   },
+   {
+    "name": "音速斥力场",
+    "category": "Ability",
+    "description": "击退敌人，若击退至墙面还可将其击晕",
+    "icon": "icons/heroes/金驭/abilities/音速斥力场.png"
+   },
+   {
+    "name": "爆能水晶",
+    "category": "Ability",
+    "description": "投出一枚爆能水晶，再次激活即可引爆",
+    "icon": "icons/heroes/金驭/abilities/爆能水晶.png"
+   },
+   {
+    "name": "全景牢笼",
+    "category": "UltimateAbility",
+    "description": "发射一道高强度光束屏障囚禁敌人，消失时会引爆",
+    "icon": "icons/heroes/金驭/abilities/全景牢笼.png"
+   },
+   {
+    "name": "护盾重构",
+    "category": "PassiveAbility",
+    "description": "技能造成伤害会恢复护盾",
+    "icon": "icons/heroes/金驭/abilities/护盾重构.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/金驭/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "高效设计",
+    "description": "使用屏障阵列后，恢复50点护盾并激活被动生命值恢复",
+    "icon": "icons/heroes/金驭/perks/高效设计.png"
+   },
+   {
+    "name": "权力扩张",
+    "description": "光子马格南的射程扩大20%%",
+    "icon": "icons/heroes/金驭/perks/权力扩张.png"
+   },
+   {
+    "name": "扰动爆破",
+    "description": "被爆能水晶爆炸命中的敌人会被减速30%%，持续2秒",
+    "icon": "icons/heroes/金驭/perks/扰动爆破.png"
+   },
+   {
+    "name": "战略转移",
+    "description": "屏障阵列激活时，可移动一次位置",
+    "icon": "icons/heroes/金驭/perks/战略转移.png"
+   }
+  ],
+  "description": "“金驭”是费斯卡集团一言千金的谈判专家，对高强度光束的驾驭炉火纯青，世上没有她掌控不了的局面",
+  "color": "#ACF0F8FF"
+ },
+ {
+  "guid": "0000000004D2.075",
+  "name": "西拉",
+  "class": "Damage",
+  "subrole": {
+   "name": "侦察",
+   "passive": "对生命值低于一半的敌人造成伤害会显示其位置"
+  },
+  "abilities": [
+   {
+    "name": "螺旋步枪",
+    "category": "Weapon",
+    "description": "自动突击武器。螺旋射击弹道，持续开火时射击精度逐渐提高",
+    "icon": "icons/heroes/西拉/abilities/螺旋步枪.png"
+   },
+   {
+    "name": "追踪弹",
+    "category": "Ability",
+    "description": "标记一名敌人。螺旋步枪的子弹会自动追踪被标记敌人",
+    "icon": "icons/heroes/西拉/abilities/追踪弹.png"
+   },
+   {
+    "name": "锚点无人机",
+    "category": "Ability",
+    "description": "发射一架锚点无人机。再次激活可向其发射抓钩",
+    "icon": "icons/heroes/西拉/abilities/锚点无人机.png"
+   },
+   {
+    "name": "震地手雷",
+    "category": "Ability",
+    "description": "投出一枚炸弹，击中地形时生成一道冲击波",
+    "icon": "icons/heroes/西拉/abilities/震地手雷.png"
+   },
+   {
+    "name": "开路先锋",
+    "category": "UltimateAbility",
+    "description": "部署一架无人机，向前飞行并空投炸弹",
+    "icon": "icons/heroes/西拉/abilities/开路先锋.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "全速飞行",
+    "description": "锚点无人机的飞行和抓钩范围扩大25%%",
+    "icon": "icons/heroes/西拉/perks/全速飞行.png"
+   },
+   {
+    "name": "紧盯不放",
+    "description": "螺旋步枪的子弹散布收紧速度加快70%%，放宽速度减慢30%%",
+    "icon": "icons/heroes/西拉/perks/紧盯不放.png"
+   },
+   {
+    "name": "医疗无人机",
+    "description": "锚点无人机会搭载一个能治疗西拉的医疗包",
+    "icon": "icons/heroes/西拉/perks/医疗无人机.png"
+   },
+   {
+    "name": "锁定猛攻",
+    "description": "追踪弹命中敌人会使你的攻击速度加快20%%，持续2秒",
+    "icon": "icons/heroes/西拉/perks/锁定猛攻.png"
+   }
+  ],
+  "description": "西拉是位尽职尽责的队友，身怀强化能力的她成功在海力士安保公司崭露头角。她的心态积极向上，勇于直面一切挑战",
+  "color": "#FFC4D4FF"
+ },
+ {
+  "guid": "0000000004D8.075",
+  "name": "埃姆雷",
+  "class": "Damage",
+  "subrole": {
+   "name": "专业",
+   "passive": "消灭敌人后在短时间内加快装弹速度"
+  },
+  "abilities": [
+   {
+    "name": "合成连发步枪",
+    "category": "Weapon",
+    "description": "三连发武器",
+    "icon": "icons/heroes/埃姆雷/abilities/合成连发步枪.png"
+   },
+   {
+    "name": "瞄准射击",
+    "category": "Weapon",
+    "description": "长按可以开镜瞄准，提高射击精度，扩大衰减射程",
+    "icon": "icons/heroes/埃姆雷/abilities/瞄准射击.png"
+   },
+   {
+    "name": "虹吸冲击枪",
+    "category": "Ability",
+    "description": "临时使用装配生命汲取爆炸子弹的半自动手枪\n使用时提高移动速度和跳跃高度",
+    "icon": "icons/heroes/埃姆雷/abilities/虹吸冲击枪.png"
+   },
+   {
+    "name": "赛博手雷",
+    "category": "Ability",
+    "description": "扔出一枚手雷，弹跳后会在短时间内引爆",
+    "icon": "icons/heroes/埃姆雷/abilities/赛博手雷.png"
+   },
+   {
+    "name": "覆盖协议",
+    "category": "UltimateAbility",
+    "description": "启动覆盖程序，将你变为人形兵器",
+    "icon": "icons/heroes/埃姆雷/abilities/覆盖协议.png"
+   },
+   {
+    "name": "机变体征",
+    "category": "PassiveAbility",
+    "description": "被动生命值恢复激活速度加快，并在激活时立即恢复30点生命值",
+    "icon": "icons/heroes/埃姆雷/abilities/机变体征.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "压制安防",
+    "description": "覆盖协议的轻型弹药会使敌人减速30%%，持续1.5秒",
+    "icon": "icons/heroes/埃姆雷/perks/压制安防.png"
+   },
+   {
+    "name": "敏捷强化",
+    "description": "虹吸冲击枪的移动速度加成在不开火时提高20%%",
+    "icon": "icons/heroes/埃姆雷/perks/敏捷强化.png"
+   },
+   {
+    "name": "散热装置",
+    "description": "虹吸冲击枪直接命中会返还60%%热量并使其持续时间延长0.1秒",
+    "icon": "icons/heroes/埃姆雷/perks/散热装置.png"
+   },
+   {
+    "name": "赛博黏附",
+    "description": "赛博手雷接触时会附着，对被附着的敌人额外造成40点伤害",
+    "icon": "icons/heroes/埃姆雷/perks/赛博黏附.png"
+   }
+  ],
+  "description": "埃姆雷在守望先锋突击小队效力期间广受赞誉，后来竟突然人间蒸发。多年后，他再度现身，躯体和心智却已受到某种未知存在的操控",
+  "color": "#E53D3DFF"
+ },
+ {
+  "guid": "0000000004DD.075",
+  "name": "安燃",
+  "class": "Damage",
+  "subrole": {
+   "name": "奇袭",
+   "passive": "提高急救包恢复的生命值"
+  },
+  "abilities": [
+   {
+    "name": "朱雀扇",
+    "category": "Weapon",
+    "description": "能扇出炽烈火焰的折扇",
+    "icon": "icons/heroes/安燃/abilities/朱雀扇.png"
+   },
+   {
+    "name": "煽火风",
+    "category": "Weapon",
+    "description": "能强化燃烧伤害的灼热狂风",
+    "icon": "icons/heroes/安燃/abilities/煽火风.png"
+   },
+   {
+    "name": "怒炎冲",
+    "category": "Ability",
+    "description": "向前疾行，对击中的敌人造成伤害",
+    "icon": "icons/heroes/安燃/abilities/怒炎冲.png"
+   },
+   {
+    "name": "熠闪舞",
+    "category": "Ability",
+    "description": "闪避所有伤害并打击周围敌人，每击中一名敌人都会治疗自身",
+    "icon": "icons/heroes/安燃/abilities/熠闪舞.png"
+   },
+   {
+    "name": "朱羽焚",
+    "category": "UltimateAbility",
+    "description": "向前猛冲，击中时爆炸并立即点燃敌人",
+    "icon": "icons/heroes/安燃/abilities/朱羽焚.png"
+   },
+   {
+    "name": "朱魂返",
+    "category": "UltimateAbility",
+    "description": "阵亡时，在炽烈的爆炸中复生",
+    "icon": "icons/heroes/安燃/abilities/朱魂返.png"
+   },
+   {
+    "name": "焚身焰",
+    "category": "PassiveAbility",
+    "description": "用火焰攻击命中敌人可将其点燃",
+    "icon": "icons/heroes/安燃/abilities/焚身焰.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "长燃之焰",
+    "description": "敌人被点燃后，燃烧持续时间延长1.5秒",
+    "icon": "icons/heroes/安燃/perks/长燃之焰.png"
+   },
+   {
+    "name": "烈火护体",
+    "description": "使用终极技能时获得50点过量生命值，用终极技能每点燃一名敌人，也会获得50点过量生命值",
+    "icon": "icons/heroes/安燃/perks/烈火护体.png"
+   },
+   {
+    "name": "易燃易爆",
+    "description": "使用怒炎冲每击中一名敌人会使其冷却时间缩短1.5秒",
+    "icon": "icons/heroes/安燃/perks/易燃易爆.png"
+   },
+   {
+    "name": "噬心狂炎",
+    "description": "熠闪舞后续打击的治疗量提高25点",
+    "icon": "icons/heroes/安燃/perks/噬心狂炎.png"
+   }
+  ],
+  "description": "安燃是五行大学火学院的毕业生之星，心中燃着熊熊烈火的她永远渴望着突破自身的极限",
+  "color": "#F55A26FF"
+ },
+ {
+  "guid": "0000000004E3.075",
+  "name": "瑞稀",
+  "class": "Support",
+  "subrole": {
+   "name": "生存",
+   "passive": "位移技能会激活被动生命值恢复"
+  },
+  "abilities": [
+   {
+    "name": "御魂镰刃",
+    "category": "Weapon",
+    "description": "扔出能对敌人造成伤害的弹跳镰刃",
+    "icon": "icons/heroes/瑞稀/abilities/御魂镰刃.png"
+   },
+   {
+    "name": "疗魂斗笠",
+    "category": "Ability",
+    "description": "扔出能在盟友间弹跳的斗笠并为其治疗",
+    "icon": "icons/heroes/瑞稀/abilities/疗魂斗笠.png"
+   },
+   {
+    "name": "缚魂锁链",
+    "category": "Ability",
+    "description": "扔出锁链，限制一名敌人的移动",
+    "icon": "icons/heroes/瑞稀/abilities/缚魂锁链.png"
+   },
+   {
+    "name": "替魂纸人",
+    "category": "Ability",
+    "description": "向前一跃，加快移动速度。再次激活会瞬移回原地",
+    "icon": "icons/heroes/瑞稀/abilities/替魂纸人.png"
+   },
+   {
+    "name": "护魂结界",
+    "category": "UltimateAbility",
+    "description": "生成一道结界，能治疗位于其中的盟友并吸收穿过结界的敌方射弹",
+    "icon": "icons/heroes/瑞稀/abilities/护魂结界.png"
+   },
+   {
+    "name": "安魂灵气",
+    "category": "PassiveAbility",
+    "description": "治疗周围盟友。对他人造成伤害或治疗时效果会变得越来越强",
+    "icon": "icons/heroes/瑞稀/abilities/安魂灵气.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "灵气奔涌",
+    "description": "安魂灵气获取量提高25%%",
+    "icon": "icons/heroes/瑞稀/perks/灵气奔涌.png"
+   },
+   {
+    "name": "魂中破绽",
+    "description": "用缚魂锁链命中敌人会使你对其造成的伤害提高30%%，持续2秒",
+    "icon": "icons/heroes/瑞稀/perks/魂中破绽.png"
+   },
+   {
+    "name": "共鸣飞返",
+    "description": "疗魂斗笠额外弹跳一次。每弹跳一次，治疗量提高10点",
+    "icon": "icons/heroes/瑞稀/perks/共鸣飞返.png"
+   },
+   {
+    "name": "飞魂迅步",
+    "description": "替魂纸人激活时，受安魂灵气影响盟友的移动速度加快20%%",
+    "icon": "icons/heroes/瑞稀/perks/飞魂迅步.png"
+   }
+  ],
+  "description": "瑞稀从出生起便被厄运笼罩，为了打破诅咒、做自己命运的主宰，他甘愿付出任何代价",
+  "color": "#CCFFE5FF"
+ },
+ {
+  "guid": "000000000516.075",
+  "name": "飞天猫",
+  "class": "Support",
+  "subrole": {
+   "name": "战术",
+   "passive": "可过量储存终极技能充能"
+  },
+  "abilities": [
+   {
+    "name": "生物猫爪弹",
+    "category": "Weapon",
+    "description": "可治疗盟友并对敌人造成伤害的中距离扩散子弹",
+    "icon": "icons/heroes/飞天猫/abilities/生物猫爪弹.png"
+   },
+   {
+    "name": "咻咻飞",
+    "category": "Ability",
+    "description": "沿移动方向加速。运输其他玩家时减缓燃料恢复速度",
+    "icon": "icons/heroes/飞天猫/abilities/咻咻飞.png"
+   },
+   {
+    "name": "救生索",
+    "category": "Ability",
+    "description": "切换为运输模式，盟友可抓住救生索任你拖拽。加快移动速度并治疗被拖拽的盟友",
+    "icon": "icons/heroes/飞天猫/abilities/救生索.png"
+   },
+   {
+    "name": "呼噜噜",
+    "category": "Ability",
+    "description": "脉冲式范围治疗，频率随时间提高。激活时击退周围敌人",
+    "icon": "icons/heroes/飞天猫/abilities/呼噜噜.png"
+   },
+   {
+    "name": "猫猫劫",
+    "category": "UltimateAbility",
+    "description": "冲向地面位置，击倒敌人并拴锁离你最近的敌人",
+    "icon": "icons/heroes/飞天猫/abilities/猫猫劫.png"
+   },
+   {
+    "name": "喷气背包",
+    "category": "PassiveAbility",
+    "description": "永久飞行",
+    "icon": "icons/heroes/飞天猫/abilities/喷气背包.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "别有用心",
+    "description": "生物猫爪弹会恢复燃料，数值为治疗量的15%%",
+    "icon": "icons/heroes/飞天猫/perks/别有用心.png"
+   },
+   {
+    "name": "带盾运输",
+    "description": "运输其他英雄时获得最多50点额外护盾生命值",
+    "icon": "icons/heroes/飞天猫/perks/带盾运输.png"
+   },
+   {
+    "name": "呼噜连天",
+    "description": "呼噜噜的每次脉冲造成3波效果",
+    "icon": "icons/heroes/飞天猫/perks/呼噜连天.png"
+   },
+   {
+    "name": "嗷呜一爪",
+    "description": "快速近身攻击每6秒获得一次强化，能创伤敌人，造成40点伤害，并使其减速30%%，持续1秒",
+    "icon": "icons/heroes/飞天猫/perks/嗷呜一爪.png"
+   }
+  ],
+  "description": "“飞天猫”是一名英勇无畏的猫咪飞行员，她身穿布丽吉塔最新发明的喷气推进装置，把可爱的空域支援带到战场的每一个角落",
+  "color": "#E6E8EAFF"
+ },
+ {
+  "guid": "00000000052C.075",
+  "name": "死怨",
+  "class": "Damage",
+  "subrole": {
+   "name": "奇袭",
+   "passive": "提高急救包恢复的生命值"
+  },
+  "abilities": [
+   {
+    "name": "牙罗双枪",
+    "category": "Weapon",
+    "description": "速射幻灵手枪",
+    "icon": "icons/heroes/死怨/abilities/牙罗双枪.png"
+   },
+   {
+    "name": "交叉枪决",
+    "category": "Ability",
+    "description": "发射X形的齐射，长按可收紧散布",
+    "icon": "icons/heroes/死怨/abilities/交叉枪决.png"
+   },
+   {
+    "name": "机动闪避",
+    "category": "Ability",
+    "description": "疾冲并在短时间内获得过量生命值 ",
+    "icon": "icons/heroes/死怨/abilities/机动闪避.png"
+   },
+   {
+    "name": "纵情狂飙",
+    "category": "Ability",
+    "description": "让摩托引擎狂飙。再次激活可跳车并向前发射摩托",
+    "icon": "icons/heroes/死怨/abilities/纵情狂飙.png"
+   },
+   {
+    "name": "杀戮狂宴",
+    "category": "UltimateAbility",
+    "description": "尽情倾泻火力并向前冲刺3次",
+    "icon": "icons/heroes/死怨/abilities/杀戮狂宴.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "生存本能",
+    "description": "机动闪避过量生命值的持续时间延长1秒",
+    "icon": "icons/heroes/死怨/perks/生存本能.png"
+   },
+   {
+    "name": "斩杀机器",
+    "description": "交叉枪决对生命值低于50%%的敌人造成的伤害提高20%%",
+    "icon": "icons/heroes/死怨/perks/斩杀机器.png"
+   },
+   {
+    "name": "燃料补充",
+    "description": "激活纵情狂飙时立即恢复50点生命值，且在激活期间每秒恢复20点生命值",
+    "icon": "icons/heroes/死怨/perks/燃料补充.png"
+   },
+   {
+    "name": "死神万相",
+    "description": "获得其他三个输出副职责的被动效果（侦察、专业和神准）",
+    "icon": "icons/heroes/死怨/perks/死神万相.png"
+   }
+  ],
+  "description": "昔日的桥元家族智械阶下囚，一跃成为了最恶名昭彰的桥元长老，死怨摇身一变，化作令人闻风丧胆的憎恨化身",
+  "color": "#FBFBFBFF"
+ },
+ {
+  "guid": "000000000542.075",
+  "name": "D.Mon",
+  "class": "Tank",
+  "subrole": {
+   "name": "铁壁",
+   "passive": "获得击退和减速抗性"
+  },
+  "abilities": [
+   {
+    "name": "等离子剑",
+    "category": "Weapon",
+    "description": "高速能量近战武器",
+    "icon": "icons/heroes/D.Mon/abilities/等离子剑.png"
+   },
+   {
+    "name": "强力屏障",
+    "category": "Ability",
+    "description": "按住 %1$s 可以在前方展开一道能量屏障",
+    "icon": "icons/heroes/D.Mon/abilities/强力屏障.png"
+   },
+   {
+    "name": "助推器",
+    "category": "Ability",
+    "description": "消耗燃料，向任意水平方向突进",
+    "icon": "icons/heroes/D.Mon/abilities/助推器.png"
+   },
+   {
+    "name": "聚变连发枪",
+    "category": "Ability",
+    "description": "激活速射机枪",
+    "icon": "icons/heroes/D.Mon/abilities/聚变连发枪.png"
+   },
+   {
+    "name": "突进刺击",
+    "category": "Ability",
+    "description": "展开强力屏障后可以向前疾冲，对敌人造成伤害并将其击退",
+    "icon": "icons/heroes/D.Mon/abilities/突进刺击.png"
+   },
+   {
+    "name": "弹射！",
+    "category": "PassiveAbility",
+    "description": "当机甲被摧毁时\nD.Mon从中弹出",
+    "icon": "icons/heroes/D.Mon/abilities/弹射！.png"
+   },
+   {
+    "name": "无极斩",
+    "category": "UltimateAbility",
+    "description": "施放横扫斩击，使自身获得过量生命值，并提高敌人受到的伤害",
+    "icon": "icons/heroes/D.Mon/abilities/无极斩.png"
+   },
+   {
+    "name": "呼叫机甲",
+    "category": "UltimateAbility",
+    "description": "重组机甲",
+    "icon": "icons/heroes/D.Mon/abilities/呼叫机甲.png"
+   },
+   {
+    "name": "手提聚变连发枪",
+    "category": "Weapon",
+    "description": "重机枪",
+    "icon": "icons/heroes/D.Mon/abilities/手提聚变连发枪.png"
+   },
+   {
+    "name": "职责：重装",
+    "category": "PassiveAbility",
+    "description": "降低受到治疗和伤害时给予的\n终极技能充能\n提高预设职责模式下的基础生命值",
+    "icon": "icons/heroes/D.Mon/abilities/职责：重装.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "野兽之心",
+    "description": "等离子剑命中会为强力屏障治疗40点生命值",
+    "icon": "icons/heroes/D.Mon/perks/野兽之心.png"
+   },
+   {
+    "name": "强突刺击",
+    "description": "突进刺击获得150%%生命汲取",
+    "icon": "icons/heroes/D.Mon/perks/强突刺击.png"
+   },
+   {
+    "name": "聚焦聚变",
+    "description": "聚变连发枪发射没有散布的强效射击，但射速降低",
+    "icon": "icons/heroes/D.Mon/perks/聚焦聚变.png"
+   },
+   {
+    "name": "MEKA机动",
+    "description": "按住强力屏障时，助推器燃料消耗降低30%%",
+    "icon": "icons/heroes/D.Mon/perks/MEKA机动.png"
+   }
+  ],
+  "description": "MEKA的新任领队D.Mon凭借顶尖的游戏意识指挥着战局，让每位队员团结一心全力应战",
+  "color": "#E48172FF"
+ },
+ {
+  "guid": "000000000570.075",
+  "name": "血律",
+  "class": "Support",
+  "subrole": {
+   "name": "生存",
+   "passive": "位移技能会激活被动生命值恢复"
+  },
+  "abilities": [
+   {
+    "name": "永生权杖",
+    "category": "Weapon",
+    "description": "可以治疗盟友并对敌人造成伤害的中距离武器\n\n<fg#FFF06314>灌注：</fg>发射一道大范围的贯穿冲击",
+    "icon": "icons/heroes/血律/abilities/永生权杖.png"
+   },
+   {
+    "name": "灌注",
+    "category": "Ability",
+    "description": "为你的下个技能增加强大的效果",
+    "icon": "icons/heroes/血律/abilities/灌注.png"
+   },
+   {
+    "name": "迅影疾行",
+    "category": "Ability",
+    "description": "沿水平方向疾行，获得受伤减免\n\n<fg#FFF06314>灌注：</fg>获得自由飞行",
+    "icon": "icons/heroes/血律/abilities/迅影疾行.png"
+   },
+   {
+    "name": "焕生无人机",
+    "category": "Ability",
+    "description": "对一名盟友部署无人机群，加快其攻击速度并提供治疗\n\n<fg#FFF06314>灌注：</fg>同时对自身部署无人机群",
+    "icon": "icons/heroes/血律/abilities/焕生无人机.png"
+   },
+   {
+    "name": "救赎恩典",
+    "category": "UltimateAbility",
+    "description": "发射无人机群，降低敌人的最大生命值，并为盟友提供过量生命值",
+    "icon": "icons/heroes/血律/abilities/救赎恩典.png"
+   }
+  ],
+  "perks": [
+   {
+    "name": "救赎恩赐",
+    "description": "施加焕生无人机时治疗40点生命值",
+    "icon": "icons/heroes/血律/perks/救赎恩赐.png"
+   },
+   {
+    "name": "猩红汲取",
+    "description": "用灌注永生权杖造成伤害会获得50%%治疗",
+    "icon": "icons/heroes/血律/perks/猩红汲取.png"
+   },
+   {
+    "name": "活力传输",
+    "description": "造成伤害或治疗会缩短灌注的冷却时间",
+    "icon": "icons/heroes/血律/perks/活力传输.png"
+   },
+   {
+    "name": "生命代价",
+    "description": "牺牲25点最大生命值。永生权杖的治疗量提高20%%",
+    "icon": "icons/heroes/血律/perks/生命代价.png"
+   }
+  ],
+  "description": "“血律”本是机械义体专家，如今成为了超级恶徒。他操控着能汲取生命的无人机群，命运由他裁定",
+  "color": "#CB4D8DFF"
+ }
+]

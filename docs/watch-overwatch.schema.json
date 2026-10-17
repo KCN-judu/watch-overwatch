@@ -1,0 +1,15 @@
+{
+ "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Watch Overwatch 1.1 friendly export",
+ "type":"object",
+ "required":["schema_version","generated_at_unix_ms","source","query","completeness","units","entities","records","provider_data"],
+ "additionalProperties":false,
+ "properties":{
+  "schema_version":{"const":"1.1.0"},
+  "generated_at_unix_ms":{"type":"integer","minimum":0},
+  "source":{"type":"object"},"query":{"type":"object"},"completeness":{"type":"object"},"units":{"type":"object"},
+  "entities":{"type":"array","items":{"type":"object","required":["kind","name"]}},
+  "records":{"type":"object"},
+  "provider_data":{"type":"null"}
+ }
+}

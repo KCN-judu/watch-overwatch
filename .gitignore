@@ -1,0 +1,27 @@
+# Build output
+/target/
+/data/
+/*.exe
+/*.dll
+
+# Local working files: old build backups and downloaded archives
+/work/
+
+# Credentials and local settings (these live in %LOCALAPPDATA% too, never commit them)
+secrets.json
+.env
+*.local.json
+
+# Flutter / Dart (the app's own .gitignore covers the rest)
+app/build/
+app/.dart_tool/
+app/.flutter-plugins-dependencies
+app/windows/flutter/ephemeral/
+app/test/goldens/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log

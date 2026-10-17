@@ -1,0 +1,549 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
+import '../../core/models.dart';
+import '../../core/support.dart';
+import '../../design/icons.dart';
+import '../../design/tokens.dart';
+import '../../design/widgets.dart';
+import '../../state/app_state.dart';
+import '../player_view.dart';
+import 'team_table.dart';
+
+class MatchDetailPage extends StatefulWidget {
+  const MatchDetailPage({super.key, required this.workspace});
+  final PlayerWorkspace workspace;
+  @override
+  State<MatchDetailPage> createState() => _MatchDetailPageState();
+}
+
+class _MatchDetailPageState extends State<MatchDetailPage> {
+  Participant? _selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final app = AppScope.of(context);
+    final ws = widget.workspace;
+    final id = ws.openMatchId!;
+    final mode = ws.openMatchMode ?? app.mode;
+    final load = ws.detailFor(mode, id);
+    final c = context.c;
+    final index = ws.navIds.indexOf(id);
+    final summary = ws
+        .matchesFor(mode)
+        .value
+        ?.matches
+        .where((m) => m.id == id)
+        .firstOrNull;
+
+    final header = Row(
+      children: [
+        AppButton(
+          '对局列表',
+          icon: Icons.arrow_back,
+          quiet: true,
+          tooltip: 'Esc 或 Alt+←',
+          onPressed: ws.closeMatch,
+        ),
+        Text('›', style: Ty.body.copyWith(color: c.textSecondary)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            '${fmtDateTime(summary?.startedAtMs ?? load.value?.startedAtMs)}  ${summary?.map?.label ?? load.value?.map?.label ?? ''}',
+            style: Ty.bodyStrong,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (index >= 0)
+          Text(
+            '第 ${index + 1} / ${ws.navIds.length} 场',
+            style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
+          ),
+        IconAction(
+          icon: Icons.chevron_left,
+          label: '上一场',
+          shortcut: '[',
+          onPressed: index > 0 ? () => ws.stepMatch(-1) : null,
+        ),
+        IconAction(
+          icon: Icons.chevron_right,
+          label: '下一场',
+          shortcut: ']',
+          onPressed: index >= 0 && index < ws.navIds.length - 1
+              ? () => ws.stepMatch(1)
+              : null,
+        ),
+      ],
+    );
+
+    Widget body;
+    if (load.failedWithoutData) {
+      body = ErrorPanel(
+        what: '无法读取这场对局的详情',
+        error: load.error!,
+        onRetry: () => ws.loadDetail(mode, id),
+        extra: [AppButton('返回列表', onPressed: ws.closeMatch)],
+      );
+    } else if (!load.has) {
+      body = const AfterDelay(child: _DetailSkeleton());
+    } else {
+      body = _Body(
+        detail: load.value!,
+        summary: summary,
+        selected: _selected,
+        onSelect: (p) => setState(() => _selected = p),
+        refreshing: load.loading,
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        const SizedBox(height: Sp.withinGroup),
+        Expanded(child: body),
+      ],
+    );
+  }
+}
+
+class _DetailSkeleton extends StatelessWidget {
+  const _DetailSkeleton();
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    Widget block(double h) => Container(
+      height: h,
+      margin: const EdgeInsets.only(bottom: Sp.betweenGroups),
+      decoration: BoxDecoration(
+        color: c.hover.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(Radii.container),
+      ),
+    );
+    return Semantics(
+      label: '正在加载对局详情',
+      liveRegion: true,
+      child: ExcludeSemantics(
+        child: Column(children: [block(56), block(250), block(250)]),
+      ),
+    );
+  }
+}
+
+class _Body extends StatelessWidget {
+  const _Body({
+    required this.detail,
+    required this.summary,
+    required this.selected,
+    required this.onSelect,
+    required this.refreshing,
+  });
+  final MatchDetail detail;
+  final MatchSummary? summary;
+  final Participant? selected;
+  final ValueChanged<Participant> onSelect;
+  final bool refreshing;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final app = AppScope.of(context);
+    final all = [...detail.allies, ...detail.enemies];
+    double maxOf(double? Function(Participant) f) =>
+        all.map(f).whereType<double>().fold(0.0, math.max);
+    final maxes = (
+      damage: maxOf((p) => p.stats.damage),
+      healing: maxOf((p) => p.stats.healing),
+      mitigation: maxOf((p) => p.stats.mitigation),
+    );
+    final outcomeColor = c.outcome(detail.outcome.id);
+    return ListView(
+      // Room for the scrollbar, so it does not sit on the tables.
+      padding: const EdgeInsets.only(right: 12),
+      children: [
+        // Result line
+        Padding(
+          padding: const EdgeInsets.only(bottom: Sp.betweenGroups),
+          child: Wrap(
+            spacing: Sp.betweenGroups,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              MapThumb(
+                app.catalog.mapImage(detail.map),
+                width: 88,
+                height: 48,
+                radius: 6,
+              ),
+              Semantics(
+                header: true,
+                child: Text(detail.map?.label ?? '未知地图', style: Ty.page),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [OutcomeMark(detail.outcome)],
+              ),
+              Text(
+                fmtScore(detail.scoreTeam, detail.scoreOpponent),
+                style: Ty.num(Ty.page).copyWith(color: outcomeColor),
+              ),
+              Text(
+                detail.mode.label,
+                style: Ty.body.copyWith(color: c.textSecondary),
+              ),
+              if (detail.durationS != null)
+                Text(
+                  '用时 ${fmtClock(detail.durationS)}',
+                  style: Ty.num(Ty.body).copyWith(color: c.textSecondary),
+                ),
+              if (detail.outcomeFromScore)
+                Tooltip(
+                  message: '角斗领域详情没有提供胜负字段，结果按最终比分判断。',
+                  child: Text(
+                    '结果按比分判断',
+                    style: Ty.meta.copyWith(color: c.textSecondary),
+                  ),
+                ),
+              if (refreshing) const RefreshingChip(),
+            ],
+          ),
+        ),
+        TeamTable(
+          title: '己方',
+          ally: true,
+          players: detail.allies,
+          maxes: maxes,
+          onSelect: onSelect,
+          catalog: app.catalog,
+          stadium: detail.mode == Mode.stadium,
+        ),
+        const SizedBox(height: Sp.betweenSections),
+        TeamTable(
+          title: '对方',
+          ally: false,
+          players: detail.enemies,
+          maxes: maxes,
+          onSelect: onSelect,
+          catalog: app.catalog,
+          stadium: detail.mode == Mode.stadium,
+        ),
+        const SizedBox(height: Sp.betweenSections),
+        _SelectionPanel(
+          participant: selected,
+          mode: detail.mode,
+          catalog: app.catalog,
+        ),
+        if (detail.bansAlly.isNotEmpty || detail.bansEnemy.isNotEmpty) ...[
+          const SizedBox(height: Sp.betweenSections),
+          _Bans(detail: detail, catalog: app.catalog),
+        ],
+        if (detail.subjectHeroes.isNotEmpty) ...[
+          const SizedBox(height: Sp.betweenSections),
+          _SubjectHeroes(segments: detail.subjectHeroes, catalog: app.catalog),
+        ],
+        if (detail.rounds.isNotEmpty) ...[
+          const SizedBox(height: Sp.betweenSections),
+          _Rounds(rounds: detail.rounds),
+        ],
+        const SizedBox(height: Sp.betweenSections),
+      ],
+    );
+  }
+}
+
+/// Read-only properties of the selected participant.
+class _SelectionPanel extends StatelessWidget {
+  const _SelectionPanel({
+    required this.participant,
+    required this.mode,
+    required this.catalog,
+  });
+  final Participant? participant;
+  final Mode mode;
+  final Catalog catalog;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final p = participant;
+    if (p == null) {
+      return Text(
+        '点击或用方向键与 Enter 选择一名玩家，在这里查看威能、组队和更多数据。',
+        style: Ty.body.copyWith(color: c.textSecondary),
+      );
+    }
+    final s = p.stats;
+    Widget row(String label, String value) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(label, style: Ty.body.copyWith(color: c.textSecondary)),
+          ),
+          Expanded(child: Text(value, style: Ty.num(Ty.body))),
+        ],
+      ),
+    );
+    Widget perks(String label, int level) {
+      final picks = p.perks.where((k) => k.level == level).toList();
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 120,
+              child: Text(
+                label,
+                style: Ty.body.copyWith(color: c.textSecondary),
+              ),
+            ),
+            Expanded(
+              child: picks.isEmpty
+                  ? Text(missing, style: Ty.body)
+                  : Wrap(
+                      spacing: 16,
+                      runSpacing: 4,
+                      children: [
+                        for (final k in picks)
+                          PerkChip(k.perk, catalog: catalog),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Semantics(
+      container: true,
+      label: '${p.name ?? '未知玩家'} 的详细数据',
+      child: Container(
+        padding: const EdgeInsets.all(Sp.betweenGroups),
+        decoration: BoxDecoration(
+          color: c.raised,
+          borderRadius: BorderRadius.circular(Radii.container),
+          border: Border.all(color: c.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${p.name ?? '未知玩家'}${p.isSubject ? '（查询对象）' : ''}',
+              style: Ty.section,
+            ),
+            const SizedBox(height: Sp.withinGroup),
+            Wrap(
+              spacing: 48,
+              runSpacing: Sp.withinGroup,
+              children: [
+                SizedBox(
+                  width: 340,
+                  child: Column(
+                    children: [
+                      perks('一级威能', 1),
+                      perks('二级威能', 2),
+                      row(
+                        '组队',
+                        p.partyBnetIds.isEmpty
+                            ? '没有组队信息'
+                            : '与 ${p.partyBnetIds.length} 名玩家组队',
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  width: 340,
+                  child: Column(
+                    children: [
+                      row('最后一击', fmtInt(s.finalBlows)),
+                      row('单独消灭', fmtInt(s.soloKills)),
+                      row('承受伤害', fmtInt(s.damageTaken)),
+                      row('承受治疗', fmtInt(s.healingTaken)),
+                      row('目标争夺（秒）', fmtInt(s.objectiveTimeS)),
+                    ],
+                  ),
+                ),
+                if (p.stadium != null)
+                  SizedBox(
+                    width: 340,
+                    child: Column(
+                      children: [
+                        row('局内货币', fmtInt(p.stadium!.worth)),
+                        row(
+                          '异能',
+                          p.stadium!.powers.isEmpty
+                              ? missing
+                              : p.stadium!.powers.map((e) => e.label).join('、'),
+                        ),
+                        row(
+                          '装备',
+                          p.stadium!.items.isEmpty
+                              ? missing
+                              : p.stadium!.items.map((e) => e.label).join('、'),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: Sp.withinControl),
+            Text(
+              '— 表示上游没有提供，不等于 0。',
+              style: Ty.meta.copyWith(color: c.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Bans extends StatelessWidget {
+  const _Bans({required this.detail, required this.catalog});
+  final MatchDetail detail;
+  final Catalog catalog;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    Widget side(String title, List<EntityRef> heroes, bool ally) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TeamTag(ally: ally),
+        const SizedBox(width: 8),
+        Text('禁用', style: Ty.meta.copyWith(color: c.textSecondary)),
+        const SizedBox(width: 8),
+        if (heroes.isEmpty)
+          Text(missing)
+        else
+          for (final h in heroes) ...[
+            NetImage(catalog.heroIcon(h), size: 22, fallback: h.label),
+            const SizedBox(width: 4),
+            Text(h.label, style: Ty.body),
+            const SizedBox(width: 10),
+          ],
+      ],
+    );
+    return Wrap(
+      spacing: Sp.betweenSections,
+      runSpacing: Sp.withinGroup,
+      children: [
+        side('己方', detail.bansAlly, true),
+        side('对方', detail.bansEnemy, false),
+      ],
+    );
+  }
+}
+
+class _SubjectHeroes extends StatelessWidget {
+  const _SubjectHeroes({required this.segments, required this.catalog});
+  final List<HeroSegment> segments;
+  final Catalog catalog;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(header: true, child: Text('查询对象在本场使用的英雄', style: Ty.section)),
+        const SizedBox(height: Sp.withinGroup),
+        for (final s in segments)
+          Container(
+            margin: const EdgeInsets.only(bottom: Sp.withinGroup),
+            padding: const EdgeInsets.all(Sp.withinGroup + 4),
+            decoration: BoxDecoration(
+              color: c.raised,
+              borderRadius: BorderRadius.circular(Radii.container),
+              border: Border.all(color: c.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    NetImage(
+                      catalog.heroIcon(s.hero),
+                      size: 26,
+                      fallback: s.hero.label,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(s.hero.label, style: Ty.bodyStrong),
+                    const SizedBox(width: 12),
+                    Text(
+                      '使用 ${fmtClock(s.playTimeS)}${s.share == null ? '' : '（占本场 ${fmtPct((s.share ?? 0) * 100, digits: 0)}）'}',
+                      style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Builder(
+                  builder: (context) {
+                    final named = s.stats
+                        .where((v) => v.stat.name != null)
+                        .toList();
+                    final unnamed = s.stats.length - named.length;
+                    if (named.isEmpty) {
+                      return Text(
+                        '本场 ${s.stats.length} 项统计，目录里还没有它们的名称。',
+                        style: Ty.meta.copyWith(color: c.textSecondary),
+                      );
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 20,
+                          runSpacing: 2,
+                          children: [
+                            for (final v in named)
+                              Text(
+                                '${v.stat.name}  ${fmtOne(v.value)}',
+                                style: Ty.num(Ty.body),
+                              ),
+                          ],
+                        ),
+                        if (unnamed > 0)
+                          Text(
+                            '另有 $unnamed 项统计目录里没有名称，未显示。',
+                            style: Ty.meta.copyWith(color: c.textSecondary),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _Rounds extends StatelessWidget {
+  const _Rounds({required this.rounds});
+  final List<Round> rounds;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(header: true, child: Text('回合', style: Ty.section)),
+        const SizedBox(height: Sp.withinGroup),
+        Wrap(
+          spacing: Sp.betweenGroups,
+          runSpacing: 4,
+          children: [
+            for (final r in rounds)
+              Text(
+                '第 ${r.index + 1} 回合  ${fmtScore(r.scoreTeam, r.scoreOpponent)}  ${fmtClock(r.durationS)}',
+                style: Ty.num(Ty.body).copyWith(color: c.textPrimary),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}

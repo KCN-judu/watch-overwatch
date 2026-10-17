@@ -1,0 +1,5 @@
+{"code":0,"success":true,"traceId":"MASKED","data":[
+ {"mapGuid":"576460752303424195","matchId":"m3","matchRet":1,"instanceType":"IT_RANKED","heroGuid":"207165582859043685","roleType":"healer","teamScore":3,"opponentScore":1,"kill":15,"killMax":false,"assist":16,"death":4,"heroDamage":4631,"heroDamageMax":false,"cure":6801,"cureMax":true,"resistDamage":0,"resistDamageMax":false,"rankInfo":{"rankName":"Platinum","rankSubTier":5,"rankScore":395,"ts":1777212060658},"beginTs":1777212060658,"gameMode":"SportPreset"},
+ {"mapGuid":"576460752303424195","matchId":"m2","matchRet":-1,"instanceType":"IT_RANKED","heroGuid":"207165582859043685","roleType":"healer","teamScore":0,"opponentScore":2,"kill":"5","assist":"6","death":"7","heroDamage":"1000","cure":"2000","resistDamage":"0","rankInfo":{},"beginTs":1777208460658,"gameMode":"SportPreset"},
+ {"mapGuid":"576460752303423579","matchId":"m1","matchRet":0,"instanceType":"IT_UNRANKED","heroGuid":"207165582859042818","roleType":"dps","teamScore":2,"opponentScore":2,"kill":20,"assist":2,"death":5,"beginTs":1777100000000,"gameMode":"SportOpen"}
+]}
