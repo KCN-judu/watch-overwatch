@@ -190,6 +190,40 @@ pub fn backfill_participants(tx: &Transaction<'_>) -> rusqlite::Result<()> {
     Ok(())
 }
 
+// ---- who a name is ----------------------------------------------------------------------------
+
+/// Remembers that these (lower-cased) names are this player.
+pub fn remember_names(
+    tx: &Transaction<'_>,
+    names: &[String],
+    bnet_id: &str,
+) -> rusqlite::Result<()> {
+    let mut statement = tx.prepare_cached(&SQL.player.name_upsert)?;
+    for name in names {
+        statement.execute(params![name, bnet_id])?;
+    }
+    Ok(())
+}
+
+pub fn remember_profile(tx: &Transaction<'_>, bnet_id: &str, data: &str) -> rusqlite::Result<()> {
+    tx.prepare_cached(&SQL.player.profile_upsert)?
+        .execute(params![bnet_id, data])?;
+    Ok(())
+}
+
+/// The bnet id a (lower-cased) name was last seen to be, if any.
+pub fn known_id(conn: &Connection, name_lower: &str) -> rusqlite::Result<Option<String>> {
+    conn.prepare_cached(&SQL.player.name_select)?
+        .query_row([name_lower], |r| r.get(0))
+        .optional()
+}
+
+pub fn known_profile(conn: &Connection, bnet_id: &str) -> rusqlite::Result<Option<String>> {
+    conn.prepare_cached(&SQL.player.profile_select)?
+        .query_row([bnet_id], |r| r.get(0))
+        .optional()
+}
+
 // ---- upkeep ----------------------------------------------------------------------------------------
 
 /// Drops details fetched before `cutoff_ms` and the participants left without a match.
@@ -215,6 +249,8 @@ pub fn delete_all(tx: &Transaction<'_>) -> rusqlite::Result<()> {
         &SQL.participant.delete_all,
         &SQL.list.delete_all,
         &SQL.state.delete_all,
+        &SQL.player.name_delete_all,
+        &SQL.player.profile_delete_all,
     ] {
         tx.execute(sql, [])?;
     }

@@ -65,6 +65,9 @@ pub struct CollectPlan {
     /// Keep only the newest this many matches of each mode in the dataset (all when
     /// unset): the exports a user sizes by number of matches.
     pub match_limit: Option<usize>,
+    /// Read the player's card and careers too (the profile page needs them). Off for the
+    /// callers that only want matches and ranks: it saves a few requests every time.
+    pub profile: bool,
     /// Optional live progress sink; never serialised.
     #[serde(skip)]
     pub progress: Option<Arc<Progress>>,
@@ -90,6 +93,7 @@ impl Default for CollectPlan {
             known_matches: Vec::new(),
             list_quota: None,
             match_limit: None,
+            profile: true,
             progress: None,
             cache: None,
         }
@@ -718,41 +722,48 @@ fn merge_ratings(ratings: &mut Vec<RoleRating>, rows: Vec<RoleRating>, key: u32,
     }
 }
 
-/// Collects the player's card, careers, match lists, newest match details and
-/// hero board. Individual failures are recorded in `coverage` instead of aborting.
-pub async fn collect_player<F: Fetcher>(
+/// What reading the player's card and careers gave.
+struct ProfilePart {
+    fetches: Vec<FetchRecord>,
+    card: Option<PlayerProfile>,
+    careers: Vec<CareerSnapshot>,
+}
+
+/// Reads the card and the career of each mode (nothing when the plan has no profile).
+async fn read_profile<F: Fetcher>(
     f: &F,
     cat: &Catalog,
     token: &str,
-    identity: &Value,
     plan: &CollectPlan,
-) -> PlayerDataset {
-    let mut fetches = Vec::new();
-    let mut profile = normalize::profile(identity);
-
-    let result = f.fetch(Endpoint::Card, json!({"token":token})).await;
-    fetches.push(record(Endpoint::Card, None, None, None, None, &result));
-    if let Ok(card) = &result {
-        normalize::merge_profile(
-            &mut profile,
-            normalize::profile(normalize::payload(&card.value)),
-        );
+) -> ProfilePart {
+    let mut part = ProfilePart {
+        fetches: Vec::new(),
+        card: None,
+        careers: Vec::new(),
+    };
+    if !plan.profile {
+        return part;
     }
-
+    let result = f.fetch(Endpoint::Card, json!({"token":token})).await;
+    part.fetches
+        .push(record(Endpoint::Card, None, None, None, None, &result));
+    if let Ok(card) = &result {
+        part.card = Some(normalize::profile(normalize::payload(&card.value)));
+    }
     let mut seasons = vec![plan.season];
     for s in &plan.career_seasons {
         if !seasons.contains(&Some(*s)) {
             seasons.push(Some(*s));
         }
     }
-    let mut careers = Vec::new();
     for &mode in &plan.modes {
         for &season in &seasons {
             let endpoint = mode.career();
             let result = f.fetch(endpoint, career_payload(token, mode, season)).await;
-            fetches.push(record(endpoint, Some(mode), season, None, None, &result));
+            part.fetches
+                .push(record(endpoint, Some(mode), season, None, None, &result));
             if let Ok(v) = result {
-                careers.push(normalize::career(
+                part.careers.push(normalize::career(
                     normalize::payload(&v.value),
                     mode,
                     season,
@@ -761,29 +772,45 @@ pub async fn collect_player<F: Fetcher>(
             }
         }
     }
+    part
+}
 
-    let roles: Vec<Role> = if plan.roles.is_empty() {
-        Role::PLAYABLE.to_vec()
-    } else {
-        plan.roles.clone()
+/// What reading the match lists gave.
+struct ListsPart {
+    fetches: Vec<FetchRecord>,
+    match_lists: Vec<ListCoverage>,
+    matches: Vec<MatchSummary>,
+}
+
+/// The match list of every mode of the plan: from the rows the caller already holds, or
+/// through the local store when there is one (and `subject` says whose list it is), or by
+/// paging the upstream.
+async fn read_lists<F: Fetcher>(
+    f: &F,
+    cat: &Catalog,
+    token: &str,
+    plan: &CollectPlan,
+    roles: &[Role],
+    subject: Option<&str>,
+) -> ListsPart {
+    let mut part = ListsPart {
+        fetches: Vec::new(),
+        match_lists: Vec::new(),
+        matches: Vec::new(),
     };
-    let mut match_lists = Vec::new();
-    let mut matches = Vec::new();
     let mut seen = HashSet::new();
     if !plan.known_matches.is_empty() {
         // The history is what the caller already read; nothing to page through.
-        matches.extend(
+        part.matches.extend(
             plan.known_matches
                 .iter()
                 .filter(|m| seen.insert(m.id.clone()))
                 .cloned(),
         );
+        return part;
     }
     for &mode in &plan.modes {
-        if !plan.known_matches.is_empty() {
-            break;
-        }
-        if let (Some(cache), Some(subject)) = (plan.cache.as_deref(), profile.bnet_id.as_deref()) {
+        let pages = if let (Some(cache), Some(subject)) = (plan.cache.as_deref(), subject) {
             // Through the local store: only what is new (and, as needed, older) is fetched.
             let scope = SyncScope {
                 page: PageScope {
@@ -796,41 +823,67 @@ pub async fn collect_player<F: Fetcher>(
                 quota: plan
                     .list_quota
                     .or(plan.details_per_role)
-                    .map(|n| (n, roles.as_slice())),
+                    .map(|n| (n, roles)),
             };
-            let pages = sync_match_list(f, cat, cache, &scope, plan.progress.as_deref()).await;
-            fetches.extend(pages.fetches);
-            match_lists.push(pages.coverage);
-            matches.extend(
-                newest(pages.matches, plan.match_limit)
-                    .into_iter()
-                    .filter(|m| seen.insert(m.id.clone())),
-            );
-            continue;
-        }
-        let quota = plan.details_per_role;
-        let scope = PageScope {
-            token,
-            mode,
-            season: plan.season,
-            max_pages: plan.max_pages,
+            sync_match_list(f, cat, cache, &scope, plan.progress.as_deref()).await
+        } else {
+            let quota = plan.details_per_role;
+            let scope = PageScope {
+                token,
+                mode,
+                season: plan.season,
+                max_pages: plan.max_pages,
+            };
+            match_pages_until(
+                f,
+                cat,
+                &scope,
+                |read| quota.is_some_and(|n| role_quota_met_for(read, n, roles)),
+                plan.progress.as_deref(),
+            )
+            .await
         };
-        let pages = match_pages_until(
-            f,
-            cat,
-            &scope,
-            |read| quota.is_some_and(|n| role_quota_met_for(read, n, &roles)),
-            plan.progress.as_deref(),
-        )
-        .await;
-        fetches.extend(pages.fetches);
-        match_lists.push(pages.coverage);
-        matches.extend(
+        part.fetches.extend(pages.fetches);
+        part.match_lists.push(pages.coverage);
+        part.matches.extend(
             newest(pages.matches, plan.match_limit)
                 .into_iter()
                 .filter(|m| seen.insert(m.id.clone())),
         );
     }
+    part
+}
+
+/// Collects the player's card, careers, match lists, newest match details and
+/// hero board. Individual failures are recorded in `coverage` instead of aborting.
+pub async fn collect_player<F: Fetcher>(
+    f: &F,
+    cat: &Catalog,
+    token: &str,
+    identity: &Value,
+    plan: &CollectPlan,
+) -> PlayerDataset {
+    let mut fetches = Vec::new();
+    let mut profile = normalize::profile(identity);
+    let roles: Vec<Role> = if plan.roles.is_empty() {
+        Role::PLAYABLE.to_vec()
+    } else {
+        plan.roles.clone()
+    };
+
+    // The card and careers first (they can say who the player is when the identity does
+    // not), then the match lists. Asking for them together was tried: the upstream answers
+    // one request at a time per account, so it saved nothing.
+    let profile_part = read_profile(f, cat, token, plan).await;
+    if let Some(card) = &profile_part.card {
+        normalize::merge_profile(&mut profile, card.clone());
+    }
+    let lists_part = read_lists(f, cat, token, plan, &roles, profile.bnet_id.as_deref()).await;
+    fetches.extend(profile_part.fetches);
+    let careers = profile_part.careers;
+    fetches.extend(lists_part.fetches);
+    let match_lists = lists_part.match_lists;
+    let mut matches = lists_part.matches;
     matches.sort_by_key(|m| std::cmp::Reverse(m.started_at_ms));
 
     let mut details = BTreeMap::new();
@@ -1005,7 +1058,8 @@ pub async fn collect_player<F: Fetcher>(
             if let Ok(v) = result {
                 let rows = normalize::role_ratings(normalize::payload(&v.value), season);
                 if let Some(cache) = cache {
-                    cache.put_season_ratings(&u.id, key, &rows);
+                    // A season asked for by its number is a finished one: its ranks never change.
+                    cache.put_season_ratings(&u.id, key, &rows, season.is_some());
                 }
                 merge_ratings(&mut ratings, rows, key, current);
             }

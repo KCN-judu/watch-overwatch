@@ -138,6 +138,11 @@ pub(crate) async fn search_player(
         sessions.remove(&oldest);
     }
     let identity = redact(identity);
+    // Remember who this name is, so its stored matches can be shown at once next time.
+    if let (Some(store), Some(bnet_id)) = (&s.store, subject_id(&identity)) {
+        let canonical = identity["name"].as_str().unwrap_or_default();
+        store.remember_player(&[input.name.trim(), canonical], &bnet_id);
+    }
     sessions.insert(
         id.clone(),
         PlayerSession {
@@ -665,6 +670,63 @@ pub(crate) async fn cache_clear(State(s): State<AppState>) -> Response {
     cache_stats(State(s)).await
 }
 
+#[derive(Deserialize)]
+pub(crate) struct StoredInput {
+    name: String,
+    #[serde(default = "sport")]
+    mode: String,
+}
+
+/// What is already stored for a name, with no request to the upstream: the matches read so
+/// far and the last profile, shaped like a dataset, so the app can show something while the
+/// real read is under way. `known` is false for a name never looked up.
+pub(crate) async fn player_stored(
+    State(s): State<AppState>,
+    Json(input): Json<StoredInput>,
+) -> Response {
+    let (Some(mode), Some(store)) = (Mode::parse(&input.mode), s.store.as_ref()) else {
+        return Json(json!({"known":false})).into_response();
+    };
+    let Some((bnet_id, profile)) = store.known_player(&input.name) else {
+        return Json(json!({"known":false})).into_response();
+    };
+    let list = store.match_list(ListKey {
+        subject: &bnet_id,
+        mode,
+        season: None,
+    });
+    let profile: Value = profile
+        .and_then(|p| serde_json::from_str(&p).ok())
+        .unwrap_or_else(|| json!({"bnet_id": bnet_id, "name": input.name.trim()}));
+    let total = list.rows.len();
+    Json(json!({
+        "known": true,
+        "dataset": {
+            "generated_at_ms": 0,
+            "profile": profile,
+            "careers": [],
+            "matches": list.rows,
+            "hero_boards": [],
+            "player_ratings": [],
+            "coverage": {
+                "match_lists": [{
+                    "mode": mode,
+                    "season": null,
+                    "pages_fetched": 0,
+                    "exhausted": list.exhausted,
+                    "new_matches": 0,
+                    "total_matches": total,
+                }],
+                "details_requested": 0,
+                "details_ok": 0,
+                "cache_hits": 0,
+                "fetches": [],
+            },
+        },
+    }))
+    .into_response()
+}
+
 /// Looks up and stores what the lobby-strength analysis needs from `rows`: each match's
 /// detail and every participant's rank. Failures only leave the match unprepared.
 async fn prepare_matches(
@@ -684,6 +746,7 @@ async fn prepare_matches(
         known_matches: rows,
         max_details: 0,
         hero_board: false,
+        profile: false,
         lobby_ratings: ratings,
         max_rated_players: 600,
         cache: s
@@ -835,6 +898,12 @@ pub(crate) async fn player_dataset(
     }
     match collected {
         Ok(dataset) => {
+            if input.plan.profile
+                && let (Some(store), Some(id)) = (&s.store, dataset.profile.bnet_id.as_deref())
+                && let Ok(json) = serde_json::to_string(&dataset.profile)
+            {
+                store.remember_profile(id, &json);
+            }
             let analysis = analysis::analyze(&dataset, &input.analysis);
             if let Some(p) = &tracker {
                 p.update(|s| s.phase = "done".into());

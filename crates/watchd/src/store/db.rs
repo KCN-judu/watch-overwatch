@@ -13,12 +13,28 @@ pub struct Db {
 }
 
 impl Db {
-    /// Opens `path` and runs `schema` (each statement is idempotent).
-    pub fn open(name: &'static str, path: &Path, schema: &[String]) -> rusqlite::Result<Self> {
+    /// Opens `path` and runs `schema` (each statement is idempotent), then `upgrades`:
+    /// statements, in order, that bring a database made by an older version up to date.
+    /// The first one fails with "duplicate column" on one that already is, which ends the
+    /// upgrade.
+    pub fn open(
+        name: &'static str,
+        path: &Path,
+        schema: &[String],
+        upgrades: &[String],
+    ) -> rusqlite::Result<Self> {
         let conn = Connection::open(path)?;
         conn.execute_batch(PRAGMAS)?;
         for statement in schema {
             conn.execute(statement, [])?;
+        }
+        for statement in upgrades {
+            match conn.execute(statement, []) {
+                Ok(_) => {}
+                // Already up to date: the rest of the upgrade has been done too.
+                Err(e) if e.to_string().contains("duplicate column") => break,
+                Err(e) => return Err(e),
+            }
         }
         Ok(Self {
             name,

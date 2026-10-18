@@ -1367,6 +1367,7 @@ fn a_match_is_prepared_once_its_detail_and_every_lookup_are_stored() {
             id,
             25,
             &[rating(id, p.role, 2000 + rated, None).roles[0].clone()],
+            false,
         );
         rated += 100;
     }
@@ -1419,6 +1420,7 @@ fn career_ranks_come_from_the_stored_lookups_and_never_replace_the_match_rank() 
         &id,
         24,
         &[rating(&id, target.role, 1700, None).roles[0].clone()],
+        true,
     );
     let mut shown = detail.clone();
     collect::attach_career_ranks(&mut shown, &cache, 25);
@@ -1436,6 +1438,7 @@ fn career_ranks_come_from_the_stored_lookups_and_never_replace_the_match_rank() 
         &id,
         25,
         &[rating(&id, target.role, 2100, None).roles[0].clone()],
+        false,
     );
     let mut shown = detail.clone();
     collect::attach_career_ranks(&mut shown, &cache, 25);
@@ -1556,4 +1559,90 @@ fn fleta_is_a_players_share_of_half_their_teams_final_blows() {
     assert_eq!(d.allies[4].fleta, Some(0.0));
     // A team with no final blows has no index to give.
     assert!(d.enemies.iter().all(|p| p.fleta.is_none()));
+}
+
+#[tokio::test]
+async fn once_ranks_expire_only_the_current_season_is_looked_up_again() {
+    struct Counter(Mutex<Vec<Option<u64>>>);
+    impl Fetcher for Counter {
+        async fn fetch(&self, endpoint: Endpoint, payload: Value) -> Result<Fetched, Failure> {
+            let value = match endpoint {
+                Endpoint::MatchList if payload["gameMode"] == "leisure" => {
+                    json!({"code":0,"data":[{"matchId":"q1","matchRet":1,"beginTs":5,"gameMode":"LeisurePreset"}]})
+                }
+                Endpoint::MatchInfo => fixture("queryMatchInfo"),
+                Endpoint::CareerCount if payload["token"] != "TOKEN" => {
+                    self.0.lock().unwrap().push(payload["season"].as_u64());
+                    // Nobody has a rank: every player needs the previous season too.
+                    json!({"code":0,"data":{"guideCountData":[]}})
+                }
+                _ => json!({"code":0,"data":[]}),
+            };
+            Ok(Fetched {
+                value,
+                cached: false,
+            })
+        }
+    }
+    let fake = Counter(Mutex::new(Vec::new()));
+    let cache: std::sync::Arc<dyn watch_core::StrengthCache> = std::sync::Arc::new(
+        watch_core::MemoryCache::new().with_ratings_ttl(std::time::Duration::from_millis(1)),
+    );
+    let plan = CollectPlan {
+        modes: vec![Mode::Quick],
+        lobby_ratings: true,
+        hero_board: false,
+        cache: Some(cache),
+        ..CollectPlan::default()
+    };
+    let cat = catalog();
+    let identity = json!({"bnetId":"1001"});
+    let run = || collect::collect_player(&fake, &cat, "TOKEN", &identity, &plan);
+    run().await;
+    let first = std::mem::take(&mut *fake.0.lock().unwrap());
+    assert!(
+        first.contains(&None) && first.contains(&Some(24)),
+        "the first run needs both"
+    );
+    // Past the lifetime of the current season's ranks.
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    run().await;
+    let second = fake.0.lock().unwrap().clone();
+    assert!(
+        second.contains(&None),
+        "the current season is looked up again"
+    );
+    assert!(
+        !second.contains(&Some(24)),
+        "a finished season is settled: {second:?}"
+    );
+}
+
+#[tokio::test]
+async fn without_the_profile_no_card_or_career_is_requested() {
+    let fake = FakeDashen {
+        calls: Mutex::new(Vec::new()),
+        fail: None,
+    };
+    let plan = CollectPlan {
+        modes: vec![Mode::Quick],
+        profile: false,
+        max_details: 0,
+        hero_board: false,
+        ..CollectPlan::default()
+    };
+    let ds =
+        collect::collect_player(&fake, &catalog(), "TOKEN", &json!({"bnetId":"1001"}), &plan).await;
+    let calls: Vec<Endpoint> = fake.calls.lock().unwrap().iter().map(|c| c.0).collect();
+    assert!(!calls.contains(&Endpoint::Card) && !calls.contains(&Endpoint::CareerCount));
+    assert!(
+        calls.contains(&Endpoint::MatchList),
+        "the list is still read"
+    );
+    assert!(ds.careers.is_empty());
+    assert_eq!(
+        ds.profile.bnet_id.as_deref(),
+        Some("1001"),
+        "the identity is enough for who it is"
+    );
 }

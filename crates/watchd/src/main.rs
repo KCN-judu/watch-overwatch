@@ -107,6 +107,7 @@ async fn main() -> anyhow::Result<()> {
                 .layer(axum::extract::DefaultBodyLimit::max(2 * 1024 * 1024)),
         )
         .route("/api/player/prepare", post(service::player_prepare))
+        .route("/api/player/stored", post(service::player_stored))
         .route("/api/progress", get(service::progress))
         .route("/api/cache", get(service::cache_stats))
         .route("/api/cache/clear", post(service::cache_clear))

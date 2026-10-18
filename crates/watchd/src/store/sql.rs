@@ -110,6 +110,34 @@ impl Table {
         format!("DELETE FROM {}{}", self.name, self.filter(by))
     }
 
+    /// Add a column to an existing table (the upgrade for databases made without it).
+    pub fn add_column(&self, column: &str) -> String {
+        let c = self
+            .columns
+            .iter()
+            .find(|c| c.name == column)
+            .unwrap_or_else(|| panic!("table {} has no column {column}", self.name));
+        format!("ALTER TABLE {} ADD COLUMN {} {}", self.name, c.name, c.decl)
+    }
+
+    /// Set `flag` to 1 on every row whose `column` is below the highest in the table.
+    pub fn flag_below_highest(&self, flag: &str, column: &str) -> String {
+        self.check(&[flag, column]);
+        format!(
+            "UPDATE {t} SET {flag} = 1 WHERE {column} < (SELECT MAX({column}) FROM {t})",
+            t = self.name
+        )
+    }
+
+    /// Delete the rows whose `column` is below `?1`, except those with `keep` set to 1.
+    pub fn delete_older_unless(&self, column: &str, keep: &str) -> String {
+        self.check(&[column, keep]);
+        format!(
+            "DELETE FROM {} WHERE {column} < ?1 AND {keep} = 0",
+            self.name
+        )
+    }
+
     /// Delete the rows whose `column` is below `?1`.
     pub fn delete_older(&self, column: &str) -> String {
         self.check(&[column]);
@@ -132,12 +160,28 @@ impl Table {
     /// Copy the rows of the same table in the attached database `schema`; with
     /// `at_least`, only those whose column is `>= ?1`. Rows already here win.
     pub fn copy_from(&self, schema: &str, at_least: Option<&str>) -> String {
+        self.copy_columns_from(
+            schema,
+            &self.columns.iter().map(|c| c.name).collect::<Vec<_>>(),
+            at_least,
+        )
+    }
+
+    /// Like [`Table::copy_from`], for an attached table that has only these `columns`.
+    pub fn copy_columns_from(
+        &self,
+        schema: &str,
+        columns: &[&str],
+        at_least: Option<&str>,
+    ) -> String {
+        self.check(columns);
+        let list = columns.join(", ");
         let filter = at_least.map_or_else(String::new, |c| {
             self.check(&[c]);
             format!(" WHERE {c} >= ?1")
         });
         format!(
-            "INSERT OR IGNORE INTO {name} SELECT * FROM {schema}.{name}{filter}",
+            "INSERT OR IGNORE INTO {name} ({list}) SELECT {list} FROM {schema}.{name}{filter}",
             name = self.name
         )
     }
@@ -200,6 +244,27 @@ pub const PARTICIPANT: Table = Table {
     key: &["subject", "mode", "match_id", "bnet_id"],
 };
 
+/// Which player a name (lower-cased) belongs to, so a stored list can be shown before the
+/// upstream has said who the name is.
+pub const PLAYER_NAME: Table = Table {
+    name: "player_name",
+    columns: &[
+        col("name_lower", "TEXT NOT NULL"),
+        col("bnet_id", "TEXT NOT NULL"),
+    ],
+    key: &["name_lower"],
+};
+
+/// The last profile read for a player (as the JSON the app shows).
+pub const PLAYER_PROFILE: Table = Table {
+    name: "player_profile",
+    columns: &[
+        col("bnet_id", "TEXT NOT NULL"),
+        col("data", "TEXT NOT NULL"),
+    ],
+    key: &["bnet_id"],
+};
+
 /// A player's competitive ranks in one season, stamped with when they were fetched.
 pub const SEASON_RATINGS: Table = Table {
     name: "season_ratings",
@@ -208,6 +273,9 @@ pub const SEASON_RATINGS: Table = Table {
         col("season", "INTEGER NOT NULL"),
         col("fetched_ms", "INTEGER NOT NULL"),
         col("data", "TEXT NOT NULL"),
+        // 1 for a finished season asked for by its number: never expires. Last, so a
+        // database made before the column existed gets it appended by the upgrade below.
+        col("settled", "INTEGER NOT NULL DEFAULT 0"),
     ],
     key: &["bnet_id", "season"],
 };
@@ -254,6 +322,17 @@ pub struct DetailSql {
     pub delete_all: String,
 }
 
+pub struct PlayerSql {
+    pub name_upsert: String,
+    /// `bnet_id` for a lower-cased name (`?1`).
+    pub name_select: String,
+    pub profile_upsert: String,
+    /// `data` for a bnet id (`?1`).
+    pub profile_select: String,
+    pub name_delete_all: String,
+    pub profile_delete_all: String,
+}
+
 pub struct ParticipantSql {
     pub upsert: String,
     pub delete_orphans: &'static str,
@@ -264,9 +343,13 @@ pub struct ParticipantSql {
 
 pub struct RatingSql {
     pub upsert: String,
-    /// `fetched_ms`, `data` of one player and season (`?1` bnet id, `?2` season).
+    /// `fetched_ms`, `settled`, `data` of one player and season (`?1` bnet id, `?2` season).
     pub select: String,
+    /// Ranks fetched before `?1` that are not settled.
     pub delete_older: String,
+    /// Brings a ratings database made before `settled` existed up to date: the later
+    /// statements only run when the first one (adding the column) did.
+    pub upgrade: Vec<String>,
     pub count_players: String,
     pub delete_all: String,
 }
@@ -288,6 +371,7 @@ pub struct Sql {
     pub state: StateSql,
     pub detail: DetailSql,
     pub participant: ParticipantSql,
+    pub player: PlayerSql,
     pub rating: RatingSql,
     pub legacy: LegacySql,
 }
@@ -302,6 +386,8 @@ impl Sql {
                 LIST_STATE.create(),
                 PARTICIPANT.create(),
                 PARTICIPANT_INDEX.to_owned(),
+                PLAYER_NAME.create(),
+                PLAYER_PROFILE.create(),
             ],
             ratings_schema: vec![SEASON_RATINGS.create()],
             list: ListSql {
@@ -340,14 +426,29 @@ impl Sql {
                 count_players: PARTICIPANT.count_distinct("bnet_id"),
                 delete_all: PARTICIPANT.delete_all(),
             },
+            player: PlayerSql {
+                name_upsert: PLAYER_NAME.upsert(),
+                name_select: PLAYER_NAME.select(&["bnet_id"], &["name_lower"], None),
+                profile_upsert: PLAYER_PROFILE.upsert(),
+                profile_select: PLAYER_PROFILE.select(&["data"], &["bnet_id"], None),
+                name_delete_all: PLAYER_NAME.delete_all(),
+                profile_delete_all: PLAYER_PROFILE.delete_all(),
+            },
             rating: RatingSql {
                 upsert: SEASON_RATINGS.upsert(),
                 select: SEASON_RATINGS.select(
-                    &["fetched_ms", "data"],
+                    &["fetched_ms", "settled", "data"],
                     &["bnet_id", "season"],
                     None,
                 ),
-                delete_older: SEASON_RATINGS.delete_older("fetched_ms"),
+                delete_older: SEASON_RATINGS.delete_older_unless("fetched_ms", "settled"),
+                // Run in order, and only if adding the column worked (that is, on a database
+                // made before it): the seasons before the newest one in the table were all
+                // asked for by their number, so they are settled.
+                upgrade: vec![
+                    SEASON_RATINGS.add_column("settled"),
+                    SEASON_RATINGS.flag_below_highest("settled", "season"),
+                ],
                 count_players: SEASON_RATINGS.count_distinct("bnet_id"),
                 delete_all: SEASON_RATINGS.delete_all(),
             },
@@ -356,7 +457,11 @@ impl Sql {
                 list: MATCH_LIST.copy_from("legacy", None),
                 state: LIST_STATE.copy_from("legacy", None),
                 participant: PARTICIPANT.copy_from("legacy", None),
-                ratings: SEASON_RATINGS.copy_from("legacy", Some("fetched_ms")),
+                ratings: SEASON_RATINGS.copy_columns_from(
+                    "legacy",
+                    &["bnet_id", "season", "fetched_ms", "data"],
+                    Some("fetched_ms"),
+                ),
             },
         }
     }
@@ -386,6 +491,12 @@ impl Sql {
                 &self.participant.count,
                 &self.participant.count_players,
                 &self.participant.delete_all,
+                &self.player.name_upsert,
+                &self.player.name_select,
+                &self.player.profile_upsert,
+                &self.player.profile_select,
+                &self.player.name_delete_all,
+                &self.player.profile_delete_all,
             ]
             .map(String::as_str),
         );
@@ -415,6 +526,17 @@ impl Sql {
 pub static SQL: LazyLock<Sql> = LazyLock::new(Sql::build);
 
 #[cfg(test)]
+/// A ratings table as an older version made it, without the `settled` column.
+#[cfg(test)]
+pub const OLD_RATINGS_TABLE: &str = "CREATE TABLE season_ratings(bnet_id TEXT NOT NULL,         season INTEGER NOT NULL, fetched_ms INTEGER NOT NULL, data TEXT NOT NULL,         PRIMARY KEY(bnet_id, season))";
+#[cfg(test)]
+pub const OLD_RATINGS_ROW: &str =
+    "INSERT INTO season_ratings VALUES ('1', 25, 1700000000000, '[]')";
+#[cfg(test)]
+pub const OLD_RATINGS_ROW_EARLIER: &str =
+    "INSERT INTO season_ratings VALUES ('1', 24, 1700000000000, '[]')";
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -422,13 +544,18 @@ mod tests {
     fn generated_statements_have_the_expected_shape() {
         assert_eq!(
             SEASON_RATINGS.upsert(),
-            "INSERT INTO season_ratings (bnet_id, season, fetched_ms, data) \
-             VALUES (?1, ?2, ?3, ?4) ON CONFLICT(bnet_id, season) \
-             DO UPDATE SET fetched_ms = excluded.fetched_ms, data = excluded.data"
+            "INSERT INTO season_ratings (bnet_id, season, fetched_ms, data, settled) \
+             VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT(bnet_id, season) \
+             DO UPDATE SET fetched_ms = excluded.fetched_ms, data = excluded.data, \
+             settled = excluded.settled"
+        );
+        assert_eq!(
+            SQL.rating.delete_older,
+            "DELETE FROM season_ratings WHERE fetched_ms < ?1 AND settled = 0"
         );
         assert_eq!(
             SQL.rating.select,
-            "SELECT fetched_ms, data FROM season_ratings WHERE bnet_id = ?1 AND season = ?2"
+            "SELECT fetched_ms, settled, data FROM season_ratings WHERE bnet_id = ?1 AND season = ?2"
         );
         assert_eq!(
             SQL.list.delete,

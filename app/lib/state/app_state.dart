@@ -262,12 +262,22 @@ class PlayerWorkspace extends ChangeNotifier {
       ).value?.coverage.matchLists.any((l) => l.mode == mode && l.exhausted) ??
       false;
 
+  /// When each mode's list was last read from the upstream's newest page.
+  final _newestChecked = <Mode, DateTime>{};
+
   Future<void> _readList(
     Mode mode,
-    bool fresh,
+    bool requestedFresh,
     int? quota,
     Iterable<Role> roles,
   ) async {
+    // The refresh button and an analysis both ask for a fresh look at the newest page;
+    // one done a few seconds ago answers both.
+    final checked = _newestChecked[mode];
+    final fresh =
+        requestedFresh &&
+        (checked == null ||
+            DateTime.now().difference(checked) > const Duration(seconds: 10));
     final l = matchesFor(mode);
     final shown = l.value?.matches ?? const <MatchSummary>[];
     if (!fresh &&
@@ -279,6 +289,19 @@ class PlayerWorkspace extends ChangeNotifier {
     l.loading = true;
     l.error = null;
     notifyListeners();
+    // Nothing on screen yet: show what is already stored for this player right away, while
+    // the real read (who they are, what is new) is under way. No request goes upstream.
+    if (!l.has) {
+      try {
+        final kept = await app.api.stored(name, mode);
+        if (kept != null && kept.matches.isNotEmpty && !l.has) {
+          l.value = kept;
+          notifyListeners();
+        }
+      } on ApiError {
+        // Only a head start: the real read follows.
+      }
+    }
     try {
       var first = true;
       while (true) {
@@ -294,6 +317,7 @@ class PlayerWorkspace extends ChangeNotifier {
         );
         l.value = ds;
         l.at = DateTime.now();
+        if (first && fresh) _newestChecked[mode] = DateTime.now();
         notifyListeners();
         final cover = ds.coverage.matchLists
             .where((c) => c.mode == mode)

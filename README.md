@@ -82,7 +82,7 @@ cd app; flutter analyze; flutter test
 
 - 账号凭据：`%LOCALAPPDATA%\Watch Overwatch\secrets.json`，不会出现在界面、日志、导出或仓库里。
 - 界面状态：同目录的 `ui-state.json`。图片缓存：同目录的 `img-cache\`，可以随时删除，会重新下载。
-- 本地数据库：同目录的 `cache\matches.db`（对局列表、对局详情，含双方玩家的昵称和编号）和 `cacheatings.db`（玩家段位，3 天过期），没有任何令牌，设置页可清除。
+- 本地数据库：同目录的 `cache\matches.db`（对局列表、对局详情，含双方玩家的昵称和编号）和 `cache\ratings.db`（玩家段位，3 天过期），没有任何令牌，设置页可清除。
 - 请求只发往网易大神的接口；图片取自大神和暴雪的图片地址。
 
 ## 说明

@@ -249,6 +249,8 @@ class Api {
           // The match rows already read; the service does not read the list again.
           if (known.isNotEmpty) 'known_matches': [for (final m in known) m.raw],
           'hero_board': false,
+          // Only the lobby analysis is wanted here, not the profile.
+          'profile': false,
           'lobby_ratings': true,
           'max_rated_players': (perRole * 30).clamp(1, 600),
         },
@@ -290,6 +292,18 @@ class Api {
       total: (j['total'] as num?)?.toInt() ?? 0,
       enabled: j['enabled'] == true,
     );
+  }
+
+  /// What is already stored locally for a name, with no request to the upstream: the
+  /// matches read so far (and the last profile) shaped like a dataset. Null for a name
+  /// never looked up before.
+  Future<PlayerDataset?> stored(String name, Mode mode) async {
+    final j = await post('/api/player/stored', {
+      'name': name,
+      'mode': mode.id,
+    }, timeout: const Duration(seconds: 5));
+    if (j['known'] != true) return null;
+    return PlayerDataset((j['dataset'] as Map).cast<String, dynamic>());
   }
 
   /// What the local strength cache holds: matches, players, bytes. Null if it is unavailable.
@@ -406,9 +420,11 @@ class Backend {
       lastLaunchError = '无法启动 watchd：$e';
       return false;
     }
-    for (var i = 0; i < 40; i++) {
+    // The service is up in about half a second: look often, so the app does not sit
+    // idle for most of a polling interval after it is ready.
+    for (var i = 0; i < 125; i++) {
       if (await api.healthy()) return true;
-      await Future<void>.delayed(const Duration(milliseconds: 250));
+      await Future<void>.delayed(const Duration(milliseconds: 80));
     }
     lastLaunchError = 'watchd 已启动，但 10 秒内没有响应。';
     return false;

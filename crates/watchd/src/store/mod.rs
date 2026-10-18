@@ -104,8 +104,13 @@ impl LocalStore {
     ) -> rusqlite::Result<Self> {
         let layout = Layout::new(dir);
         layout.ensure();
-        let matches = Db::open("matches", &layout.matches_db(), &SQL.matches_schema)?;
-        let ratings = Db::open("ratings", &layout.ratings_db(), &SQL.ratings_schema)?;
+        let matches = Db::open("matches", &layout.matches_db(), &SQL.matches_schema, &[])?;
+        let ratings = Db::open(
+            "ratings",
+            &layout.ratings_db(),
+            &SQL.ratings_schema,
+            &SQL.rating.upgrade,
+        )?;
         let now = clock.now_ms();
         let ratings_ttl_ms = ratings_ttl.as_millis() as i64;
         files::migrate_legacy(&layout, &matches, &ratings, now - ratings_ttl_ms);
@@ -141,6 +146,35 @@ impl LocalStore {
                 .unwrap_or(0),
             bytes: self.layout.bytes(),
         }
+    }
+
+    /// Remembers that `names` (any case) are the player `bnet_id`.
+    pub fn remember_player(&self, names: &[&str], bnet_id: &str) {
+        let lower: Vec<String> = names.iter().map(|n| n.to_lowercase()).collect();
+        self.matches.write("remember a player", |tx| {
+            matches::remember_names(tx, &lower, bnet_id)
+        });
+    }
+
+    /// Keeps the profile (as JSON) last read for a player.
+    pub fn remember_profile(&self, bnet_id: &str, json: &str) {
+        self.matches.write("remember a profile", |tx| {
+            matches::remember_profile(tx, bnet_id, json)
+        });
+    }
+
+    /// Who `name` is, if it has been looked up before: the bnet id and the last profile.
+    pub fn known_player(&self, name: &str) -> Option<(String, Option<String>)> {
+        let lower = name.trim().to_lowercase();
+        self.matches
+            .read("recall a player", |c| {
+                let Some(id) = matches::known_id(c, &lower)? else {
+                    return Ok(None);
+                };
+                let profile = matches::known_profile(c, &id)?;
+                Ok(Some((id, profile)))
+            })
+            .flatten()
     }
 
     /// Forgets everything, in both databases.
@@ -201,18 +235,26 @@ impl StrengthCache for LocalStore {
     }
 
     fn season_ratings(&self, bnet_id: &str, season: u32) -> Option<Vec<RoleRating>> {
-        let (fetched, ratings) = self
+        let stored = self
             .ratings
             .read("read ranks", |c| ratings::get(c, bnet_id, season))
             .flatten()?;
-        // Past its lifetime counts as missing: the caller fetches and overwrites it.
-        (self.clock.now_ms().saturating_sub(fetched) <= self.ratings_ttl_ms).then_some(ratings)
+        // A settled season never goes stale; any other counts as missing once it is past
+        // its lifetime, and the caller fetches and overwrites it.
+        let fresh = self.clock.now_ms().saturating_sub(stored.fetched_ms) <= self.ratings_ttl_ms;
+        (stored.settled || fresh).then_some(stored.ratings)
     }
 
-    fn put_season_ratings(&self, bnet_id: &str, season: u32, ratings: &[RoleRating]) {
+    fn put_season_ratings(
+        &self,
+        bnet_id: &str,
+        season: u32,
+        ratings: &[RoleRating],
+        settled: bool,
+    ) {
         let now = self.clock.now_ms();
         self.ratings.write("store ranks", |tx| {
-            ratings::put(tx, bnet_id, season, ratings, now)
+            ratings::put(tx, bnet_id, season, ratings, settled, now)
         });
     }
 }
@@ -305,8 +347,8 @@ mod tests {
         let clock = ManualClock::new();
         let store = LocalStore::open_with(&dir, clock.clone(), RATINGS_TTL).unwrap();
         assert!(store.season_ratings("1", 25).is_none());
-        store.put_season_ratings("1", 25, &[rating(Role::Tank, 2300)]);
-        store.put_season_ratings("1", 24, &[rating(Role::Tank, 2000)]);
+        store.put_season_ratings("1", 25, &[rating(Role::Tank, 2300)], false);
+        store.put_season_ratings("1", 24, &[rating(Role::Tank, 2000)], false);
 
         clock.advance(2 * DAY);
         let kept = store.season_ratings("1", 25).unwrap();
@@ -318,7 +360,7 @@ mod tests {
         assert!(store.season_ratings("1", 24).is_none());
 
         // The lookup that follows overwrites the row and stamps it again.
-        store.put_season_ratings("1", 25, &[rating(Role::Tank, 2400)]);
+        store.put_season_ratings("1", 25, &[rating(Role::Tank, 2400)], false);
         assert_eq!(
             store.season_ratings("1", 25).unwrap()[0].rank.skill_rating,
             Some(2400)
@@ -337,12 +379,62 @@ mod tests {
     }
 
     #[test]
+    fn a_settled_season_never_expires_and_is_kept_when_the_store_opens() {
+        let dir = temp_dir("settled");
+        let clock = ManualClock::new();
+        {
+            let store = LocalStore::open_with(&dir, clock.clone(), RATINGS_TTL).unwrap();
+            store.put_season_ratings("1", 24, &[rating(Role::Tank, 1900)], true);
+            store.put_season_ratings("1", 25, &[rating(Role::Tank, 2300)], false);
+            clock.advance(30 * DAY);
+            assert!(
+                store.season_ratings("1", 24).is_some(),
+                "a finished season stays"
+            );
+            assert!(
+                store.season_ratings("1", 25).is_none(),
+                "the current one expired"
+            );
+        }
+        let store = LocalStore::open_with(&dir, clock, RATINGS_TTL).unwrap();
+        assert!(store.season_ratings("1", 24).is_some());
+        assert_eq!(store.stats().players, 1, "only the settled row is left");
+        drop(store);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_ratings_database_from_before_the_settled_column_is_upgraded() {
+        let dir = temp_dir("upgrade");
+        std::fs::create_dir_all(&dir).unwrap();
+        {
+            let old = Connection::open(dir.join("ratings.db")).unwrap();
+            old.execute(sql::OLD_RATINGS_TABLE, []).unwrap();
+            old.execute(sql::OLD_RATINGS_ROW, []).unwrap();
+            old.execute(sql::OLD_RATINGS_ROW_EARLIER, []).unwrap();
+        }
+        let clock = ManualClock::new();
+        let store = LocalStore::open_with(&dir, clock.clone(), RATINGS_TTL).unwrap();
+        // The old rows are there. The newest season in the table stays unsettled; the one
+        // before it was asked for by its number, so it is settled.
+        assert!(store.season_ratings("1", 25).is_some());
+        assert!(store.season_ratings("1", 24).is_some());
+        clock.advance(30 * DAY);
+        assert!(store.season_ratings("1", 25).is_none());
+        assert!(store.season_ratings("1", 24).is_some());
+        store.put_season_ratings("2", 24, &[rating(Role::Tank, 1900)], true);
+        assert!(store.season_ratings("2", 24).is_some());
+        drop(store);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn expired_ranks_are_dropped_when_the_store_opens() {
         let dir = temp_dir("prune");
         let clock = ManualClock::new();
         {
             let store = LocalStore::open_with(&dir, clock.clone(), RATINGS_TTL).unwrap();
-            store.put_season_ratings("1", 25, &[rating(Role::Tank, 2300)]);
+            store.put_season_ratings("1", 25, &[rating(Role::Tank, 2300)], false);
         }
         clock.advance(4 * DAY);
         let store = LocalStore::open_with(&dir, clock, RATINGS_TTL).unwrap();
@@ -399,6 +491,27 @@ mod tests {
     }
 
     #[test]
+    fn a_name_is_remembered_with_its_last_profile_and_forgotten_on_clear() {
+        let dir = temp_dir("names");
+        {
+            let store = LocalStore::open(&dir).unwrap();
+            assert!(store.known_player("Scott#52183").is_none());
+            store.remember_player(&["Scott#52183", "scott#52183"], "519735692");
+            store.remember_profile("519735692", r#"{"name":"Scott#52183"}"#);
+        }
+        // Still there after a restart, found whatever the case and spaces.
+        let store = LocalStore::open(&dir).unwrap();
+        let (id, profile) = store.known_player("  sCOTT#52183 ").unwrap();
+        assert_eq!(id, "519735692");
+        assert_eq!(profile.as_deref(), Some(r#"{"name":"Scott#52183"}"#));
+        assert!(store.known_player("someone#1").is_none());
+        store.clear();
+        assert!(store.known_player("Scott#52183").is_none());
+        drop(store);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn a_detail_is_stored_with_its_participants_and_unreachable_players() {
         let path = format!(
             "{}/../watch-core/tests/fixtures/fightQueryMatchInfo.json",
@@ -450,11 +563,11 @@ mod tests {
                 old.execute(ddl, []).unwrap();
             }
             let upsert = &SQL.rating.upsert;
-            old.execute(upsert, rusqlite::params!["1", 25, now, "[]"])
+            old.execute(upsert, rusqlite::params!["1", 25, now, "[]", 0])
                 .unwrap();
             // One already past its lifetime: not carried over.
             let stale = now - (RATINGS_TTL.as_millis() as i64) - 1;
-            old.execute(upsert, rusqlite::params!["2", 25, stale, "[]"])
+            old.execute(upsert, rusqlite::params!["2", 25, stale, "[]", 0])
                 .unwrap();
             old.execute(
                 &SQL.list.upsert,

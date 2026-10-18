@@ -60,14 +60,16 @@ pub trait StrengthCache: Send + Sync + std::fmt::Debug {
     fn put_detail(&self, subject: &str, detail: &MatchDetail, unreachable: &[String]);
     /// Ranks of one player in one season, or `None` when there are none stored or they
     /// are older than [`RATINGS_TTL`]. The age is checked here, in one place, so every
-    /// caller gets either fresh data or a miss.
+    /// caller gets either fresh data or a miss. Ranks stored as `settled` never expire.
     fn season_ratings(&self, bnet_id: &str, season: u32) -> Option<Vec<RoleRating>>;
-    /// Stores ranks stamped with the current time, replacing what was there.
-    fn put_season_ratings(&self, bnet_id: &str, season: u32, ratings: &[RoleRating]);
+    /// Stores ranks stamped with the current time, replacing what was there. `settled` is
+    /// for a season that is over and was asked for by its number: what a finished season
+    /// says about a player cannot change, so it is never looked up again.
+    fn put_season_ratings(&self, bnet_id: &str, season: u32, ratings: &[RoleRating], settled: bool);
 }
 
 /// When the ranks were stored (ms since the epoch), and the ranks.
-type StoredRatings = (u128, Vec<RoleRating>);
+type StoredRatings = (u128, bool, Vec<RoleRating>);
 
 /// Subject, mode and season of a stored list.
 type ListId = (String, Mode, Option<u32>);
@@ -166,15 +168,21 @@ impl StrengthCache for MemoryCache {
     }
     fn season_ratings(&self, bnet_id: &str, season: u32) -> Option<Vec<RoleRating>> {
         let r = self.ratings.lock().ok()?;
-        let (at, rows) = r.get(&(bnet_id.to_owned(), season))?;
-        let fresh = crate::now_ms().saturating_sub(*at) <= self.ttl.as_millis();
+        let (at, settled, rows) = r.get(&(bnet_id.to_owned(), season))?;
+        let fresh = *settled || crate::now_ms().saturating_sub(*at) <= self.ttl.as_millis();
         fresh.then(|| rows.clone())
     }
-    fn put_season_ratings(&self, bnet_id: &str, season: u32, ratings: &[RoleRating]) {
+    fn put_season_ratings(
+        &self,
+        bnet_id: &str,
+        season: u32,
+        ratings: &[RoleRating],
+        settled: bool,
+    ) {
         if let Ok(mut r) = self.ratings.lock() {
             r.insert(
                 (bnet_id.to_owned(), season),
-                (crate::now_ms(), ratings.to_vec()),
+                (crate::now_ms(), settled, ratings.to_vec()),
             );
         }
     }
