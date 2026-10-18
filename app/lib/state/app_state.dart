@@ -516,10 +516,40 @@ class PlayerWorkspace extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadDetail(Mode mode, String id) => _run(
-    details.putIfAbsent('${mode.id}:$id', Load.new),
-    () => _call((s) => app.api.detail(s, mode, id)),
-  );
+  /// Reads a match's detail. The table comes back at once with the ranks already known;
+  /// when the players' ranks are still to be looked up that happens next, and the table is
+  /// filled in as soon as it is done.
+  Future<void> loadDetail(Mode mode, String id) async {
+    final l = details.putIfAbsent('${mode.id}:$id', Load.new);
+    await _run(l, () => _call((s) => app.api.detail(s, mode, id)));
+    if (l.value?.ratingsPending == true) {
+      unawaited(_completeRatings(mode, id));
+    }
+  }
+
+  final _completing = <String>{};
+
+  /// Whether the ranks of the players in this match are being looked up right now.
+  bool ratingsLoading(Mode mode, String id) =>
+      _completing.contains('${mode.id}:$id');
+
+  Future<void> _completeRatings(Mode mode, String id) async {
+    final key = '${mode.id}:$id';
+    if (_closed || !_completing.add(key)) return;
+    notifyListeners();
+    try {
+      await _call(
+        (s) => app.api.prepare(s, mode, matchId: id, batch: 1, window: 5000),
+      );
+      final detail = await _call((s) => app.api.detail(s, mode, id));
+      details[key]?.value = detail;
+    } on ApiError {
+      // The ranks stay as they were; the cells show a dash again.
+    } finally {
+      _completing.remove(key);
+      if (!_closed) notifyListeners();
+    }
+  }
 
   Load<MatchDetail> detailFor(Mode mode, String id) =>
       details.putIfAbsent('${mode.id}:$id', Load.new);
@@ -537,6 +567,41 @@ class PlayerWorkspace extends ChangeNotifier {
 
   void closeMatch() {
     openMatchId = null;
+    openPlayerKey = null;
+    notifyListeners();
+  }
+
+  /// The player whose page is open inside the open match: `ally:2` is the third of the
+  /// player's own team, `enemy:0` the first of the other team.
+  String? openPlayerKey;
+
+  void openPlayer(String side, int index) {
+    openPlayerKey = '$side:$index';
+    notifyListeners();
+  }
+
+  /// Steps through the players of the match that is open (see [stepPlayer]).
+  void stepOpenPlayer(int delta) {
+    final id = openMatchId, mode = openMatchMode;
+    final d = id == null || mode == null ? null : detailFor(mode, id).value;
+    if (d != null) stepPlayer(delta, d.allies.length, d.enemies.length);
+  }
+
+  /// Back from a player's page to the whole match.
+  void closePlayer() {
+    openPlayerKey = null;
+    notifyListeners();
+  }
+
+  /// Steps through the match's players, own team first. Stops at either end.
+  void stepPlayer(int delta, int allies, int enemies) {
+    final key = openPlayerKey;
+    if (key == null) return;
+    final parts = key.split(':');
+    final index = (parts[0] == 'ally' ? 0 : allies) + int.parse(parts[1]);
+    final next = index + delta;
+    if (next < 0 || next >= allies + enemies) return;
+    openPlayerKey = next < allies ? 'ally:$next' : 'enemy:${next - allies}';
     notifyListeners();
   }
 
@@ -544,6 +609,7 @@ class PlayerWorkspace extends ChangeNotifier {
   void stepMatch(int delta) {
     final id = openMatchId, mode = openMatchMode;
     if (id == null || mode == null) return;
+    openPlayerKey = null;
     final i = navIds.indexOf(id);
     if (i < 0) return;
     final j = i + delta;

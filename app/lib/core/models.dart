@@ -300,6 +300,10 @@ class Participant {
       rank = Rank.opt(j['rank']),
       careerRank = Rank.opt(j['career_rank']),
       careerOtherRoles = _b(j['career_other_roles']),
+      fleta = _d(j['fleta']),
+      endorsedBy = [
+        for (final e in (j['endorsed_by_bnet_ids'] as List? ?? const [])) '$e',
+      ],
       perks = _list(j['perks'], PerkPick.new),
       partyBnetIds = [
         for (final e in (j['party_bnet_ids'] as List? ?? const [])) '$e',
@@ -323,6 +327,13 @@ class Participant {
 
   /// [careerRank] is the highest of the player's ranks in other roles.
   final bool careerOtherRoles;
+
+  /// Final blows as a percentage of half the player's team's final blows; null when
+  /// either is unknown.
+  final double? fleta;
+
+  /// Who endorsed this player after the match (bnet ids).
+  final List<String> endorsedBy;
   final List<PerkPick> perks;
   final List<String> partyBnetIds;
   final bool suspended;
@@ -352,7 +363,7 @@ class Round {
 }
 
 class MatchDetail {
-  MatchDetail(Json j)
+  MatchDetail(Json j, {this.ratingsPending = false})
     : id = _s(j['id']) ?? '',
       mode = Mode.parse(_s(j['mode'])),
       map = EntityRef.opt(j['map']),
@@ -369,6 +380,10 @@ class MatchDetail {
       enemies = _list(j['enemies'], Participant.new),
       rounds = _list(j['rounds'], Round.new);
   final String id;
+
+  /// The players' ranks are not all looked up yet; the table is shown first and filled
+  /// in when they are.
+  final bool ratingsPending;
   final Mode mode;
   final EntityRef? map;
   final Outcome outcome;

@@ -34,6 +34,7 @@ class TeamTable extends StatelessWidget {
     required this.onSelect,
     required this.catalog,
     required this.stadium,
+    this.ratingsLoading = false,
   });
   final String title;
   final bool ally;
@@ -42,6 +43,9 @@ class TeamTable extends StatelessWidget {
   final ValueChanged<Participant> onSelect;
   final Catalog catalog;
   final bool stadium;
+
+  /// The players' ranks are still being looked up: a cell with none says so instead of a dash.
+  final bool ratingsLoading;
 
   /// Two-line rows (name over hero) need more height than the density default.
   static const _rowHeight = 54.0;
@@ -336,6 +340,15 @@ class TeamTable extends StatelessWidget {
         cell: (_, l) {
           if (l.isTotal) return const SizedBox.shrink();
           final p = l.player!;
+          if (ratingsLoading && p.rank == null && p.careerRank == null) {
+            return Tooltip(
+              message: '正在查询这名玩家的竞技段位',
+              child: Text(
+                '查询中',
+                style: Ty.cell.copyWith(color: c.textSecondary),
+              ),
+            );
+          }
           return RankBadge(
             p.rank ?? p.careerRank,
             catalog: catalog,

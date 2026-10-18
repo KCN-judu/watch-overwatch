@@ -9,6 +9,7 @@ import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../state/app_state.dart';
 import '../player_view.dart';
+import 'player_detail_page.dart';
 import 'team_table.dart';
 
 class MatchDetailPage extends StatefulWidget {
@@ -19,8 +20,6 @@ class MatchDetailPage extends StatefulWidget {
 }
 
 class _MatchDetailPageState extends State<MatchDetailPage> {
-  Participant? _selected;
-
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
@@ -37,42 +36,97 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         .where((m) => m.id == id)
         .firstOrNull;
 
+    // The player whose page is open, when one is.
+    final playerKey = ws.openPlayerKey;
+    Participant? player;
+    var playerIndex = -1;
+    var playerCount = 0;
+    var playerIsAlly = true;
+    final loaded = load.value;
+    if (playerKey != null && loaded != null) {
+      final parts = playerKey.split(':');
+      playerIsAlly = parts[0] == 'ally';
+      final team = playerIsAlly ? loaded.allies : loaded.enemies;
+      final i = int.tryParse(parts[1]) ?? -1;
+      if (i >= 0 && i < team.length) {
+        player = team[i];
+        playerIndex = (playerIsAlly ? 0 : loaded.allies.length) + i;
+        playerCount = loaded.allies.length + loaded.enemies.length;
+      }
+    }
+    final onPlayerPage = player != null;
+    final title =
+        '${fmtDateTime(summary?.startedAtMs ?? load.value?.startedAtMs)}  ${summary?.map?.label ?? load.value?.map?.label ?? ''}';
+
     final header = Row(
       children: [
         AppButton(
           '对局列表',
           icon: Icons.arrow_back,
           quiet: true,
-          tooltip: 'Esc 或 Alt+←',
+          tooltip: onPlayerPage ? null : 'Esc 或 Alt+←',
           onPressed: ws.closeMatch,
         ),
         Text('›', style: Ty.body.copyWith(color: c.textSecondary)),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            '${fmtDateTime(summary?.startedAtMs ?? load.value?.startedAtMs)}  ${summary?.map?.label ?? load.value?.map?.label ?? ''}',
-            style: Ty.bodyStrong,
-            overflow: TextOverflow.ellipsis,
-          ),
+          child: onPlayerPage
+              ? Row(
+                  children: [
+                    Flexible(
+                      child: AppButton(
+                        title,
+                        quiet: true,
+                        tooltip: '回到整场对局（Esc 或 Alt+←）',
+                        onPressed: ws.closePlayer,
+                      ),
+                    ),
+                    Text('›', style: Ty.body.copyWith(color: c.textSecondary)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        player.name ?? '未知玩家',
+                        style: Ty.bodyStrong,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                )
+              : Text(
+                  title,
+                  style: Ty.bodyStrong,
+                  overflow: TextOverflow.ellipsis,
+                ),
         ),
-        if (index >= 0)
+        if (onPlayerPage)
+          Text(
+            '第 ${playerIndex + 1} / $playerCount 位',
+            style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
+          )
+        else if (index >= 0)
           Text(
             '第 ${index + 1} / ${ws.navIds.length} 场',
             style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
           ),
         IconAction(
           icon: Icons.chevron_left,
-          label: '上一场',
+          label: onPlayerPage ? '上一位' : '上一场',
           shortcut: '[',
-          onPressed: index > 0 ? () => ws.stepMatch(-1) : null,
+          onPressed: onPlayerPage
+              ? (playerIndex > 0 ? () => ws.stepOpenPlayer(-1) : null)
+              : (index > 0 ? () => ws.stepMatch(-1) : null),
         ),
         IconAction(
           icon: Icons.chevron_right,
-          label: '下一场',
+          label: onPlayerPage ? '下一位' : '下一场',
           shortcut: ']',
-          onPressed: index >= 0 && index < ws.navIds.length - 1
-              ? () => ws.stepMatch(1)
-              : null,
+          onPressed: onPlayerPage
+              ? (playerIndex < playerCount - 1
+                    ? () => ws.stepOpenPlayer(1)
+                    : null)
+              : (index >= 0 && index < ws.navIds.length - 1
+                    ? () => ws.stepMatch(1)
+                    : null),
         ),
       ],
     );
@@ -87,13 +141,31 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       );
     } else if (!load.has) {
       body = const AfterDelay(child: _DetailSkeleton());
+    } else if (onPlayerPage) {
+      body = PlayerDetailPage(
+        key: ValueKey(playerKey),
+        detail: load.value!,
+        player: player,
+        ally: playerIsAlly,
+        catalog: app.catalog,
+        ratingsLoading:
+            ws.ratingsLoading(mode, id) && load.value!.ratingsPending,
+      );
     } else {
       body = _Body(
         detail: load.value!,
         summary: summary,
-        selected: _selected,
-        onSelect: (p) => setState(() => _selected = p),
+        onOpenPlayer: (p) {
+          final d = load.value!;
+          final a = d.allies.indexOf(p);
+          if (a >= 0) {
+            ws.openPlayer('ally', a);
+          } else {
+            ws.openPlayer('enemy', d.enemies.indexOf(p));
+          }
+        },
         refreshing: load.loading,
+        ratingsLoading: ws.ratingsLoading(mode, id),
       );
     }
 
@@ -135,15 +207,17 @@ class _Body extends StatelessWidget {
   const _Body({
     required this.detail,
     required this.summary,
-    required this.selected,
-    required this.onSelect,
+    required this.onOpenPlayer,
     required this.refreshing,
+    required this.ratingsLoading,
   });
   final MatchDetail detail;
   final MatchSummary? summary;
-  final Participant? selected;
-  final ValueChanged<Participant> onSelect;
+  final ValueChanged<Participant> onOpenPlayer;
   final bool refreshing;
+
+  /// The players' ranks are being looked up: cells without one say so.
+  final bool ratingsLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -214,9 +288,10 @@ class _Body extends StatelessWidget {
           ally: true,
           players: detail.allies,
           maxes: maxes,
-          onSelect: onSelect,
+          onSelect: onOpenPlayer,
           catalog: app.catalog,
           stadium: detail.mode == Mode.stadium,
+          ratingsLoading: ratingsLoading && detail.ratingsPending,
         ),
         const SizedBox(height: Sp.betweenSections),
         TeamTable(
@@ -224,15 +299,15 @@ class _Body extends StatelessWidget {
           ally: false,
           players: detail.enemies,
           maxes: maxes,
-          onSelect: onSelect,
+          onSelect: onOpenPlayer,
           catalog: app.catalog,
           stadium: detail.mode == Mode.stadium,
+          ratingsLoading: ratingsLoading && detail.ratingsPending,
         ),
-        const SizedBox(height: Sp.betweenSections),
-        _SelectionPanel(
-          participant: selected,
-          mode: detail.mode,
-          catalog: app.catalog,
+        const SizedBox(height: Sp.withinGroup),
+        Text(
+          '点一名玩家（或用方向键选中后按 Enter）打开他的详情页：威能、Fleta 指数、组队和点赞。',
+          style: Ty.meta.copyWith(color: c.textSecondary),
         ),
         if (detail.bansAlly.isNotEmpty || detail.bansEnemy.isNotEmpty) ...[
           const SizedBox(height: Sp.betweenSections),
@@ -248,155 +323,6 @@ class _Body extends StatelessWidget {
         ],
         const SizedBox(height: Sp.betweenSections),
       ],
-    );
-  }
-}
-
-/// Read-only properties of the selected participant.
-class _SelectionPanel extends StatelessWidget {
-  const _SelectionPanel({
-    required this.participant,
-    required this.mode,
-    required this.catalog,
-  });
-  final Participant? participant;
-  final Mode mode;
-  final Catalog catalog;
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final p = participant;
-    if (p == null) {
-      return Text(
-        '点击或用方向键与 Enter 选择一名玩家，在这里查看威能、组队和更多数据。',
-        style: Ty.body.copyWith(color: c.textSecondary),
-      );
-    }
-    final s = p.stats;
-    Widget row(String label, String value) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(label, style: Ty.body.copyWith(color: c.textSecondary)),
-          ),
-          Expanded(child: Text(value, style: Ty.num(Ty.body))),
-        ],
-      ),
-    );
-    Widget perks(String label, int level) {
-      final picks = p.perks.where((k) => k.level == level).toList();
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 120,
-              child: Text(
-                label,
-                style: Ty.body.copyWith(color: c.textSecondary),
-              ),
-            ),
-            Expanded(
-              child: picks.isEmpty
-                  ? Text(missing, style: Ty.body)
-                  : Wrap(
-                      spacing: 16,
-                      runSpacing: 4,
-                      children: [
-                        for (final k in picks)
-                          PerkChip(k.perk, catalog: catalog),
-                      ],
-                    ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Semantics(
-      container: true,
-      label: '${p.name ?? '未知玩家'} 的详细数据',
-      child: Container(
-        padding: const EdgeInsets.all(Sp.betweenGroups),
-        decoration: BoxDecoration(
-          color: c.raised,
-          borderRadius: BorderRadius.circular(Radii.container),
-          border: Border.all(color: c.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${p.name ?? '未知玩家'}${p.isSubject ? '（查询对象）' : ''}',
-              style: Ty.section,
-            ),
-            const SizedBox(height: Sp.withinGroup),
-            Wrap(
-              spacing: 48,
-              runSpacing: Sp.withinGroup,
-              children: [
-                SizedBox(
-                  width: 340,
-                  child: Column(
-                    children: [
-                      perks('一级威能', 1),
-                      perks('二级威能', 2),
-                      row(
-                        '组队',
-                        p.partyBnetIds.isEmpty
-                            ? '没有组队信息'
-                            : '与 ${p.partyBnetIds.length} 名玩家组队',
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  width: 340,
-                  child: Column(
-                    children: [
-                      row('最后一击', fmtInt(s.finalBlows)),
-                      row('单独消灭', fmtInt(s.soloKills)),
-                      row('承受伤害', fmtInt(s.damageTaken)),
-                      row('承受治疗', fmtInt(s.healingTaken)),
-                      row('目标争夺（秒）', fmtInt(s.objectiveTimeS)),
-                    ],
-                  ),
-                ),
-                if (p.stadium != null)
-                  SizedBox(
-                    width: 340,
-                    child: Column(
-                      children: [
-                        row('局内货币', fmtInt(p.stadium!.worth)),
-                        row(
-                          '异能',
-                          p.stadium!.powers.isEmpty
-                              ? missing
-                              : p.stadium!.powers.map((e) => e.label).join('、'),
-                        ),
-                        row(
-                          '装备',
-                          p.stadium!.items.isEmpty
-                              ? missing
-                              : p.stadium!.items.map((e) => e.label).join('、'),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: Sp.withinControl),
-            Text(
-              '— 表示上游没有提供，不等于 0。',
-              style: Ty.meta.copyWith(color: c.textSecondary),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

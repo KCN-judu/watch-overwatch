@@ -160,8 +160,11 @@ List<Cmd> buildCommands() {
       singleKey: true,
       enabled: (a) => detailOpen(a) || heroOpen(a),
       disabledReason: (a) => '打开一场对局或一个英雄后可用。',
-      run: (a, s) =>
-          heroOpen(a) ? a.current?.stepHero(-1) : a.current?.stepMatch(-1),
+      run: (a, s) => heroOpen(a)
+          ? a.current?.stepHero(-1)
+          : a.current?.openPlayerKey != null
+          ? a.current?.stepOpenPlayer(-1)
+          : a.current?.stepMatch(-1),
     ),
     Cmd(
       id: 'match.next',
@@ -172,8 +175,11 @@ List<Cmd> buildCommands() {
       singleKey: true,
       enabled: (a) => detailOpen(a) || heroOpen(a),
       disabledReason: (a) => '打开一场对局或一个英雄后可用。',
-      run: (a, s) =>
-          heroOpen(a) ? a.current?.stepHero(1) : a.current?.stepMatch(1),
+      run: (a, s) => heroOpen(a)
+          ? a.current?.stepHero(1)
+          : a.current?.openPlayerKey != null
+          ? a.current?.stepOpenPlayer(1)
+          : a.current?.stepMatch(1),
     ),
     Cmd(
       id: 'match.back',
@@ -183,8 +189,11 @@ List<Cmd> buildCommands() {
       shortcutLabel: 'Alt+←  /  Esc',
       enabled: (a) => detailOpen(a) || heroOpen(a),
       disabledReason: (a) => '打开一场对局或一个英雄后可用。',
-      run: (a, s) =>
-          heroOpen(a) ? a.current?.closeHero() : a.current?.closeMatch(),
+      run: (a, s) => heroOpen(a)
+          ? a.current?.closeHero()
+          : a.current?.openPlayerKey != null
+          ? a.current?.closePlayer()
+          : a.current?.closeMatch(),
     ),
     Cmd(
       id: 'view.nav.toggle',

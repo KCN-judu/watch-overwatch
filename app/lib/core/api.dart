@@ -193,7 +193,10 @@ class Api {
       'mode': mode.provider,
       'match_id': matchId,
     }, cancel: cancel);
-    return MatchDetail((j['ir'] as Map).cast<String, dynamic>());
+    return MatchDetail(
+      (j['ir'] as Map).cast<String, dynamic>(),
+      ratingsPending: j['ratings_pending'] == true,
+    );
   }
 
   Future<List<SeasonPoint>> trend(
@@ -265,6 +268,7 @@ class Api {
     int window = 300,
     int batch = 3,
     bool ratings = true,
+    String? matchId,
     CancelToken? cancel,
   }) async {
     final j = await post(
@@ -275,6 +279,7 @@ class Api {
         'window': window,
         'batch': batch,
         'ratings': ratings,
+        'match_id': ?matchId,
       },
       cancel: cancel,
       timeout: const Duration(seconds: 150),
