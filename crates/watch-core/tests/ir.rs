@@ -1533,3 +1533,27 @@ async fn a_match_limit_keeps_the_newest_matches_of_each_mode() {
         .is_err()
     );
 }
+
+#[test]
+fn fleta_is_a_players_share_of_half_their_teams_final_blows() {
+    let mut d = fixture_detail(Mode::Competitive);
+    // The fixture's teams are short: make them five.
+    d.allies = vec![d.allies[0].clone(); 5];
+    d.enemies = vec![d.enemies[0].clone(); 5];
+    let finals = [6.0, 2.0, 2.0, 0.0, 0.0];
+    for (p, f) in d.allies.iter_mut().zip(finals) {
+        p.stats.final_blows = Some(f);
+    }
+    d.allies[3].stats.final_blows = None; // unknown stays unknown
+    for p in d.enemies.iter_mut() {
+        p.stats.final_blows = Some(0.0);
+    }
+    analysis::attach_fleta(&mut d);
+    // The team made 10 final blows: half is 5, so 6 is 120% and 2 is 40%.
+    assert_eq!(d.allies[0].fleta, Some(120.0));
+    assert_eq!(d.allies[1].fleta, Some(40.0));
+    assert_eq!(d.allies[3].fleta, None);
+    assert_eq!(d.allies[4].fleta, Some(0.0));
+    // A team with no final blows has no index to give.
+    assert!(d.enemies.iter().all(|p| p.fleta.is_none()));
+}

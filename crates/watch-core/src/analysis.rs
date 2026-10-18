@@ -624,3 +624,21 @@ pub fn analyze(ds: &PlayerDataset, options: &AnalysisOptions) -> PlayerAnalysis 
         lobby_strength: crate::strength::lobby_strength(&ds.details, &ds.player_ratings),
     }
 }
+
+/// Fills each participant's Fleta index: their final blows as a percentage of half of
+/// their own team's final blows, so 100 means they took half of the team's final blows
+/// (the share a player in a team of five would not be expected to exceed by much), and
+/// higher means they finished off more of the kills than that. Worked out per team, from
+/// the match only. `None` when the player's final blows are unknown or the team has none.
+pub fn attach_fleta(detail: &mut MatchDetail) {
+    for team in [&mut detail.allies, &mut detail.enemies] {
+        let total: f64 = team.iter().filter_map(|p| p.stats.final_blows).sum();
+        for p in team.iter_mut() {
+            p.fleta = p
+                .stats
+                .final_blows
+                .filter(|_| total > 0.0)
+                .map(|f| f / (total * 0.5) * 100.0);
+        }
+    }
+}

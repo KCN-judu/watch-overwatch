@@ -321,6 +321,10 @@ pub struct Participant {
     /// the role they played).
     #[serde(default)]
     pub career_other_roles: bool,
+    /// Fleta index, worked out from the match when a detail is shown; see
+    /// [`crate::analysis::attach_fleta`].
+    #[serde(default)]
+    pub fleta: Option<f64>,
     pub perks: Vec<PerkPick>,
     /// Pre-made group members (`friendBnetIds`).
     pub party_bnet_ids: Vec<String>,

@@ -277,9 +277,10 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
         "history" => return history_view(s, token, mode, input, view).await,
         _ => return Err(error("validation", "未知的玩家视图。 ")),
     };
-    // A finished match never changes: one kept locally is not asked for again. What is
-    // missing of it (its detail, and the ranks of the players in it) is looked up now,
-    // once, and kept, so showing it and analysing it later cost nothing more.
+    // A finished match never changes: one kept locally is not asked for again. The detail
+    // comes back at once with the ranks that are already known, and `ratings_pending` says
+    // whether the players' ranks are still to be looked up (`/api/player/prepare` with this
+    // match's id does that), so the table can be shown first and filled in afterwards.
     if input.view == "detail"
         && !input.fresh
         && let (Some(store), Some(subject), Some(id)) = (
@@ -287,28 +288,22 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
             subject_id(&player.identity),
             input.match_id.as_deref(),
         )
+        && let Some(kept) = store.detail(mode, id, &subject)
     {
         let current = s.catalog.current_season;
         let rate = mode != Mode::Stadium;
-        if rate && !collect::match_prepared(store.as_ref(), mode, id, &subject, current) {
-            let key = ListKey {
-                subject: &subject,
-                mode,
-                season: None,
-            };
-            if let Some(row) = store.match_list(key).rows.into_iter().find(|m| m.id == id) {
-                prepare_matches(s, &player, mode, vec![row], true).await;
-            }
+        let mut detail = kept.detail;
+        if rate {
+            collect::attach_career_ranks(&mut detail, store.as_ref(), current);
         }
-        if let Some(kept) = store.detail(mode, id, &subject) {
-            let mut detail = kept.detail;
-            if rate {
-                collect::attach_career_ranks(&mut detail, store.as_ref(), current);
-            }
-            view.ir = json!(detail);
-            view.extra.insert("cached".into(), json!(true));
-            return Ok(view);
-        }
+        analysis::attach_fleta(&mut detail);
+        view.ir = json!(detail);
+        view.extra.insert("cached".into(), json!(true));
+        view.extra.insert(
+            "ratings_pending".into(),
+            json!(rate && !collect::match_prepared(store.as_ref(), mode, id, &subject, current)),
+        );
+        return Ok(view);
     }
     let (metric, value, cached) = cached_request(
         &s.client,
@@ -334,6 +329,7 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
             // Keep it for next time; what an earlier analysis recorded about players who
             // could not be looked up is kept as it was.
             let mut shown = detail.clone();
+            analysis::attach_fleta(&mut shown);
             if let (Some(cache), Some(subject)) = (&s.store, subject.as_deref()) {
                 let unreachable = cache
                     .detail(mode, &detail.id, subject)
@@ -341,10 +337,17 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
                     .unwrap_or_default();
                 cache.put_detail(subject, &detail, &unreachable);
                 if mode != Mode::Stadium {
-                    collect::attach_career_ranks(
-                        &mut shown,
-                        cache.as_ref(),
-                        s.catalog.current_season,
+                    let current = s.catalog.current_season;
+                    collect::attach_career_ranks(&mut shown, cache.as_ref(), current);
+                    view.extra.insert(
+                        "ratings_pending".into(),
+                        json!(!collect::match_prepared(
+                            cache.as_ref(),
+                            mode,
+                            &detail.id,
+                            subject,
+                            current
+                        )),
                     );
                 }
             }
@@ -704,6 +707,9 @@ pub(crate) struct PrepareInput {
     /// How many of the newest matches to keep ready.
     #[serde(default = "prepare_window")]
     window: usize,
+    /// Prepare only this match of the stored list, whatever its place in the queue.
+    #[serde(default)]
+    match_id: Option<String>,
     /// Also look up the players' ranks (otherwise only each match's detail is kept).
     #[serde(default = "prepare_ratings")]
     ratings: bool,
@@ -766,7 +772,15 @@ pub(crate) async fn player_prepare(
             })
             .collect()
     };
-    let batch: Vec<MatchSummary> = waiting(&store).into_iter().take(input.batch).collect();
+    let batch: Vec<MatchSummary> = match input.match_id.as_deref() {
+        Some(id) => store
+            .match_list(key)
+            .rows
+            .into_iter()
+            .filter(|m| m.id == id)
+            .collect(),
+        None => waiting(&store).into_iter().take(input.batch).collect(),
+    };
     let prepared = batch.len();
     if !batch.is_empty() {
         prepare_matches(&s, &player, mode, batch, input.ratings).await;
