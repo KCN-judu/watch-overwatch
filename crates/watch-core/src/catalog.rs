@@ -198,7 +198,7 @@ impl Catalog {
         result
     }
     /// The imported catalog if present, otherwise the bundled snapshot
-    /// (`data/query_tool.min.json`, regenerated with `data/slim_catalog.py`).
+    /// (`data/query_tool.min.json`, regenerated with `cargo xtask slim-catalog`).
     pub fn load() -> Self {
         std::fs::read(data_dir().join("catalog.json"))
             .ok()

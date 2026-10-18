@@ -1,0 +1,3 @@
+[alias]
+# Development tasks written in Rust (see crates/xtask): `cargo xtask sync-assets`
+xtask = "run --quiet --package xtask --"
