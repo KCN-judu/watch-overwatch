@@ -413,7 +413,8 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
   if (ws == null) return;
   final modes = {...Mode.values.where((m) => m == app.mode)};
   // How many of the newest matches of each mode: a preset, all (0), or the typed number (-1).
-  var choice = 50;
+  // Everything already read is kept locally, so "all" is the default.
+  var choice = 0;
   final custom = TextEditingController(text: '200');
   var ratings = false;
   int? count() {
@@ -445,6 +446,25 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
                   ),
                   const SizedBox(height: Sp.betweenGroups),
                   Text('包含的模式', style: Ty.bodyStrong),
+                  CheckboxListTile(
+                    dense: true,
+                    tristate: true,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text('全部模式', style: Ty.body),
+                    value: modes.length == Mode.values.length
+                        ? true
+                        : modes.isEmpty
+                        ? false
+                        : null,
+                    onChanged: (v) => setState(() {
+                      if (modes.length == Mode.values.length) {
+                        modes.clear();
+                      } else {
+                        modes.addAll(Mode.values);
+                      }
+                    }),
+                  ),
                   for (final m in Mode.values)
                     CheckboxListTile(
                       dense: true,
