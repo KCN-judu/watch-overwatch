@@ -1,0 +1,277 @@
+import 'package:flutter/material.dart';
+
+import 'icons.dart';
+import 'net_pic.dart';
+import 'tokens.dart';
+
+/// Section heading with an accent colour as a bar, optionally followed by an info tip.
+class AccentTitle extends StatelessWidget {
+  const AccentTitle(this.text, {super.key, required this.accent, this.info});
+  final String text;
+  final Color accent;
+  final String? info;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(width: 4, height: 20, color: accent),
+        const SizedBox(width: 10),
+        Semantics(header: true, child: Text(text, style: Ty.section)),
+        if (info != null) InfoTip(info!),
+      ],
+    );
+  }
+}
+
+/// Cards in equal columns (as many as fit, up to four), every row the same height.
+class CardGrid extends StatelessWidget {
+  const CardGrid(
+    this.children, {
+    super.key,
+    this.minWidth = 320,
+    this.height = 112,
+  });
+  final List<Widget> children;
+  final double minWidth, height;
+  static const _gap = 10.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        final cols = ((box.maxWidth + _gap) / (minWidth + _gap)).floor().clamp(
+          1,
+          4,
+        );
+        final rows = <Widget>[];
+        for (var i = 0; i < children.length; i += cols) {
+          if (i > 0) rows.add(const SizedBox(height: _gap));
+          rows.add(
+            SizedBox(
+              height: height,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var j = 0; j < cols; j++) ...[
+                    if (j > 0) const SizedBox(width: _gap),
+                    Expanded(
+                      child: i + j < children.length
+                          ? children[i + j]
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }
+        return Column(children: rows);
+      },
+    );
+  }
+}
+
+/// The surface every card sits on: raised, bordered, rounded, with an accent bar down the
+/// left edge. (A border whose sides differ in colour cannot be rounded, so the bar is a
+/// separate strip inside the clipped card.)
+class CardSurface extends StatelessWidget {
+  const CardSurface({super.key, required this.accent, required this.child});
+  final Color accent;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final radius = BorderRadius.circular(Radii.container);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: c.raised,
+        borderRadius: radius,
+        border: Border.all(color: c.border),
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(width: 3, color: accent),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(Sp.betweenGroups),
+                child: child,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A named thing with an icon and a few lines of text: an ability, a perk, a piece of
+/// equipment. The icon is a bundled asset or an image address; either may be missing.
+class InfoCard extends StatelessWidget {
+  const InfoCard({
+    super.key,
+    required this.name,
+    required this.accent,
+    this.description = '',
+    this.tag,
+    this.asset,
+    this.iconUrl,
+  });
+  final String name;
+  final String description;
+  final String? tag;
+  final String? asset;
+  final String? iconUrl;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final text = description.replaceAll('%%', '%');
+    final Widget icon = SizedBox(
+      width: 48,
+      height: 48,
+      child: asset != null
+          ? Image.asset(
+              asset!,
+              fit: BoxFit.contain,
+              color: c.textPrimary,
+              colorBlendMode: BlendMode.srcIn,
+              filterQuality: FilterQuality.medium,
+              excludeFromSemantics: true,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            )
+          : iconUrl != null
+          ? ExcludeSemantics(
+              child: NetPic(
+                iconUrl!,
+                width: 48,
+                height: 48,
+                color: c.textPrimary,
+                blend: BlendMode.srcIn,
+                error: const SizedBox(width: 48, height: 48),
+              ),
+            )
+          : null,
+    );
+    return CardSurface(
+      accent: accent,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          icon,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        style: Ty.bodyStrong,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (tag != null && tag!.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        tag!,
+                        style: Ty.meta.copyWith(color: c.textSecondary),
+                      ),
+                    ],
+                  ],
+                ),
+                if (text.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Tooltip(
+                      message: text,
+                      waitDuration: const Duration(milliseconds: 400),
+                      child: Text(
+                        text,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: Ty.body.copyWith(color: c.textSecondary),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One figure with its label, an optional line under it and an optional bar showing a
+/// share (0 to 1) of something. A missing value shows the dash, never 0.
+class StatCard extends StatelessWidget {
+  const StatCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.accent,
+    this.caption,
+    this.share,
+    this.tooltip,
+  });
+  final String label;
+  final String value;
+  final Color accent;
+  final String? caption;
+
+  /// Fraction of the bar to fill; no bar when null.
+  final double? share;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final card = CardSurface(
+      accent: accent,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
+          const SizedBox(height: 2),
+          Text(value, style: Ty.num(Ty.figure)),
+          if (share != null) ...[
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(
+                value: share!.clamp(0.0, 1.0),
+                minHeight: 4,
+                color: accent,
+                backgroundColor: c.border,
+              ),
+            ),
+          ],
+          if (caption != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              caption!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Ty.meta.copyWith(color: c.textSecondary),
+            ),
+          ],
+        ],
+      ),
+    );
+    return Semantics(
+      container: true,
+      label: '$label $value${caption == null ? '' : '，$caption'}',
+      excludeSemantics: true,
+      child: tooltip == null ? card : Tooltip(message: tooltip!, child: card),
+    );
+  }
+}

@@ -4,6 +4,7 @@ import '../../core/gamedata.dart';
 import '../../core/hero_stats.dart';
 import '../../core/models.dart';
 import '../../core/support.dart';
+import '../../design/cards.dart';
 import '../../design/icons.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
@@ -135,25 +136,6 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
           ],
         );
       },
-    );
-  }
-}
-
-/// Section heading with the hero's colour as a bar.
-class _Title extends StatelessWidget {
-  const _Title(this.text, {required this.accent, this.info});
-  final String text;
-  final Color accent;
-  final String? info;
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(width: 4, height: 20, color: accent),
-        const SizedBox(width: 10),
-        Semantics(header: true, child: Text(text, style: Ty.section)),
-        if (info != null) InfoTip(info!),
-      ],
     );
   }
 }
@@ -537,7 +519,7 @@ class _SeasonStats extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Title(
+        AccentTitle(
           '赛季数据',
           accent: accent,
           info:
@@ -653,7 +635,7 @@ class _Recent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Title(
+        AccentTitle(
           '近期对局',
           accent: accent,
           info: '已读取的 $total 场里你用${hero.hero.label}打的。平均值来自这些对局，不是赛季累计。',
@@ -762,89 +744,18 @@ class _Kit extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    Widget icon(String? asset) => SizedBox(
-      width: 48,
-      height: 48,
-      child: asset == null
-          ? null
-          : Image.asset(
-              asset,
-              fit: BoxFit.contain,
-              color: c.textPrimary,
-              colorBlendMode: BlendMode.srcIn,
-              filterQuality: FilterQuality.medium,
-              excludeFromSemantics: true,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-            ),
-    );
-
     Widget card({
       required String? asset,
       required String name,
       String? tag,
       required String description,
-    }) {
-      final text = description.replaceAll('%%', '%');
-      return Container(
-        padding: const EdgeInsets.all(Sp.betweenGroups),
-        decoration: BoxDecoration(
-          color: c.raised,
-          borderRadius: BorderRadius.circular(Radii.container),
-          border: Border(
-            left: BorderSide(color: accent, width: 3),
-            top: BorderSide(color: c.border),
-            right: BorderSide(color: c.border),
-            bottom: BorderSide(color: c.border),
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            icon(asset),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          name,
-                          style: Ty.bodyStrong,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (tag != null && tag.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        Text(
-                          tag,
-                          style: Ty.meta.copyWith(color: c.textSecondary),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (text.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Tooltip(
-                        message: text,
-                        waitDuration: const Duration(milliseconds: 400),
-                        child: Text(
-                          text,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: Ty.body.copyWith(color: c.textSecondary),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+    }) => InfoCard(
+      asset: asset,
+      name: name,
+      tag: tag,
+      description: description,
+      accent: accent,
+    );
 
     final minor = game.perks.take(2).toList();
     final major = game.perks.skip(2).toList();
@@ -855,7 +766,7 @@ class _Kit extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 6),
           child: Text(title, style: Ty.meta.copyWith(color: c.textSecondary)),
         ),
-        _CardGrid([
+        CardGrid([
           for (final p in perks)
             card(asset: p.asset, name: p.name, description: p.description),
         ]),
@@ -865,9 +776,13 @@ class _Kit extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Title('技能', accent: accent, info: '来自本机安装的游戏资料（国服 2.25），名称和说明与游戏内一致。'),
+        AccentTitle(
+          '技能',
+          accent: accent,
+          info: '来自本机安装的游戏资料（国服 2.25），名称和说明与游戏内一致。',
+        ),
         const SizedBox(height: Sp.withinGroup + 2),
-        _CardGrid([
+        CardGrid([
           for (final a in game.kit)
             card(
               asset: a.asset,
@@ -878,7 +793,7 @@ class _Kit extends StatelessWidget {
         ]),
         if (game.perks.length >= 4) ...[
           const SizedBox(height: Sp.betweenSections + 8),
-          _Title('威能', accent: accent),
+          AccentTitle('威能', accent: accent),
           const SizedBox(height: Sp.withinGroup + 2),
           perkRow('一级威能（二选一）', minor),
           const SizedBox(height: Sp.betweenGroups),
@@ -890,44 +805,3 @@ class _Kit extends StatelessWidget {
 }
 
 /// Equal-size cards in as many equal columns as fit: same width, same height, so the
-/// block reads as a set instead of a ragged pile.
-class _CardGrid extends StatelessWidget {
-  const _CardGrid(this.children);
-  final List<Widget> children;
-  static const _gap = 10.0, _minWidth = 320.0, _height = 112.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, box) {
-        final cols = ((box.maxWidth + _gap) / (_minWidth + _gap)).floor().clamp(
-          1,
-          4,
-        );
-        final rows = <Widget>[];
-        for (var i = 0; i < children.length; i += cols) {
-          if (i > 0) rows.add(const SizedBox(height: _gap));
-          rows.add(
-            SizedBox(
-              height: _height,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var j = 0; j < cols; j++) ...[
-                    if (j > 0) const SizedBox(width: _gap),
-                    Expanded(
-                      child: i + j < children.length
-                          ? children[i + j]
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          );
-        }
-        return Column(children: rows);
-      },
-    );
-  }
-}
