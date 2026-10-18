@@ -15,7 +15,8 @@ use std::{
 };
 use tokio::sync::Mutex;
 use watch_core::{
-    Completeness, ExportSource, Failure, RequestMetric, RequestSpec, WatchClient,
+    Completeness, ExportSource, Failure, ListKey, RequestMetric, RequestSpec, StrengthCache as _,
+    WatchClient,
     analysis::{self, AnalysisOptions, Clock, Window},
     collect::{self, CollectPlan, Fetched, Fetcher},
     dashen::{Endpoint, Mode, normalize},
@@ -276,6 +277,39 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
         "history" => return history_view(s, token, mode, input, view).await,
         _ => return Err(error("validation", "未知的玩家视图。 ")),
     };
+    // A finished match never changes: one kept locally is not asked for again. What is
+    // missing of it (its detail, and the ranks of the players in it) is looked up now,
+    // once, and kept, so showing it and analysing it later cost nothing more.
+    if input.view == "detail"
+        && !input.fresh
+        && let (Some(store), Some(subject), Some(id)) = (
+            s.store.as_ref(),
+            subject_id(&player.identity),
+            input.match_id.as_deref(),
+        )
+    {
+        let current = s.catalog.current_season;
+        let rate = mode != Mode::Stadium;
+        if rate && !collect::match_prepared(store.as_ref(), mode, id, &subject, current) {
+            let key = ListKey {
+                subject: &subject,
+                mode,
+                season: None,
+            };
+            if let Some(row) = store.match_list(key).rows.into_iter().find(|m| m.id == id) {
+                prepare_matches(s, &player, mode, vec![row]).await;
+            }
+        }
+        if let Some(kept) = store.detail(mode, id, &subject) {
+            let mut detail = kept.detail;
+            if rate {
+                collect::attach_career_ranks(&mut detail, store.as_ref(), current);
+            }
+            view.ir = json!(detail);
+            view.extra.insert("cached".into(), json!(true));
+            return Ok(view);
+        }
+    }
     let (metric, value, cached) = cached_request(
         &s.client,
         &player.cache,
@@ -290,13 +324,31 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
         "profile" => json!(normalize::career(raw, mode, input.season, cat)),
         "detail" => {
             let subject = subject_id(&player.identity);
-            json!(normalize::match_detail(
+            let detail = normalize::match_detail(
                 input.match_id.as_deref().unwrap_or_default(),
                 raw,
                 mode,
                 subject.as_deref(),
-                cat
-            ))
+                cat,
+            );
+            // Keep it for next time; what an earlier analysis recorded about players who
+            // could not be looked up is kept as it was.
+            let mut shown = detail.clone();
+            if let (Some(cache), Some(subject)) = (&s.store, subject.as_deref()) {
+                let unreachable = cache
+                    .detail(mode, &detail.id, subject)
+                    .map(|k| k.unreachable)
+                    .unwrap_or_default();
+                cache.put_detail(subject, &detail, &unreachable);
+                if mode != Mode::Stadium {
+                    collect::attach_career_ranks(
+                        &mut shown,
+                        cache.as_ref(),
+                        s.catalog.current_season,
+                    );
+                }
+            }
+            json!(shown)
         }
         "card" => json!(normalize::profile(raw)),
         "heroes" => json!(normalize::player_hero_board(raw, cat)),
@@ -599,15 +651,109 @@ pub(crate) async fn progress(
 
 /// What the strength cache holds.
 pub(crate) async fn cache_stats(State(s): State<AppState>) -> Response {
-    Json(json!({"strength": s.strength_cache.as_ref().map(|c| c.stats())})).into_response()
+    Json(json!({"store": s.store.as_ref().map(|c| c.stats())})).into_response()
 }
 
 /// Empties the strength cache (the next analysis fetches everything again).
 pub(crate) async fn cache_clear(State(s): State<AppState>) -> Response {
-    if let Some(c) = &s.strength_cache {
+    if let Some(c) = &s.store {
         c.clear();
     }
     cache_stats(State(s)).await
+}
+
+/// Looks up and stores what the lobby-strength analysis needs from `rows`: each match's
+/// detail and every participant's rank. Failures only leave the match unprepared.
+async fn prepare_matches(s: &AppState, player: &Session, mode: Mode, rows: Vec<MatchSummary>) {
+    let fetcher = SessionFetcher {
+        client: &s.client,
+        cache: &player.cache,
+        fresh: false,
+    };
+    let plan = CollectPlan {
+        modes: vec![mode],
+        known_matches: rows,
+        max_details: 0,
+        hero_board: false,
+        lobby_ratings: true,
+        max_rated_players: 300,
+        cache: s
+            .store
+            .clone()
+            .map(|c| c as std::sync::Arc<dyn watch_core::StrengthCache>),
+        ..CollectPlan::default()
+    };
+    let _ = tokio::time::timeout(
+        Duration::from_secs(120),
+        collect::collect_player(&fetcher, &s.catalog, &player.token, &player.identity, &plan),
+    )
+    .await;
+}
+
+#[derive(Deserialize)]
+pub(crate) struct PrepareInput {
+    session: String,
+    #[serde(default = "sport")]
+    mode: String,
+    /// How many of the newest matches to keep ready.
+    #[serde(default = "prepare_window")]
+    window: usize,
+    /// How many of them to prepare in this call.
+    #[serde(default = "prepare_batch")]
+    batch: usize,
+}
+
+fn prepare_window() -> usize {
+    30
+}
+
+fn prepare_batch() -> usize {
+    3
+}
+
+/// Prepares a small batch of the newest matches that are not ready for the strength
+/// analysis yet, so the cost of looking players up is spread over every update instead of
+/// landing on the analysis. Answers how many were prepared and how many are still waiting.
+pub(crate) async fn player_prepare(
+    State(s): State<AppState>,
+    Json(input): Json<PrepareInput>,
+) -> Response {
+    let Some(mode) = Mode::parse(&input.mode)
+        .filter(|m| *m != Mode::Stadium)
+        .filter(|_| (1..=300).contains(&input.window) && (1..=10).contains(&input.batch))
+    else {
+        return fail(error("validation", "无效的模式或数量。 ")).into_response();
+    };
+    let player = match session(&s, &input.session, "玩家会话已过期，请重新查找玩家。 ").await
+    {
+        Ok(p) => p,
+        Err(e) => return fail(e).into_response(),
+    };
+    let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
+        return Json(json!({"prepared":0,"remaining":0,"enabled":false})).into_response();
+    };
+    let current = s.catalog.current_season;
+    let key = ListKey {
+        subject: &subject,
+        mode,
+        season: None,
+    };
+    let waiting = |store: &crate::store::LocalStore| -> Vec<MatchSummary> {
+        store
+            .match_list(key)
+            .rows
+            .into_iter()
+            .take(input.window)
+            .filter(|m| !collect::match_prepared(store, mode, &m.id, &subject, current))
+            .collect()
+    };
+    let batch: Vec<MatchSummary> = waiting(&store).into_iter().take(input.batch).collect();
+    let prepared = batch.len();
+    if !batch.is_empty() {
+        prepare_matches(&s, &player, mode, batch).await;
+    }
+    let remaining = waiting(&store).len();
+    Json(json!({"prepared":prepared,"remaining":remaining,"enabled":true})).into_response()
 }
 
 /// Full IR dataset for one player plus its analysis.
@@ -630,7 +776,7 @@ pub(crate) async fn player_dataset(
     };
     let mut plan = input.plan.clone();
     plan.cache = s
-        .strength_cache
+        .store
         .clone()
         .map(|c| c as std::sync::Arc<dyn watch_core::StrengthCache>);
     // "Refresh" asks the upstream for current-season ranks again, not just for pages.

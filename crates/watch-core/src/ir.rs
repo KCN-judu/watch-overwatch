@@ -309,7 +309,18 @@ pub struct Participant {
     pub hero_icon_url: Option<String>,
     pub role: Role,
     pub stats: StatLine,
+    /// The rank the match itself reported (competitive and Stadium only).
     pub rank: Option<Rank>,
+    /// The player's own competitive rank for this role, current season or else the one
+    /// before, taken from what was looked up for the lobby-strength analysis. Not stored
+    /// with the match: it is attached when a detail is shown, and it is the rank *now*,
+    /// not at the time of the match.
+    #[serde(default)]
+    pub career_rank: Option<Rank>,
+    /// `career_rank` is the highest of the player's ranks in other roles (they have none for
+    /// the role they played).
+    #[serde(default)]
+    pub career_other_roles: bool,
     pub perks: Vec<PerkPick>,
     /// Pre-made group members (`friendBnetIds`).
     pub party_bnet_ids: Vec<String>,
@@ -490,6 +501,15 @@ pub struct PlayerRating {
     pub roles: Vec<RoleRating>,
 }
 
+/// Whose rank a player's rating is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RatingFit {
+    /// Their rank for the role they played.
+    SameRole,
+    /// They have no rank for that role, so it is the highest of their ranks in other roles.
+    OtherRoles,
+}
+
 impl PlayerRating {
     /// Current-season rating for `role`, falling back to an older season.
     pub fn for_role(&self, role: Role) -> Option<&RoleRating> {
@@ -497,6 +517,37 @@ impl PlayerRating {
             .iter()
             .filter(|r| r.role == role && r.rank.skill_rating.is_some())
             .min_by_key(|r| r.season.map_or(0, |s| u32::MAX - s))
+    }
+
+    /// The rating to use for a player who played `role`. Their rank for that role when
+    /// they have one. Otherwise, a player who is ranked, only in other roles, still counts
+    /// as ranked: the highest of those ranks (this season's if there are any, else the
+    /// earlier season's), so that a lobby is not judged on the few players who happen to
+    /// have a rank in exactly the role they played. `None` for a player with no rank at all.
+    pub fn rating_for(&self, role: Role) -> Option<(f64, RatingFit)> {
+        if role == Role::Unknown {
+            return None;
+        }
+        if let Some(r) = self.for_role(role) {
+            return Some((r.rank.skill_rating? as f64, RatingFit::SameRole));
+        }
+        let others = |current: bool| -> Vec<f64> {
+            self.roles
+                .iter()
+                .filter(|r| r.role != role && r.season.is_none() == current)
+                .filter_map(|r| r.rank.skill_rating)
+                .map(|v| v as f64)
+                .collect()
+        };
+        let this_season = others(true);
+        let pool = if this_season.is_empty() {
+            others(false)
+        } else {
+            this_season
+        };
+        pool.into_iter()
+            .reduce(f64::max)
+            .map(|best| (best, RatingFit::OtherRoles))
     }
 }
 

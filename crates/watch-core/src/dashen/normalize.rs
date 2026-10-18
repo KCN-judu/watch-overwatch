@@ -372,6 +372,8 @@ fn participant(
         role,
         stats: stat_line(v),
         rank: rank(v.get(&["rankInfo"]), mode),
+        career_rank: None,
+        career_other_roles: false,
         perks,
         party_bnet_ids: strings(&v.list(&["friendBnetIds"])),
         endorsed_by_bnet_ids: strings(&v.list(&["endorserBnetIds"])),

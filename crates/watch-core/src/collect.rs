@@ -1,14 +1,14 @@
 //! Orchestrates upstream calls into a complete [`PlayerDataset`]. Transport,
 //! caching and credentials stay behind [`Fetcher`]; this module only decides
 //! what to ask for and records how complete the answer is.
-use crate::cache::{CachedDetail, ListKey, RATINGS_TTL, StrengthCache};
+use crate::cache::{CachedDetail, ListKey, StrengthCache};
 use crate::dashen::{Endpoint, Mode, normalize};
 use crate::ir::*;
 use crate::progress::{Progress, report};
 use crate::{Catalog, Failure};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::future::Future;
 use std::sync::Arc;
 
@@ -367,13 +367,8 @@ async fn read_list_page<F: Fetcher>(
     match result {
         Ok(v) => {
             out.coverage.pages_fetched += 1;
-            let mut seen = HashSet::new();
             let rows = normalize::match_list(normalize::payload(&v.value), scope.mode, cat);
-            Some(
-                rows.into_iter()
-                    .filter(|m| !m.id.is_empty() && seen.insert(m.id.clone()))
-                    .collect(),
-            )
+            Some(rows.into_iter().filter(|m| !m.id.is_empty()).collect())
         }
         Err(e) => {
             out.error = Some(e);
@@ -409,7 +404,14 @@ pub async fn sync_match_list<F: Fetcher>(
     let max_pages = page_scope.max_pages;
     let stored = cache.match_list(key);
     let had_rows = !stored.rows.is_empty();
-    let stored_ids: HashSet<String> = stored.rows.iter().map(|m| m.id.clone()).collect();
+    let stored_rows: HashMap<String, MatchSummary> = stored
+        .rows
+        .iter()
+        .map(|m| (m.id.clone(), m.clone()))
+        .collect();
+    // Rows already stored that a page just read shows differently: a row is only ever
+    // written once as new, so what the upstream corrects later has to be picked up here.
+    let mut updates: Vec<MatchSummary> = Vec::new();
     let mut exhausted = stored.exhausted;
     let mut rows = stored.rows;
     let mut out = MatchPages {
@@ -449,11 +451,17 @@ pub async fn sync_match_list<F: Fetcher>(
             reached_end = true;
             break;
         }
-        let overlaps = list.iter().any(|m| stored_ids.contains(&m.id));
+        let overlaps = list.iter().any(|m| stored_rows.contains_key(&m.id));
         let before = fresh.len();
         for m in list {
-            if !stored_ids.contains(&m.id) && seen.insert(m.id.clone()) {
-                fresh.push(m);
+            match stored_rows.get(&m.id) {
+                Some(old) if *old != m => updates.push(m),
+                Some(_) => {}
+                None => {
+                    if seen.insert(m.id.clone()) {
+                        fresh.push(m);
+                    }
+                }
             }
         }
         if !had_rows {
@@ -476,7 +484,10 @@ pub async fn sync_match_list<F: Fetcher>(
             break;
         }
     }
-    if had_rows && !fresh.is_empty() {
+    // A page that failed before the new matches joined the stored run proves nothing about
+    // where they sit, so they are dropped and the store is left as it was.
+    let failed_before_joining = had_rows && !joined && out.error.is_some();
+    if had_rows && !fresh.is_empty() && !failed_before_joining {
         if !joined {
             // New matches that do not reach the stored run: start over from them.
             cache.clear_match_list(key);
@@ -487,7 +498,7 @@ pub async fn sync_match_list<F: Fetcher>(
         added += fresh.len();
         rows.extend(fresh);
     }
-    if reached_end && !(had_rows && joined) {
+    if reached_end && !(had_rows && joined) && !failed_before_joining {
         exhausted = true;
     }
 
@@ -501,10 +512,18 @@ pub async fn sync_match_list<F: Fetcher>(
             else {
                 break;
             };
-            let older: Vec<MatchSummary> = list
-                .into_iter()
-                .filter(|m| known.insert(m.id.clone()))
-                .collect();
+            let mut older: Vec<MatchSummary> = Vec::new();
+            for m in list {
+                match stored_rows.get(&m.id) {
+                    Some(old) if *old != m => updates.push(m),
+                    Some(_) => {}
+                    None => {
+                        if known.insert(m.id.clone()) {
+                            older.push(m);
+                        }
+                    }
+                }
+            }
             if older.is_empty() {
                 exhausted = true;
                 break;
@@ -514,6 +533,14 @@ pub async fn sync_match_list<F: Fetcher>(
             rows.extend(older);
             report(progress, |s| s.matches_found = rows.len());
             next += 1;
+        }
+    }
+    if !updates.is_empty() {
+        cache.put_match_rows(key, &updates);
+        for u in updates {
+            if let Some(slot) = rows.iter_mut().find(|r| r.id == u.id) {
+                *slot = u;
+            }
         }
     }
     cache.set_list_exhausted(key, exhausted);
@@ -586,7 +613,7 @@ fn rating_cached(
     if refresh {
         return false;
     }
-    match cache.season_ratings(id, current, Some(RATINGS_TTL)) {
+    match cache.season_ratings(id, current) {
         Some(rows)
             if rows
                 .iter()
@@ -596,8 +623,67 @@ fn rating_cached(
         }
         // The current season has no rank for this role: the previous one decides, and it
         // is either cached or looked up, so only a missing entry needs the network.
-        Some(_) => previous.is_none_or(|p| cache.season_ratings(id, p, None).is_some()),
+        Some(_) => previous.is_none_or(|p| cache.season_ratings(id, p).is_some()),
         None => false,
+    }
+}
+
+/// Whether everything the lobby-strength analysis needs from this match is stored: its
+/// detail, and a current rank for every participant who can be looked up. Such a match is
+/// analysed without a single request.
+pub fn match_prepared(
+    cache: &dyn StrengthCache,
+    mode: Mode,
+    match_id: &str,
+    subject: &str,
+    current: u32,
+) -> bool {
+    let previous = current.checked_sub(1).filter(|s| *s > 0);
+    cache.detail(mode, match_id, subject).is_some_and(|kept| {
+        rating_needs(&kept.detail)
+            .into_iter()
+            .filter(|(id, _, _)| !kept.unreachable.contains(id))
+            .all(|(id, _, role)| rating_cached(cache, &id, role, current, previous, false))
+    })
+}
+
+/// Fills each participant's `career_rank` from the ranks stored for lobby strength, by the
+/// same rule the analysis uses ([`PlayerRating::rating_for`]), without any request:
+/// players nobody has looked up stay without one.
+pub fn attach_career_ranks(detail: &mut MatchDetail, cache: &dyn StrengthCache, current: u32) {
+    let previous = current.checked_sub(1).filter(|s| *s > 0);
+    for p in detail.allies.iter_mut().chain(detail.enemies.iter_mut()) {
+        let ranked = p.rank.as_ref().is_some_and(|r| r.skill_rating.is_some());
+        let (Some(id), false) = (p.bnet_id.as_deref(), ranked) else {
+            continue;
+        };
+        let mut roles = Vec::new();
+        for season in std::iter::once(current).chain(previous) {
+            if let Some(rows) = cache.season_ratings(id, season) {
+                merge_ratings(&mut roles, rows, season, current);
+            }
+        }
+        let player = PlayerRating {
+            bnet_id: id.to_owned(),
+            name: None,
+            roles,
+        };
+        match player.rating_for(p.role) {
+            Some((_, RatingFit::SameRole)) => {
+                p.career_rank = player.for_role(p.role).map(|r| r.rank.clone());
+            }
+            Some((best, RatingFit::OtherRoles)) => {
+                p.career_rank = Some(Rank {
+                    tier: None,
+                    division: None,
+                    score: None,
+                    skill_rating: Some(best.round() as i64),
+                    at_ms: None,
+                });
+                p.career_other_roles = true;
+            }
+            None => {}
+        }
     }
 }
 
@@ -866,10 +952,9 @@ pub async fn collect_player<F: Fetcher>(
                 break;
             }
             let key = season.unwrap_or(current);
-            let max_age = season.is_none().then_some(RATINGS_TTL);
             let skip_cache = plan.refresh_ratings && season.is_none();
             if let Some(cache) = cache.filter(|_| !skip_cache)
-                && let Some(rows) = cache.season_ratings(&u.id, key, max_age)
+                && let Some(rows) = cache.season_ratings(&u.id, key)
             {
                 cache_hits += 1;
                 report(plan.progress.as_deref(), |s| s.cached += 1);

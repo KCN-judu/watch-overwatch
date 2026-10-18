@@ -129,8 +129,8 @@ async fn dataset(args: &Args) -> anyhow::Result<()> {
     }
     // Finished matches and ranks are kept between runs unless asked not to.
     if !args.flag("no-cache") {
-        plan.cache = crate::open_strength_cache()
-            .map(|c| c as std::sync::Arc<dyn watch_core::StrengthCache>);
+        plan.cache =
+            crate::open_store().map(|c| c as std::sync::Arc<dyn watch_core::StrengthCache>);
     }
     plan.validate().map_err(|e| anyhow::anyhow!(e.message))?;
 

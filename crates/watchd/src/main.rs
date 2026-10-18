@@ -1,9 +1,8 @@
 mod cli;
 mod community;
-mod exports;
 mod players;
 mod service;
-mod strength_cache;
+mod store;
 use axum::{
     Json, Router,
     extract::{Request, State},
@@ -33,15 +32,15 @@ pub(crate) struct AppState {
     /// Live progress of running collections, by the id the client chose.
     progress: ProgressBook,
     /// Finished-match details and ranks kept between analyses; `None` if it could not be opened.
-    strength_cache: Option<Arc<strength_cache::SqliteCache>>,
+    store: Option<Arc<store::LocalStore>>,
 }
-/// Opens the on-disk strength cache; without it analyses still work, just without reuse.
-pub(crate) fn open_strength_cache() -> Option<Arc<strength_cache::SqliteCache>> {
-    let path = watch_core::data_dir().join("cache").join("strength.db");
-    match strength_cache::SqliteCache::open(&path) {
+/// Opens the on-disk local store; without it everything still works, just without reuse.
+pub(crate) fn open_store() -> Option<Arc<store::LocalStore>> {
+    let dir = watch_core::data_dir().join("cache");
+    match store::LocalStore::open(&dir) {
         Ok(c) => Some(Arc::new(c)),
         Err(e) => {
-            tracing::warn!("strength cache unavailable ({}): {e}", path.display());
+            tracing::warn!("local store unavailable ({}): {e}", dir.display());
             None
         }
     }
@@ -107,13 +106,10 @@ async fn main() -> anyhow::Result<()> {
             post(service::player_dataset)
                 .layer(axum::extract::DefaultBodyLimit::max(2 * 1024 * 1024)),
         )
+        .route("/api/player/prepare", post(service::player_prepare))
         .route("/api/progress", get(service::progress))
         .route("/api/cache", get(service::cache_stats))
         .route("/api/cache/clear", post(service::cache_clear))
-        .route(
-            "/api/export/file",
-            post(exports::save).layer(axum::extract::DefaultBodyLimit::max(16 * 1024 * 1024)),
-        )
         .route("/api/player/replies", post(service::player_replies))
         .route("/api/catalog", get(community::catalog))
         .route("/api/community", post(community::query))
@@ -125,7 +121,7 @@ async fn main() -> anyhow::Result<()> {
             settings_lock: Arc::new(Mutex::new(())),
             catalog: Arc::new(watch_core::Catalog::load()),
             progress: Arc::new(std::sync::Mutex::new(HashMap::new())),
-            strength_cache: open_strength_cache(),
+            store: open_store(),
         });
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", port())).await?;
     tracing::info!("Watch Overwatch: http://127.0.0.1:{}", port());

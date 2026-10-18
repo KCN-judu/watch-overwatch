@@ -563,7 +563,7 @@ async fn collector_rates_unranked_participants_with_previous_season_fallback() {
                     let rows = match (token.as_str(), season) {
                         ("SECRET-1", None) => vec![row("healer", 395)],
                         ("SECRET-2", Some(24)) => vec![row("dps", 497)],
-                        // Ranked on another role only: not used for the role played.
+                        // Ranked on another role only: used, and counted as such.
                         ("SECRET-3", _) => vec![row("tank", 795)],
                         _ => vec![],
                     };
@@ -601,9 +601,11 @@ async fn collector_rates_unranked_participants_with_previous_season_fallback() {
         (Some(2000.0), Some(3200.0))
     );
     assert_eq!(
-        m.enemy.rated.overall, 0,
-        "the enemy is only ranked on tank but played damage"
+        (m.enemy.rated.overall, m.enemy.other_role),
+        (1, 1),
+        "the enemy is ranked only on tank but played damage: rated by that rank, and counted as such"
     );
+    assert_eq!(m.ally.other_role, 0);
     assert!(!serde_json::to_string(&ds).unwrap().contains("SECRET"));
 }
 
@@ -1058,6 +1060,8 @@ async fn known_matches_are_used_without_reading_the_list_again() {
 struct History {
     ids: Mutex<Vec<(String, &'static str)>>,
     pages: Mutex<Vec<u64>>,
+    /// A list page that fails when asked for.
+    fail_page: Mutex<Option<u64>>,
 }
 
 impl History {
@@ -1065,6 +1069,7 @@ impl History {
         let h = History {
             ids: Mutex::new(Vec::new()),
             pages: Mutex::new(Vec::new()),
+            fail_page: Mutex::new(None),
         };
         h.add_newer(n, "tank");
         h.pages.lock().unwrap().clear();
@@ -1092,6 +1097,13 @@ impl Fetcher for History {
             Endpoint::MatchList => {
                 let page = payload["page"].as_u64().unwrap();
                 self.pages.lock().unwrap().push(page);
+                if *self.fail_page.lock().unwrap() == Some(page) {
+                    return Err(Failure {
+                        kind: "upstream",
+                        message: "down".into(),
+                        retry_after_ms: None,
+                    });
+                }
                 let ids = self.ids.lock().unwrap();
                 let rows: Vec<Value> = ids
                     .iter()
@@ -1267,4 +1279,217 @@ async fn news_that_does_not_reach_the_stored_run_replaces_it() {
     assert_eq!(last.matches.len(), 45);
     let ids: std::collections::HashSet<_> = last.matches.iter().map(|m| &m.id).collect();
     assert_eq!(ids.len(), 45);
+}
+
+#[tokio::test]
+async fn a_failed_page_never_costs_the_stored_list() {
+    let h = History::new(25);
+    let cache = watch_core::MemoryCache::new();
+    sync(&h, &cache, 20, None).await;
+    h.take_pages();
+    // 15 matches since: they only join the stored run on page 2, which fails.
+    h.add_newer(15, "tank");
+    *h.fail_page.lock().unwrap() = Some(2);
+    let broken = sync(&h, &cache, 20, None).await;
+    assert!(broken.error.is_some());
+    assert_eq!(broken.matches.len(), 25, "what was stored is still there");
+    assert!(broken.coverage.exhausted, "and still known to be complete");
+    // The next try, with the upstream back, picks the news up.
+    *h.fail_page.lock().unwrap() = None;
+    let fixed = sync(&h, &cache, 20, None).await;
+    assert!(fixed.error.is_none());
+    assert_eq!((fixed.matches.len(), fixed.coverage.new_matches), (40, 15));
+}
+
+#[tokio::test]
+async fn rows_already_stored_are_refreshed_from_the_pages_read() {
+    let h = History::new(25);
+    let cache = watch_core::MemoryCache::new();
+    sync(&h, &cache, 20, None).await;
+    // The upstream later corrects the newest match (here its role).
+    h.ids.lock().unwrap()[0].1 = "healer";
+    let again = sync(&h, &cache, 20, None).await;
+    assert_eq!(again.coverage.new_matches, 0);
+    assert_eq!(again.matches[0].id, "m24");
+    assert_eq!(again.matches[0].role, Role::Support);
+    let key = watch_core::ListKey {
+        subject: "1001",
+        mode: Mode::Quick,
+        season: None,
+    };
+    use watch_core::StrengthCache as _;
+    assert_eq!(
+        cache.match_list(key).rows[0].role,
+        Role::Support,
+        "and stored that way"
+    );
+}
+
+// ---- a match is ready for analysis when everything it needs is stored ----------------------
+
+fn fixture_detail(mode: Mode) -> MatchDetail {
+    normalize::match_detail(
+        "m3",
+        normalize::payload(&fixture("queryMatchInfo")),
+        mode,
+        Some("1001"),
+        &catalog(),
+    )
+}
+
+#[test]
+fn a_match_is_prepared_once_its_detail_and_every_lookup_are_stored() {
+    use watch_core::StrengthCache as _;
+    // Quick play: the detail carries no ranks, so every participant needs a lookup.
+    let mut detail = fixture_detail(Mode::Quick);
+    for p in detail.allies.iter_mut().chain(detail.enemies.iter_mut()) {
+        p.rank = None;
+    }
+    let cache = watch_core::MemoryCache::new();
+    assert!(!collect::match_prepared(
+        &cache,
+        Mode::Quick,
+        "m3",
+        "1001",
+        25
+    ));
+    cache.put_detail("1001", &detail, &[]);
+    assert!(
+        !collect::match_prepared(&cache, Mode::Quick, "m3", "1001", 25),
+        "the detail alone is not enough: nobody has been rated"
+    );
+    let mut rated = 0;
+    for p in detail.allies.iter().chain(&detail.enemies) {
+        let (Some(id), true) = (p.bnet_id.as_deref(), p.role != Role::Unknown) else {
+            continue;
+        };
+        cache.put_season_ratings(
+            id,
+            25,
+            &[rating(id, p.role, 2000 + rated, None).roles[0].clone()],
+        );
+        rated += 100;
+    }
+    assert!(collect::match_prepared(
+        &cache,
+        Mode::Quick,
+        "m3",
+        "1001",
+        25
+    ));
+    // A player the upstream gave no token for is not waited for.
+    let cache2 = watch_core::MemoryCache::new();
+    let everyone: Vec<String> = detail
+        .allies
+        .iter()
+        .chain(&detail.enemies)
+        .filter_map(|p| p.bnet_id.clone())
+        .collect();
+    cache2.put_detail("1001", &detail, &everyone);
+    assert!(collect::match_prepared(
+        &cache2,
+        Mode::Quick,
+        "m3",
+        "1001",
+        25
+    ));
+}
+
+#[test]
+fn career_ranks_come_from_the_stored_lookups_and_never_replace_the_match_rank() {
+    use watch_core::StrengthCache as _;
+    let mut detail = fixture_detail(Mode::Quick);
+    for p in detail.allies.iter_mut().chain(detail.enemies.iter_mut()) {
+        p.rank = None;
+    }
+    let target = detail
+        .allies
+        .iter()
+        .find(|p| p.bnet_id.is_some() && p.role != Role::Unknown)
+        .unwrap()
+        .clone();
+    let id = target.bnet_id.clone().unwrap();
+    let cache = watch_core::MemoryCache::new();
+    // Nothing stored: no career rank.
+    let mut shown = detail.clone();
+    collect::attach_career_ranks(&mut shown, &cache, 25);
+    assert!(shown.allies.iter().all(|p| p.career_rank.is_none()));
+    // Only last season has a rank for the role: it is used.
+    cache.put_season_ratings(
+        &id,
+        24,
+        &[rating(&id, target.role, 1700, None).roles[0].clone()],
+    );
+    let mut shown = detail.clone();
+    collect::attach_career_ranks(&mut shown, &cache, 25);
+    let got = |d: &MatchDetail| {
+        d.allies
+            .iter()
+            .find(|p| p.bnet_id.as_deref() == Some(&id))
+            .unwrap()
+            .career_rank
+            .clone()
+    };
+    assert_eq!(got(&shown).and_then(|r| r.skill_rating), Some(1700));
+    // The current season wins when it has one.
+    cache.put_season_ratings(
+        &id,
+        25,
+        &[rating(&id, target.role, 2100, None).roles[0].clone()],
+    );
+    let mut shown = detail.clone();
+    collect::attach_career_ranks(&mut shown, &cache, 25);
+    assert_eq!(got(&shown).and_then(|r| r.skill_rating), Some(2100));
+    // A rank the match itself reported is left alone and gets no career rank.
+    let mut with_rank = detail.clone();
+    for p in with_rank.allies.iter_mut() {
+        if p.bnet_id.as_deref() == Some(&id) {
+            p.rank = Some(Rank {
+                tier: None,
+                division: None,
+                score: None,
+                skill_rating: Some(3000),
+                at_ms: None,
+            });
+        }
+    }
+    collect::attach_career_ranks(&mut with_rank, &cache, 25);
+    assert!(got(&with_rank).is_none());
+}
+
+#[test]
+fn a_rating_prefers_the_role_played_then_the_best_other_role_this_season_then_earlier() {
+    let mk = |roles: Vec<(Role, i64, Option<u32>)>| PlayerRating {
+        bnet_id: "1".into(),
+        name: None,
+        roles: roles
+            .into_iter()
+            .map(|(role, sr, season)| rating("1", role, sr, season).roles[0].clone())
+            .collect(),
+    };
+    // The role played wins over everything else.
+    let p = mk(vec![(Role::Damage, 2000, None), (Role::Tank, 3000, None)]);
+    assert_eq!(
+        p.rating_for(Role::Damage),
+        Some((2000.0, RatingFit::SameRole))
+    );
+    // No rank for it: the highest of the others this season, earlier seasons ignored.
+    let p = mk(vec![
+        (Role::Tank, 1500, None),
+        (Role::Support, 2500, None),
+        (Role::Tank, 900, Some(24)),
+    ]);
+    assert_eq!(
+        p.rating_for(Role::Damage),
+        Some((2500.0, RatingFit::OtherRoles))
+    );
+    // Only earlier seasons have anything: those.
+    let p = mk(vec![(Role::Tank, 1800, Some(24))]);
+    assert_eq!(
+        p.rating_for(Role::Support),
+        Some((1800.0, RatingFit::OtherRoles))
+    );
+    // Ranked in nothing, or a role that is not known: no rating.
+    assert_eq!(mk(vec![]).rating_for(Role::Tank), None);
+    assert_eq!(p.rating_for(Role::Unknown), None);
 }

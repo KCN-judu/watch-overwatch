@@ -17,8 +17,8 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::Duration;
 
-/// How long a current-season rating is reused before it is looked up again.
-pub const RATINGS_TTL: Duration = Duration::from_secs(7 * 24 * 3600);
+/// How long a player's ranks (any season) are used before they are looked up again.
+pub const RATINGS_TTL: Duration = Duration::from_secs(3 * 24 * 3600);
 
 /// A kept match detail, and the participants who could not be looked up when it was
 /// fetched (the upstream gave no token for them), so they are not asked about again.
@@ -58,13 +58,11 @@ pub trait StrengthCache: Send + Sync + std::fmt::Debug {
     /// The detail of `match_id` as seen by `subject` (their bnet id).
     fn detail(&self, mode: Mode, match_id: &str, subject: &str) -> Option<CachedDetail>;
     fn put_detail(&self, subject: &str, detail: &MatchDetail, unreachable: &[String]);
-    /// Ranks of one player in one season. `max_age` of `None` never expires.
-    fn season_ratings(
-        &self,
-        bnet_id: &str,
-        season: u32,
-        max_age: Option<Duration>,
-    ) -> Option<Vec<RoleRating>>;
+    /// Ranks of one player in one season, or `None` when there are none stored or they
+    /// are older than [`RATINGS_TTL`]. The age is checked here, in one place, so every
+    /// caller gets either fresh data or a miss.
+    fn season_ratings(&self, bnet_id: &str, season: u32) -> Option<Vec<RoleRating>>;
+    /// Stores ranks stamped with the current time, replacing what was there.
     fn put_season_ratings(&self, bnet_id: &str, season: u32, ratings: &[RoleRating]);
 }
 
@@ -75,16 +73,33 @@ type StoredRatings = (u128, Vec<RoleRating>);
 type ListId = (String, Mode, Option<u32>);
 
 /// In-memory cache: for tests, and a fallback when the disk cache cannot be opened.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct MemoryCache {
+    ttl: Duration,
     lists: Mutex<HashMap<ListId, StoredList>>,
     details: Mutex<HashMap<(Mode, String, String), CachedDetail>>,
     ratings: Mutex<HashMap<(String, u32), StoredRatings>>,
 }
 
+impl Default for MemoryCache {
+    fn default() -> Self {
+        Self {
+            ttl: RATINGS_TTL,
+            lists: Mutex::default(),
+            details: Mutex::default(),
+            ratings: Mutex::default(),
+        }
+    }
+}
+
 impl MemoryCache {
     pub fn new() -> Self {
         Self::default()
+    }
+    /// Uses `ttl` instead of [`RATINGS_TTL`] (tests).
+    pub fn with_ratings_ttl(mut self, ttl: Duration) -> Self {
+        self.ttl = ttl;
+        self
     }
     /// Forgets every rating but keeps the match details.
     pub fn clear_ratings(&self) {
@@ -149,16 +164,10 @@ impl StrengthCache for MemoryCache {
             );
         }
     }
-    fn season_ratings(
-        &self,
-        bnet_id: &str,
-        season: u32,
-        max_age: Option<Duration>,
-    ) -> Option<Vec<RoleRating>> {
+    fn season_ratings(&self, bnet_id: &str, season: u32) -> Option<Vec<RoleRating>> {
         let r = self.ratings.lock().ok()?;
         let (at, rows) = r.get(&(bnet_id.to_owned(), season))?;
-        let fresh =
-            max_age.is_none_or(|age| crate::now_ms().saturating_sub(*at) <= age.as_millis());
+        let fresh = crate::now_ms().saturating_sub(*at) <= self.ttl.as_millis();
         fresh.then(|| rows.clone())
     }
     fn put_season_ratings(&self, bnet_id: &str, season: u32, ratings: &[RoleRating]) {

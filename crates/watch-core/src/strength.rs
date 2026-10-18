@@ -132,6 +132,10 @@ pub struct SideStrength {
     #[serde(default)]
     pub max: RoleMeans,
     pub rated: RoleCounts,
+    /// Of the rated players, how many have no rank for the role they played and are
+    /// rated by their ranks in other roles.
+    #[serde(default)]
+    pub other_role: usize,
     pub players: usize,
 }
 
@@ -154,12 +158,12 @@ pub struct MatchStrength {
 fn participant_rating(
     p: &Participant,
     ratings: &HashMap<&str, &PlayerRating>,
-) -> Option<(f64, RatingSource)> {
+) -> Option<(f64, RatingSource, RatingFit)> {
     if let Some(sr) = p.rank.as_ref().and_then(|r| r.skill_rating) {
-        return Some((sr as f64, RatingSource::InMatch));
+        return Some((sr as f64, RatingSource::InMatch, RatingFit::SameRole));
     }
-    let rating = ratings.get(p.bnet_id.as_deref()?)?.for_role(p.role)?;
-    Some((rating.rank.skill_rating? as f64, RatingSource::Career))
+    let (sr, fit) = ratings.get(p.bnet_id.as_deref()?)?.rating_for(p.role)?;
+    Some((sr, RatingSource::Career, fit))
 }
 
 pub fn match_strength(
@@ -168,11 +172,13 @@ pub fn match_strength(
 ) -> MatchStrength {
     let mut sources = Vec::new();
     let mut side = |players: &[Participant]| {
+        let mut other_role = 0;
         let rated: Vec<(Role, f64)> = players
             .iter()
             .filter_map(|p| {
-                let (sr, source) = participant_rating(p, ratings)?;
+                let (sr, source, fit) = participant_rating(p, ratings)?;
                 sources.push(source);
+                other_role += usize::from(fit == RatingFit::OtherRoles);
                 Some((p.role, sr))
             })
             .collect();
@@ -183,6 +189,7 @@ pub fn match_strength(
             min,
             max,
             rated: rated_counts,
+            other_role,
             players: players.len(),
         };
         (strength, rated)
