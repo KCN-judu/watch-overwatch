@@ -551,10 +551,17 @@ class ListCoverage {
   ListCoverage(Json j)
     : mode = Mode.parse(_s(j['mode'])),
       pagesFetched = _i(j['pages_fetched']) ?? 0,
-      exhausted = _b(j['exhausted']);
+      exhausted = _b(j['exhausted']),
+      newMatches = _i(j['new_matches']) ?? 0,
+      totalMatches = _i(j['total_matches']) ?? 0;
   final Mode mode;
   final int pagesFetched;
+
+  /// True when the stored list reaches the player's oldest match.
   final bool exhausted;
+
+  /// Matches this read added to the local store, and how many it holds in all.
+  final int newMatches, totalMatches;
 }
 
 class FetchRecord {
@@ -680,6 +687,9 @@ class MatchStrength {
   final String source;
   final SideStrength ally, enemy;
   final RoleMeans lobby, diff;
+
+  /// False when nobody in the match could be rated: kept in the list as a gap.
+  bool get hasData => source != 'none';
 }
 
 class StrengthGroup {

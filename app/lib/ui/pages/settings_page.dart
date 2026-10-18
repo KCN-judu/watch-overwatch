@@ -462,7 +462,7 @@ class _SettingsPageState extends State<SettingsPage> {
         : '${(bytes / 1024).round()} KB';
     final text = s == null
         ? '不可用'
-        : '${s['matches']} 场对局、${s['players']} 名玩家，$size';
+        : '${s['listed']} 场对局记录、${s['matches']} 场详情、${s['participants']} 名队友与对手、${s['players']} 名玩家段位，$size';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -471,7 +471,7 @@ class _SettingsPageState extends State<SettingsPage> {
           SizedBox(
             width: 140,
             child: Text(
-              '强度缓存',
+              '本地缓存',
               style: Ty.body.copyWith(color: context.c.textSecondary),
             ),
           ),

@@ -99,6 +99,16 @@ impl Role {
             _ => Self::Unknown,
         }
     }
+    /// The wire name (`tank`, `damage`, …), as serialised.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Tank => "tank",
+            Self::Damage => "damage",
+            Self::Support => "support",
+            Self::Open => "open",
+            Self::Unknown => "unknown",
+        }
+    }
     pub fn name_zh(self) -> &'static str {
         match self {
             Self::Tank => "重装",
@@ -510,6 +520,12 @@ pub struct ListCoverage {
     pub pages_fetched: u32,
     /// True when an empty or repeating page proved there is nothing further.
     pub exhausted: bool,
+    /// Matches added to the local store by this read (newer than the newest stored).
+    #[serde(default)]
+    pub new_matches: usize,
+    /// Matches in the list after this read; with a local store, all of what is kept.
+    #[serde(default)]
+    pub total_matches: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

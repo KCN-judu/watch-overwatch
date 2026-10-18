@@ -62,7 +62,6 @@ class PlayerWorkspace extends ChangeNotifier {
   }
 
   final details = <String, Load<MatchDetail>>{};
-  final pages = <Mode, int>{};
   final filters = <Mode, MatchFilters>{};
   final strengthDetails = <Mode, int>{};
 
@@ -106,7 +105,6 @@ class PlayerWorkspace extends ChangeNotifier {
   Load<List<SeasonPoint>> trendFor(Mode m) => trend.putIfAbsent(m, Load.new);
   Load<StrengthResult> strengthFor(Mode m) => strength.putIfAbsent(m, Load.new);
   MatchFilters filtersFor(Mode m) => filters.putIfAbsent(m, MatchFilters.new);
-  int pagesFor(Mode m) => pages[m] ?? 3;
   int strengthCount(Mode m) => strengthDetails[m] ?? 10;
 
   /// Most played hero across the loaded matches, standing in for a missing avatar.
@@ -185,16 +183,93 @@ class PlayerWorkspace extends ChangeNotifier {
 
   // ---- Loads -----------------------------------------------------------------
 
-  Future<void> loadMatches(Mode mode, {bool fresh = false}) => _run(
-    matchesFor(mode),
-    () => _call(
-      (s) => app.api.dataset(s, mode, pages: pagesFor(mode), fresh: fresh),
-    ),
-  );
+  final _listSync = <Mode, Future<void>>{};
 
-  Future<void> loadMore(Mode mode) {
-    pages[mode] = (pagesFor(mode) + 2).clamp(1, 20);
-    return loadMatches(mode, fresh: false);
+  /// Reads the match list into the service's local store and shows it: matches newer than
+  /// the newest stored first, then older ones until each of [roles] has [quota] matches
+  /// (the whole history when [quota] is null). The list on screen grows as it goes.
+  /// Reads queue up per mode, so a later one sees what an earlier one stored; [fresh]
+  /// asks the upstream again for the newest page instead of reusing a recent answer.
+  Future<void> loadMatches(
+    Mode mode, {
+    bool fresh = false,
+    int? quota,
+    Iterable<Role> roles = const [],
+  }) {
+    final next = (_listSync[mode] ?? Future<void>.value()).then(
+      (_) => _readList(mode, fresh, quota, roles),
+    );
+    _listSync[mode] = next;
+    return next;
+  }
+
+  /// Whether [read] holds [quota] matches of each of [roles] (all three when empty).
+  static bool quotaMet(
+    List<MatchSummary> read,
+    int quota,
+    Iterable<Role> roles,
+  ) {
+    final wanted = roles.isEmpty ? Role.playable : roles;
+    return wanted.every((r) => read.where((m) => m.role == r).length >= quota);
+  }
+
+  /// Whether the stored list is known to reach the player's oldest match.
+  bool listExhausted(Mode mode) =>
+      matchesFor(
+        mode,
+      ).value?.coverage.matchLists.any((l) => l.mode == mode && l.exhausted) ??
+      false;
+
+  Future<void> _readList(
+    Mode mode,
+    bool fresh,
+    int? quota,
+    Iterable<Role> roles,
+  ) async {
+    final l = matchesFor(mode);
+    final shown = l.value?.matches ?? const <MatchSummary>[];
+    if (!fresh &&
+        l.has &&
+        (listExhausted(mode) ||
+            (quota != null && quotaMet(shown, quota, roles)))) {
+      return;
+    }
+    l.loading = true;
+    l.error = null;
+    notifyListeners();
+    try {
+      var first = true;
+      while (true) {
+        final before = l.value?.matches.length ?? 0;
+        final ds = await _call(
+          (s) => app.api.dataset(
+            s,
+            mode,
+            fresh: fresh && first,
+            quota: quota,
+            roles: roles,
+          ),
+        );
+        l.value = ds;
+        l.at = DateTime.now();
+        notifyListeners();
+        final cover = ds.coverage.matchLists
+            .where((c) => c.mode == mode)
+            .firstOrNull;
+        if (cover == null || cover.exhausted) break;
+        if (quota != null && quotaMet(ds.matches, quota, roles)) break;
+        // A call that added nothing would only repeat itself.
+        if (!first && ds.matches.length <= before) break;
+        first = false;
+      }
+    } on Cancelled {
+      // Keep what was there.
+    } on ApiError catch (e) {
+      l.error = e;
+    } finally {
+      l.loading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> loadCompetitive({bool fresh = false}) => _run(
@@ -254,9 +329,10 @@ class PlayerWorkspace extends ChangeNotifier {
     StrengthResult? latest;
     ApiError? failure;
     try {
-      // The matches come from the list already read on the match page. A re-analysis
-      // reads the list again first (new matches).
-      await loadMatches(mode, fresh: result.has || fresh);
+      // Look at the newest page first: anything newer than what the local store holds is
+      // added to it, then the list is read back until each role has [n] matches (older
+      // ones come from the store). The analysis picks its matches from that list.
+      await loadMatches(mode, fresh: true, quota: n, roles: roles);
 
       // Analyse the newest [n] matches of each role. A match in which nobody can be
       // rated drops out of the result, so when a role ends up with fewer than [n]
@@ -278,16 +354,10 @@ class PlayerWorkspace extends ChangeNotifier {
         ];
         strengthSelected[mode] = chosen.length;
         if (chosen.isEmpty) {
-          // Nothing of these roles was read: show the empty answer, do not ask the
-          // service to go and find matches on its own.
+          // The whole history holds none of these roles: show the empty answer, do not ask
+          // the service to go and find matches on its own.
           latest = StrengthResult(const {});
-          if (!_moreToRead(mode, roles, n)) break;
-          strengthStatus[mode] = '对局不够，正在读取更多…';
-          notifyListeners();
-          final had = read.length;
-          await loadMore(mode);
-          if ((matchesFor(mode).value?.matches.length ?? 0) <= had) break;
-          continue;
+          break;
         }
 
         strengthStatus[mode] = rounds == 1
@@ -346,25 +416,29 @@ class PlayerWorkspace extends ChangeNotifier {
 
         latest = r;
         // Which roles still lack analysable matches, and can take more?
-        final got = r.lobby.matches;
+        final got = r.lobby.matches.where((m) => m.hasData).toList();
         var extended = false;
         var stillShort = false;
+        var wanted = 0;
         for (final r in roles) {
           final have = got.where((m) => m.subjectRole == r).length;
           final avail = read.where((m) => m.role == r).length;
           if (have >= n) continue;
           stillShort = true;
+          final target = take[r]! + (n - have);
+          wanted = math.max(wanted, target);
           if (take[r]! < avail) {
-            take[r] = math.min(avail, take[r]! + (n - have));
+            take[r] = math.min(avail, target);
             extended = true;
           }
         }
         if (extended) continue;
-        if (!stillShort || !_moreToRead(mode, roles, n)) break;
-        strengthStatus[mode] = '对局不够，正在读取更多…';
+        if (!stillShort || listExhausted(mode)) break;
+        // Every stored match of the short role is already used: read older ones.
+        strengthStatus[mode] = '对局不够，正在读取更早的对局…';
         notifyListeners();
         final had = read.length;
-        await loadMore(mode);
+        await loadMatches(mode, quota: wanted, roles: roles);
         if ((matchesFor(mode).value?.matches.length ?? 0) <= had) break;
       }
     } finally {
@@ -386,16 +460,6 @@ class PlayerWorkspace extends ChangeNotifier {
     // The result on screen now covers the scope this run used.
     if (result.at != before) strengthRanScope[mode] = scope;
     notifyListeners();
-  }
-
-  /// Whether more of the match list could still be read for these roles.
-  bool _moreToRead(Mode mode, List<Role> roles, int n) {
-    final ds = matchesFor(mode).value;
-    if (ds == null || pagesFor(mode) >= 20) return false;
-    final exhausted = ds.coverage.matchLists.any(
-      (l) => l.mode == mode && l.exhausted,
-    );
-    return !exhausted;
   }
 
   void cancelStrength(Mode mode) {
@@ -721,8 +785,11 @@ class AppState extends ChangeNotifier {
       ws.loadCompetitive(fresh: true),
     ];
     if (tab == 'trend') jobs.add(ws.loadTrend(mode, fresh: true));
-    if (tab == 'strength' && ws.strengthFor(mode).has)
-      jobs.add(ws.runStrength(mode, fresh: true));
+    // The refresh button only looks for new matches. Looking every player's rank up
+    // again is a few hundred requests, so it stays with "强制刷新" on the strength page.
+    if (tab == 'strength' && ws.strengthFor(mode).has) {
+      jobs.add(ws.runStrength(mode));
+    }
     await Future.wait(jobs);
   }
 

@@ -1051,3 +1051,220 @@ async fn known_matches_are_used_without_reading_the_list_again() {
     );
     assert_eq!(ds.matches.len(), 3, "the rows handed in are the history");
 }
+
+// ---- the stored match list: only what is new is fetched -------------------------------------
+
+/// An upstream history, newest first, ten matches a page; records every page asked for.
+struct History {
+    ids: Mutex<Vec<(String, &'static str)>>,
+    pages: Mutex<Vec<u64>>,
+}
+
+impl History {
+    fn new(n: usize) -> Self {
+        let h = History {
+            ids: Mutex::new(Vec::new()),
+            pages: Mutex::new(Vec::new()),
+        };
+        h.add_newer(n, "tank");
+        h.pages.lock().unwrap().clear();
+        h
+    }
+    /// `n` matches newer than everything so far.
+    fn add_newer(&self, n: usize, role: &'static str) {
+        let mut ids = self.ids.lock().unwrap();
+        let next = ids.len();
+        let mut fresh: Vec<_> = (next..next + n)
+            .rev()
+            .map(|i| (format!("m{i}"), role))
+            .collect();
+        fresh.append(&mut ids);
+        *ids = fresh;
+    }
+    fn take_pages(&self) -> Vec<u64> {
+        std::mem::take(&mut *self.pages.lock().unwrap())
+    }
+}
+
+impl Fetcher for History {
+    async fn fetch(&self, endpoint: Endpoint, payload: Value) -> Result<Fetched, Failure> {
+        let value = match endpoint {
+            Endpoint::MatchList => {
+                let page = payload["page"].as_u64().unwrap();
+                self.pages.lock().unwrap().push(page);
+                let ids = self.ids.lock().unwrap();
+                let rows: Vec<Value> = ids
+                    .iter()
+                    .skip((page as usize - 1) * 10)
+                    .take(10)
+                    .map(|(id, role)| {
+                        let n: i64 = id[1..].parse().unwrap();
+                        role_row(id, 1000 + n, role)
+                    })
+                    .collect();
+                json!({"code":0,"data":rows})
+            }
+            _ => json!({"code":0,"data":{}}),
+        };
+        Ok(Fetched {
+            value,
+            cached: false,
+        })
+    }
+}
+
+async fn sync(
+    h: &History,
+    cache: &watch_core::MemoryCache,
+    max_pages: u32,
+    quota: Option<(usize, &[Role])>,
+) -> collect::MatchPages {
+    let scope = collect::SyncScope {
+        page: collect::PageScope {
+            token: "T",
+            mode: Mode::Quick,
+            season: None,
+            max_pages,
+        },
+        subject: "1001",
+        quota,
+    };
+    collect::sync_match_list(h, &catalog(), cache, &scope, None).await
+}
+
+#[tokio::test]
+async fn the_first_read_takes_everything_and_later_reads_only_what_is_new() {
+    let h = History::new(25);
+    let cache = watch_core::MemoryCache::new();
+
+    let first = sync(&h, &cache, 20, None).await;
+    assert_eq!(first.matches.len(), 25);
+    assert!(first.coverage.exhausted);
+    assert_eq!(
+        h.take_pages(),
+        vec![1, 2, 3, 4],
+        "the empty page 4 proves the end"
+    );
+
+    let again = sync(&h, &cache, 20, None).await;
+    assert_eq!(
+        h.take_pages(),
+        vec![1],
+        "nothing new: one request to find out"
+    );
+    assert_eq!((again.matches.len(), again.coverage.new_matches), (25, 0));
+    assert!(again.coverage.exhausted);
+
+    h.add_newer(3, "damage");
+    let three = sync(&h, &cache, 20, None).await;
+    assert_eq!(
+        h.take_pages(),
+        vec![1],
+        "three new matches fit on the first page"
+    );
+    assert_eq!((three.matches.len(), three.coverage.new_matches), (28, 3));
+    assert_eq!(three.matches[0].id, "m27", "newest first");
+
+    h.add_newer(12, "support");
+    let twelve = sync(&h, &cache, 20, None).await;
+    assert_eq!(h.take_pages(), vec![1, 2], "page 2 reaches the stored run");
+    assert_eq!(
+        (twelve.matches.len(), twelve.coverage.new_matches),
+        (40, 12)
+    );
+    let ids: std::collections::HashSet<_> = twelve.matches.iter().map(|m| &m.id).collect();
+    assert_eq!(ids.len(), 40, "no match twice");
+}
+
+#[tokio::test]
+async fn a_page_budget_splits_a_long_read_and_the_next_call_resumes() {
+    let h = History::new(45);
+    let cache = watch_core::MemoryCache::new();
+    let a = sync(&h, &cache, 2, None).await;
+    assert_eq!(a.matches.len(), 20);
+    assert!(!a.coverage.exhausted);
+    assert_eq!(h.take_pages(), vec![1, 2]);
+
+    // The next call checks page 1 for news, then carries on where the store ends.
+    let b = sync(&h, &cache, 2, None).await;
+    assert_eq!(h.take_pages(), vec![1, 3]);
+    assert_eq!(b.matches.len(), 30);
+
+    let mut last = b;
+    let mut calls = 0;
+    while !last.coverage.exhausted && calls < 10 {
+        last = sync(&h, &cache, 2, None).await;
+        calls += 1;
+    }
+    assert_eq!(last.matches.len(), 45);
+    assert!(last.coverage.exhausted);
+}
+
+#[tokio::test]
+async fn older_matches_are_read_only_until_the_quota_is_met() {
+    let h = History::new(0);
+    // Oldest to newest: 30 tank, then 6 support, then 4 damage.
+    h.add_newer(30, "tank");
+    h.add_newer(6, "healer");
+    h.add_newer(4, "dps");
+    let cache = watch_core::MemoryCache::new();
+    let got = sync(&h, &cache, 20, Some((3, &[Role::Support]))).await;
+    assert_eq!(
+        h.take_pages(),
+        vec![1],
+        "the first page already holds 3 supports"
+    );
+    assert!(!got.coverage.exhausted);
+    assert_eq!(got.matches.len(), 10);
+
+    // A larger quota resumes from the store instead of starting over.
+    let more = sync(&h, &cache, 20, Some((6, &[Role::Support]))).await;
+    assert_eq!(
+        h.take_pages(),
+        vec![1],
+        "6 supports are within the first 10 too"
+    );
+    assert_eq!(more.matches.len(), 10);
+    let tanks = sync(&h, &cache, 20, Some((12, &[Role::Tank]))).await;
+    assert_eq!(
+        h.take_pages(),
+        vec![1, 2, 3],
+        "page 1 is the news check, then older pages"
+    );
+    assert!(
+        tanks
+            .matches
+            .iter()
+            .filter(|m| m.role == Role::Tank)
+            .count()
+            >= 12
+    );
+}
+
+#[tokio::test]
+async fn news_that_does_not_reach_the_stored_run_replaces_it() {
+    let h = History::new(10);
+    let cache = watch_core::MemoryCache::new();
+    sync(&h, &cache, 20, None).await;
+    h.take_pages();
+    // 35 matches since: two pages cannot reach the stored ten.
+    h.add_newer(35, "tank");
+    let got = sync(&h, &cache, 2, None).await;
+    assert_eq!(h.take_pages(), vec![1, 2]);
+    assert_eq!(
+        got.matches.len(),
+        20,
+        "only the new run; a gap is never stored"
+    );
+    assert!(!got.coverage.exhausted);
+    let mut last = got;
+    for _ in 0..6 {
+        if last.coverage.exhausted {
+            break;
+        }
+        last = sync(&h, &cache, 20, None).await;
+    }
+    assert_eq!(last.matches.len(), 45);
+    let ids: std::collections::HashSet<_> = last.matches.iter().map(|m| &m.id).collect();
+    assert_eq!(ids.len(), 45);
+}

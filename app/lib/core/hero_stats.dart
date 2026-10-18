@@ -99,7 +99,7 @@ class HeroStats {
         r.per10 = null;
       }
     }
-    final out = _mergeSelfHealing(byGuid.values.toList());
+    var out = byGuid.values.toList();
     // Stats the game's list does not carry for this hero but matches show it doing
     // (a hero whose list has no healing at all): add them from matches.
     if (agg != null) {
@@ -116,6 +116,7 @@ class HeroStats {
         );
       }
     }
+    out = _mergeSelfHealing(out);
     // Some stats every hero can produce, and supports always heal: a missing record
     // for these is zero, never "cannot produce".
     final always = [
@@ -146,6 +147,15 @@ class HeroStats {
     final self = rows.where((r) => r.name == '自我治疗量').firstOrNull;
     if (self == null) return rows;
     final total = rows.where((r) => r.name == '治疗量').firstOrNull;
+    // A healing figure taken from matches already includes the self-healing.
+    if (total != null &&
+        (total.perMatchSource == StatSource.recent ||
+            total.per10Source == StatSource.recent)) {
+      return [
+        for (final r in rows)
+          if (!identical(r, self)) r,
+      ];
+    }
     if (total == null) {
       return [
         for (final r in rows)

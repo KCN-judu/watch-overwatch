@@ -114,13 +114,19 @@ class _LineChartState extends State<LineChart> {
     for (final (k, s) in widget.series.indexed) {
       final v = s.values[i];
       if (v == null) continue;
-      final dx = (k - (widget.series.length - 1) / 2) * 11.0;
-      final top = s.hasRange(i) ? y(s.highs![i]!) : y(v);
-      final bottom = s.hasRange(i) ? y(s.lows![i]!) : y(v);
-      final ey = p.dy < top
-          ? top - p.dy
-          : (p.dy > bottom ? p.dy - bottom : 0.0);
-      final d = math.sqrt(math.pow(p.dx - (g.x(i) + dx), 2) + ey * ey);
+      // Points and bars of every series sit on one vertical line. Touching a point picks
+      // that point; otherwise a touch inside a bar picks the narrowest bar there;
+      // otherwise the nearest point.
+      final dxp = (p.dx - g.x(i)).abs();
+      var d = math.sqrt(dxp * dxp + math.pow(p.dy - y(v), 2));
+      if (d <= 7) {
+        d -= 1000;
+      } else if (s.hasRange(i) &&
+          dxp <= _barHalf(k, widget.series.length) &&
+          p.dy >= y(s.highs![i]!) &&
+          p.dy <= y(s.lows![i]!)) {
+        d = -1 / _barHalf(k, widget.series.length);
+      }
       if (d < bestD) {
         bestD = d;
         best = k;
@@ -355,6 +361,9 @@ class _Axis {
   }
 }
 
+/// Half the width of series [k]'s spread bar: the first of [n] is the widest.
+double _barHalf(int k, int n) => 3.5 + (n - 1 - k) * 3.0;
+
 class _Geom {
   _Geom(this.size, this.n);
   final Size size;
@@ -446,10 +455,34 @@ class _LinePainter extends CustomPainter {
       tp.paint(canvas, Offset(x, size.height - _Geom.bottom + 6));
     }
 
-    // Series. With several, each is nudged sideways so the spread bars sit side by side.
-    final labelYs = <double>[];
+    // Spread: lowest to highest, a sharp bar like a candlestick's range. The series'
+    // bars are nested on the column's line (the first is the widest, behind the rest),
+    // so a match's points and bars of every series stand on one vertical line.
     for (final (k, s) in series.indexed) {
-      final dx = (k - (series.length - 1) / 2) * 11.0;
+      for (var i = 0; i < s.values.length; i++) {
+        if (!s.hasRange(i)) continue;
+        final half = _barHalf(k, series.length);
+        final top = y(s.highs![i]!), bottom = y(s.lows![i]!);
+        final bar = Rect.fromLTRB(
+          g.x(i) - half,
+          top,
+          g.x(i) + half,
+          math.max(bottom, top + 2),
+        );
+        canvas.drawRect(bar, Paint()..color = s.color.withValues(alpha: 0.30));
+        canvas.drawRect(
+          bar,
+          Paint()
+            ..color = s.color.withValues(alpha: 0.9)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1,
+        );
+      }
+    }
+
+    final labelYs = <double>[];
+    for (final s in series) {
+      const dx = 0.0;
       // Gaps between two known points: a hatched ribbon, so the missing match
       // reads as "no data here" instead of the line just ending.
       int? prev;
@@ -465,25 +498,6 @@ class _LinePainter extends CustomPainter {
           );
         }
         prev = i;
-      }
-      // Spread: lowest to highest, a sharp bar like a candlestick's range.
-      for (var i = 0; i < s.values.length; i++) {
-        if (!s.hasRange(i)) continue;
-        final top = y(s.highs![i]!), bottom = y(s.lows![i]!);
-        final bar = Rect.fromLTRB(
-          g.x(i) + dx - 3.5,
-          top,
-          g.x(i) + dx + 3.5,
-          math.max(bottom, top + 2),
-        );
-        canvas.drawRect(bar, Paint()..color = s.color.withValues(alpha: 0.30));
-        canvas.drawRect(
-          bar,
-          Paint()
-            ..color = s.color.withValues(alpha: 0.9)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1,
-        );
       }
       final line = Paint()
         ..color = s.color
@@ -568,9 +582,8 @@ class _LinePainter extends CustomPainter {
       final only = seriesIndex?.clamp(0, series.length - 1);
       final detail = detailFormat ?? valueFormat;
       if (only != null && series[only].values[i] != null) {
-        final dx = (only - (series.length - 1) / 2) * 11.0;
         canvas.drawCircle(
-          Offset(x + dx, y(series[only].values[i]!)),
+          Offset(x, y(series[only].values[i]!)),
           8,
           Paint()
             ..color = series[only].color

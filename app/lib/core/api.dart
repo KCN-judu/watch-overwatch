@@ -136,12 +136,17 @@ class Api {
     );
   }
 
-  /// Matches and careers for one mode. `details: 0` skips per-match detail requests.
+  /// The match list of one mode, read through the service's local store: matches newer
+  /// than the newest stored come first, then older ones until `quota` matches of each of
+  /// `roles` are stored (everything when `quota` is null). At most `pages` list pages are
+  /// requested per call; `coverage.exhausted` says whether the history is complete.
   Future<PlayerDataset> dataset(
     String session,
     Mode mode, {
-    int pages = 3,
+    int pages = 10,
     bool fresh = false,
+    int? quota,
+    Iterable<Role> roles = const [],
     CancelToken? cancel,
   }) async {
     final j = await post('/api/player/dataset', {
@@ -152,6 +157,9 @@ class Api {
         'max_pages': pages,
         'max_details': 0,
         'hero_board': false,
+        'list_quota': ?quota,
+        if (quota != null && roles.isNotEmpty)
+          'roles': [for (final r in roles) r.id],
       },
     }, cancel: cancel);
     return PlayerDataset((j['dataset'] as Map).cast<String, dynamic>());

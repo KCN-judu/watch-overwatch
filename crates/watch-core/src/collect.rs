@@ -1,7 +1,7 @@
 //! Orchestrates upstream calls into a complete [`PlayerDataset`]. Transport,
 //! caching and credentials stay behind [`Fetcher`]; this module only decides
 //! what to ask for and records how complete the answer is.
-use crate::cache::{CachedDetail, RATINGS_TTL, StrengthCache};
+use crate::cache::{CachedDetail, ListKey, RATINGS_TTL, StrengthCache};
 use crate::dashen::{Endpoint, Mode, normalize};
 use crate::ir::*;
 use crate::progress::{Progress, report};
@@ -58,6 +58,10 @@ pub struct CollectPlan {
     /// empty, the list is not fetched again: these rows are the history to choose
     /// from, in their own words, and only their details and ratings are looked up.
     pub known_matches: Vec<MatchSummary>,
+    /// With a local store, the list is only read as far as needed: new matches since the
+    /// last read, then older ones until every role (of `roles`) has this many, or all of
+    /// them when unset. `details_per_role` counts as this when it is unset.
+    pub list_quota: Option<usize>,
     /// Optional live progress sink; never serialised.
     #[serde(skip)]
     pub progress: Option<Arc<Progress>>,
@@ -81,6 +85,7 @@ impl Default for CollectPlan {
             roles: Vec::new(),
             refresh_ratings: false,
             known_matches: Vec::new(),
+            list_quota: None,
             progress: None,
             cache: None,
         }
@@ -99,6 +104,7 @@ impl CollectPlan {
             || self.max_rated_players > 600
             || self.roles.iter().any(|r| !Role::PLAYABLE.contains(r))
             || self.known_matches.len() > 300
+            || self.list_quota.is_some_and(|n| !(1..=300).contains(&n))
             || self.known_matches.iter().any(|m| m.id.is_empty())
             || self.career_seasons.len() > 11
             || self.season.is_some_and(|s| !season_ok(s))
@@ -258,6 +264,8 @@ pub async fn match_pages_until<F: Fetcher>(
             season,
             pages_fetched: 0,
             exhausted: false,
+            new_matches: 0,
+            total_matches: 0,
         },
         fetches: Vec::new(),
         error: None,
@@ -300,6 +308,7 @@ pub async fn match_pages_until<F: Fetcher>(
             rows.into_iter()
                 .filter(|m| !m.id.is_empty() && seen.insert(m.id.clone())),
         );
+        out.coverage.total_matches = out.matches.len();
         report(progress, |s| s.matches_found = out.matches.len());
         if out.matches.len() == before {
             out.coverage.exhausted = true;
@@ -309,6 +318,210 @@ pub async fn match_pages_until<F: Fetcher>(
             break;
         }
     }
+    out
+}
+
+/// What to read through the local store.
+pub struct SyncScope<'a> {
+    pub page: PageScope<'a>,
+    /// Whose list it is (their bnet id); the key of the stored list.
+    pub subject: &'a str,
+    /// Stop reading older matches once every one of these roles has this many.
+    pub quota: Option<(usize, &'a [Role])>,
+}
+
+/// Fetches one list page into `out`, recording the request. `None` after a failure.
+async fn read_list_page<F: Fetcher>(
+    f: &F,
+    cat: &Catalog,
+    scope: &PageScope<'_>,
+    page: u32,
+    out: &mut MatchPages,
+    progress: Option<&Progress>,
+) -> Option<Vec<MatchSummary>> {
+    let endpoint = scope.mode.match_list();
+    let result = f
+        .fetch(
+            endpoint,
+            match_list_payload(scope.token, scope.mode, scope.season, page),
+        )
+        .await;
+    out.fetches.push(record(
+        endpoint,
+        Some(scope.mode),
+        scope.season,
+        Some(page),
+        None,
+        &result,
+    ));
+    report(progress, |s| {
+        s.phase = "list".into();
+        s.done = page as usize;
+        s.total = scope.max_pages as usize;
+        s.note = format!("第 {page} 页");
+        s.requests += 1;
+        if result.is_err() {
+            s.failures += 1;
+        }
+    });
+    match result {
+        Ok(v) => {
+            out.coverage.pages_fetched += 1;
+            let mut seen = HashSet::new();
+            let rows = normalize::match_list(normalize::payload(&v.value), scope.mode, cat);
+            Some(
+                rows.into_iter()
+                    .filter(|m| !m.id.is_empty() && seen.insert(m.id.clone()))
+                    .collect(),
+            )
+        }
+        Err(e) => {
+            out.error = Some(e);
+            None
+        }
+    }
+}
+
+/// Reads a player's match list through the local store, fetching only what is missing:
+///
+///  1. page 1 and onward until a page holds a match already stored: those are the new
+///     matches (one request when there are none);
+///  2. if the store does not yet reach the player's oldest match, older pages from where
+///     the store ends, until `quota` is met or the history is exhausted.
+///
+/// At most `max_pages` pages are fetched per call; `coverage.exhausted` says whether the
+/// store is complete. Returns everything stored, newest first. What the store holds is
+/// always a gap-free run from the newest match: new matches are only added once they
+/// join the stored run, otherwise the store starts over from them.
+pub async fn sync_match_list<F: Fetcher>(
+    f: &F,
+    cat: &Catalog,
+    cache: &dyn StrengthCache,
+    scope: &SyncScope<'_>,
+    progress: Option<&Progress>,
+) -> MatchPages {
+    let page_scope = &scope.page;
+    let key = ListKey {
+        subject: scope.subject,
+        mode: page_scope.mode,
+        season: page_scope.season,
+    };
+    let max_pages = page_scope.max_pages;
+    let stored = cache.match_list(key);
+    let had_rows = !stored.rows.is_empty();
+    let stored_ids: HashSet<String> = stored.rows.iter().map(|m| m.id.clone()).collect();
+    let mut exhausted = stored.exhausted;
+    let mut rows = stored.rows;
+    let mut out = MatchPages {
+        matches: Vec::new(),
+        coverage: ListCoverage {
+            mode: page_scope.mode,
+            season: page_scope.season,
+            pages_fetched: 0,
+            exhausted: false,
+            new_matches: 0,
+            total_matches: 0,
+        },
+        fetches: Vec::new(),
+        error: None,
+    };
+    let quota_met = |rows: &[MatchSummary]| {
+        scope
+            .quota
+            .is_some_and(|(n, roles)| role_quota_met_for(rows, n, roles))
+    };
+    let mut page_size = 0usize;
+    let mut added = 0usize;
+
+    // 1. New matches. With nothing stored this is simply reading from the top.
+    let mut fresh: Vec<MatchSummary> = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut joined = false;
+    let mut reached_end = false;
+    for page in 1..=max_pages {
+        let Some(list) = read_list_page(f, cat, page_scope, page, &mut out, progress).await else {
+            break;
+        };
+        if page == 1 {
+            page_size = list.len();
+        }
+        if list.is_empty() {
+            reached_end = true;
+            break;
+        }
+        let overlaps = list.iter().any(|m| stored_ids.contains(&m.id));
+        let before = fresh.len();
+        for m in list {
+            if !stored_ids.contains(&m.id) && seen.insert(m.id.clone()) {
+                fresh.push(m);
+            }
+        }
+        if !had_rows {
+            // Nothing to join: persist as we go, so an interrupted read keeps its pages.
+            cache.put_match_rows(key, &fresh[before..]);
+            rows.extend_from_slice(&fresh[before..]);
+            added += fresh.len() - before;
+        }
+        report(progress, |s| s.matches_found = rows.len() + fresh.len());
+        if overlaps {
+            joined = true;
+            break;
+        }
+        if fresh.len() == before {
+            // A page of nothing new and nothing stored: the provider repeats its last page.
+            reached_end = true;
+            break;
+        }
+        if !had_rows && quota_met(&rows) {
+            break;
+        }
+    }
+    if had_rows && !fresh.is_empty() {
+        if !joined {
+            // New matches that do not reach the stored run: start over from them.
+            cache.clear_match_list(key);
+            rows.clear();
+            exhausted = false;
+        }
+        cache.put_match_rows(key, &fresh);
+        added += fresh.len();
+        rows.extend(fresh);
+    }
+    if reached_end && !(had_rows && joined) {
+        exhausted = true;
+    }
+
+    // 2. Older matches, from where the store ends.
+    if had_rows && joined && !exhausted && out.error.is_none() && page_size > 0 {
+        let mut known: HashSet<String> = rows.iter().map(|m| m.id.clone()).collect();
+        // The page that holds the first match the store does not have.
+        let mut next = (rows.len() / page_size) as u32 + 1;
+        while out.coverage.pages_fetched < max_pages && !quota_met(&rows) {
+            let Some(list) = read_list_page(f, cat, page_scope, next, &mut out, progress).await
+            else {
+                break;
+            };
+            let older: Vec<MatchSummary> = list
+                .into_iter()
+                .filter(|m| known.insert(m.id.clone()))
+                .collect();
+            if older.is_empty() {
+                exhausted = true;
+                break;
+            }
+            cache.put_match_rows(key, &older);
+            added += older.len();
+            rows.extend(older);
+            report(progress, |s| s.matches_found = rows.len());
+            next += 1;
+        }
+    }
+    cache.set_list_exhausted(key, exhausted);
+    rows.sort_by_key(|m| std::cmp::Reverse(m.started_at_ms));
+    out.coverage.exhausted = exhausted;
+    out.coverage.new_matches = added;
+    out.coverage.total_matches = rows.len();
+    out.matches = rows;
     out
 }
 
@@ -464,6 +677,32 @@ pub async fn collect_player<F: Fetcher>(
     for &mode in &plan.modes {
         if !plan.known_matches.is_empty() {
             break;
+        }
+        if let (Some(cache), Some(subject)) = (plan.cache.as_deref(), profile.bnet_id.as_deref()) {
+            // Through the local store: only what is new (and, as needed, older) is fetched.
+            let scope = SyncScope {
+                page: PageScope {
+                    token,
+                    mode,
+                    season: plan.season,
+                    max_pages: plan.max_pages,
+                },
+                subject,
+                quota: plan
+                    .list_quota
+                    .or(plan.details_per_role)
+                    .map(|n| (n, roles.as_slice())),
+            };
+            let pages = sync_match_list(f, cat, cache, &scope, plan.progress.as_deref()).await;
+            fetches.extend(pages.fetches);
+            match_lists.push(pages.coverage);
+            matches.extend(
+                pages
+                    .matches
+                    .into_iter()
+                    .filter(|m| seen.insert(m.id.clone())),
+            );
+            continue;
         }
         let quota = plan.details_per_role;
         let scope = PageScope {

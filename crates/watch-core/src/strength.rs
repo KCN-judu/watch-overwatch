@@ -227,7 +227,8 @@ pub struct StrengthGroup {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LobbyStrength {
-    /// Newest first; matches without any rated player are omitted.
+    /// Newest first. A match in which nobody could be rated is kept (source `none`, no
+    /// means), so it shows as a gap; the groups below only count matches with a rating.
     pub matches: Vec<MatchStrength>,
     /// Stadium ranks are a separate ladder, so summaries never mix modes.
     pub by_mode: Vec<StrengthGroup>,
@@ -260,12 +261,14 @@ pub fn lobby_strength(
     let mut matches: Vec<MatchStrength> = details
         .values()
         .map(|d| match_strength(d, &by_id))
-        .filter(|m| m.source != RatingSource::None)
         .collect();
     matches.sort_by_key(|m| std::cmp::Reverse(m.started_at_ms));
     let mut out = LobbyStrength::default();
     for mode in Mode::ALL {
-        let in_mode: Vec<&MatchStrength> = matches.iter().filter(|m| m.mode == mode).collect();
+        let in_mode: Vec<&MatchStrength> = matches
+            .iter()
+            .filter(|m| m.mode == mode && m.source != RatingSource::None)
+            .collect();
         if in_mode.is_empty() {
             continue;
         }

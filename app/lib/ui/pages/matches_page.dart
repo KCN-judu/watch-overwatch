@@ -727,49 +727,72 @@ class _ScopeLine extends StatelessWidget {
           ),
         if (filters.active) AppButton('清除筛选', quiet: true, onPressed: onClear),
         if (coverage != null)
-          coverage!.exhausted
-              ? Tooltip(
-                  message: '已读 ${coverage!.pagesFetched} 页，已读完',
+          if (coverage!.exhausted)
+            Tooltip(
+              message:
+                  '本地已保存全部对局（${coverage!.totalMatches} 场）。'
+                  '每次打开只读取比已保存的最新一场更新的对局。',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.done_all, size: 15, color: c.textSecondary),
+                  const SizedBox(width: 4),
+                  Text(
+                    coverage!.newMatches > 0
+                        ? '已读完，新增 ${coverage!.newMatches} 场'
+                        : '已读完',
+                    style: secondary,
+                  ),
+                ],
+              ),
+            )
+          else if (load.loading)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox.square(
+                  dimension: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: c.accent,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text('正在读取更早的对局…', style: secondary),
+              ],
+            )
+          else
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Tooltip(
+                  message: '还有更早的对局没有读取',
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.done_all, size: 15, color: c.textSecondary),
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 15,
+                        color: c.warning,
+                      ),
                       const SizedBox(width: 4),
-                      Text('${coverage!.pagesFetched} 页', style: secondary),
+                      Text(
+                        '未读完',
+                        style: Ty.num(Ty.body).copyWith(color: c.warning),
+                      ),
                     ],
                   ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Tooltip(
-                      message: '已读 ${coverage!.pagesFetched} 页，可能还有更早的',
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            size: 15,
-                            color: c.warning,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${coverage!.pagesFetched} 页，未读完',
-                            style: Ty.num(Ty.body).copyWith(color: c.warning),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    AppButton(
-                      '读取更多',
-                      quiet: true,
-                      icon: Icons.add,
-                      onPressed: load.loading ? null : () => ws.loadMore(mode),
-                      tooltip: '再读取 2 页',
-                    ),
-                  ],
                 ),
+                const SizedBox(width: 4),
+                AppButton(
+                  '继续读取',
+                  quiet: true,
+                  icon: Icons.add,
+                  onPressed: () => ws.loadMatches(mode),
+                  tooltip: '读取全部更早的对局',
+                ),
+              ],
+            ),
         LoadStatusBar(
           compact: true,
           at: load.at ?? load.value?.generatedAt,

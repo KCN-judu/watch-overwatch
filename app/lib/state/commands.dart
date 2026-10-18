@@ -152,15 +152,6 @@ List<Cmd> buildCommands() {
       keywords: 'filter search',
     ),
     Cmd(
-      id: 'list.more',
-      label: '读取更多对局',
-      category: '对局',
-      enabled: (a) => a.current != null && a.tab == 'matches',
-      disabledReason: (a) => '在对局列表中可用。',
-      run: (a, s) => a.current?.loadMore(a.mode),
-      keywords: 'load more page',
-    ),
-    Cmd(
       id: 'match.prev',
       label: '上一场',
       category: '对局',

@@ -107,6 +107,9 @@ class _StrengthPageState extends State<StrengthPage> {
     final c = context.c;
     final lobby = r.lobby;
     final n = ws.strengthCount(mode);
+    // Matches nobody could be rated in stay in the chart and table as gaps; the counts
+    // and averages are about the ones with data.
+    final rated = lobby.matches.where((m) => m.hasData).toList();
     final totalPlayers = lobby.matches.fold<int>(
       0,
       (s, m) => s + m.ally.players + m.enemy.players,
@@ -117,9 +120,9 @@ class _StrengthPageState extends State<StrengthPage> {
     );
     final requested = r.dataset.coverage.detailsRequested;
     final read = r.dataset.coverage.detailsOk;
-    final unrated = requested - lobby.matches.length;
+    final unrated = lobby.matches.length - rated.length;
 
-    if (lobby.matches.isEmpty) {
+    if (rated.isEmpty) {
       return [
         EmptyState(
           icon: Icons.analytics_outlined,
@@ -153,7 +156,7 @@ class _StrengthPageState extends State<StrengthPage> {
     final coveredRoles = ranScope == null ? Role.playable : [ranScope];
     final perRole = {
       for (final role in Role.playable)
-        role: lobby.matches.where((m) => m.subjectRole == role).length,
+        role: rated.where((m) => m.subjectRole == role).length,
     };
 
     return [
@@ -162,7 +165,15 @@ class _StrengthPageState extends State<StrengthPage> {
         runSpacing: 4,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Text('${lobby.matches.length} 场', style: Ty.num(Ty.bodyStrong)),
+          Text('${rated.length} 场', style: Ty.num(Ty.bodyStrong)),
+          if (unrated > 0)
+            Tooltip(
+              message: '这 $unrated 场里没有任何已评定的参与者，图里和明细里留空，不计入场数和平均。',
+              child: Text(
+                '另有 $unrated 场无人定级',
+                style: Ty.body.copyWith(color: c.warning),
+              ),
+            ),
           // Per-role coverage: the target is n each; a role with fewer is marked, not hidden.
           for (final role in coveredRoles)
             Tooltip(
@@ -231,7 +242,7 @@ class _StrengthPageState extends State<StrengthPage> {
             ),
           ),
           InfoTip(
-            '未定级或资料不可见的玩家不计入平均，也不会当作 0。${unrated > 0 ? '有 $unrated 场没有任何已评定的参与者，未计入。' : ''}',
+            '未定级或资料不可见的玩家不计入平均，也不会当作 0。${unrated > 0 ? '双方都没有已评定玩家的对局会留空，不计入场数和平均。' : ''}',
           ),
           LoadStatusBar(
             compact: true,

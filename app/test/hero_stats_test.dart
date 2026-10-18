@@ -115,6 +115,25 @@ void main() {
     expect(heal.per10Source, StatSource.provider);
   });
 
+  test('healing read from matches is not topped up with self-healing', () {
+    final cat = Catalog({
+      'heroes': {
+        _hero: {'name': '测试', 'role': 'healer'},
+      },
+      'statistics': [
+        {'heroGuid': _hero, 'valueGuid': '7', 'valueText': '自我治疗量'},
+      ],
+    });
+    final healed = MatchSummary({
+      'id': 'x',
+      'hero': {'kind': 'hero', 'guid': _hero, 'name': '测试'},
+      'stats': {'healing': 1200.0},
+    });
+    final rows = HeroStats.rows(usage(), cat, [healed]);
+    expect(rows.where((r) => r.name == '自我治疗量'), isEmpty);
+    expect(rows.singleWhere((r) => r.name == '治疗量').per10, closeTo(1200, 0.01));
+  });
+
   test('kills and damage are never a dash; supports always have healing', () {
     final bare = Catalog({
       'heroes': {
