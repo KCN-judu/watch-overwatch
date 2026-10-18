@@ -297,7 +297,7 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
                 season: None,
             };
             if let Some(row) = store.match_list(key).rows.into_iter().find(|m| m.id == id) {
-                prepare_matches(s, &player, mode, vec![row]).await;
+                prepare_matches(s, &player, mode, vec![row], true).await;
             }
         }
         if let Some(kept) = store.detail(mode, id, &subject) {
@@ -664,7 +664,13 @@ pub(crate) async fn cache_clear(State(s): State<AppState>) -> Response {
 
 /// Looks up and stores what the lobby-strength analysis needs from `rows`: each match's
 /// detail and every participant's rank. Failures only leave the match unprepared.
-async fn prepare_matches(s: &AppState, player: &Session, mode: Mode, rows: Vec<MatchSummary>) {
+async fn prepare_matches(
+    s: &AppState,
+    player: &Session,
+    mode: Mode,
+    rows: Vec<MatchSummary>,
+    ratings: bool,
+) {
     let fetcher = SessionFetcher {
         client: &s.client,
         cache: &player.cache,
@@ -675,8 +681,8 @@ async fn prepare_matches(s: &AppState, player: &Session, mode: Mode, rows: Vec<M
         known_matches: rows,
         max_details: 0,
         hero_board: false,
-        lobby_ratings: true,
-        max_rated_players: 300,
+        lobby_ratings: ratings,
+        max_rated_players: 600,
         cache: s
             .store
             .clone()
@@ -698,6 +704,9 @@ pub(crate) struct PrepareInput {
     /// How many of the newest matches to keep ready.
     #[serde(default = "prepare_window")]
     window: usize,
+    /// Also look up the players' ranks (otherwise only each match's detail is kept).
+    #[serde(default = "prepare_ratings")]
+    ratings: bool,
     /// How many of them to prepare in this call.
     #[serde(default = "prepare_batch")]
     batch: usize,
@@ -705,6 +714,10 @@ pub(crate) struct PrepareInput {
 
 fn prepare_window() -> usize {
     30
+}
+
+fn prepare_ratings() -> bool {
+    true
 }
 
 fn prepare_batch() -> usize {
@@ -719,8 +732,8 @@ pub(crate) async fn player_prepare(
     Json(input): Json<PrepareInput>,
 ) -> Response {
     let Some(mode) = Mode::parse(&input.mode)
-        .filter(|m| *m != Mode::Stadium)
-        .filter(|_| (1..=300).contains(&input.window) && (1..=10).contains(&input.batch))
+        .filter(|m| *m != Mode::Stadium || !input.ratings)
+        .filter(|_| (1..=5000).contains(&input.window) && (1..=10).contains(&input.batch))
     else {
         return fail(error("validation", "无效的模式或数量。 ")).into_response();
     };
@@ -744,16 +757,24 @@ pub(crate) async fn player_prepare(
             .rows
             .into_iter()
             .take(input.window)
-            .filter(|m| !collect::match_prepared(store, mode, &m.id, &subject, current))
+            .filter(|m| {
+                if input.ratings {
+                    !collect::match_prepared(store, mode, &m.id, &subject, current)
+                } else {
+                    !collect::detail_stored(store, mode, &m.id, &subject)
+                }
+            })
             .collect()
     };
     let batch: Vec<MatchSummary> = waiting(&store).into_iter().take(input.batch).collect();
     let prepared = batch.len();
     if !batch.is_empty() {
-        prepare_matches(&s, &player, mode, batch).await;
+        prepare_matches(&s, &player, mode, batch, input.ratings).await;
     }
     let remaining = waiting(&store).len();
-    Json(json!({"prepared":prepared,"remaining":remaining,"enabled":true})).into_response()
+    let total = store.match_list(key).rows.len().min(input.window);
+    Json(json!({"prepared":prepared,"remaining":remaining,"total":total,"enabled":true}))
+        .into_response()
 }
 
 /// Full IR dataset for one player plus its analysis.

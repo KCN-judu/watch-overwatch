@@ -62,6 +62,9 @@ pub struct CollectPlan {
     /// last read, then older ones until every role (of `roles`) has this many, or all of
     /// them when unset. `details_per_role` counts as this when it is unset.
     pub list_quota: Option<usize>,
+    /// Keep only the newest this many matches of each mode in the dataset (all when
+    /// unset): the exports a user sizes by number of matches.
+    pub match_limit: Option<usize>,
     /// Optional live progress sink; never serialised.
     #[serde(skip)]
     pub progress: Option<Arc<Progress>>,
@@ -86,6 +89,7 @@ impl Default for CollectPlan {
             refresh_ratings: false,
             known_matches: Vec::new(),
             list_quota: None,
+            match_limit: None,
             progress: None,
             cache: None,
         }
@@ -97,11 +101,12 @@ impl CollectPlan {
         let season_ok = |s: u32| (1..=100).contains(&s);
         if self.modes.is_empty()
             || !(1..=20).contains(&self.max_pages)
-            || self.max_details > 100
+            || self.max_details > 5000
+            || self.match_limit.is_some_and(|n| !(1..=5000).contains(&n))
             || self
                 .details_per_role
                 .is_some_and(|n| !(1..=50).contains(&n))
-            || self.max_rated_players > 600
+            || self.max_rated_players > 5000
             || self.roles.iter().any(|r| !Role::PLAYABLE.contains(r))
             || self.known_matches.len() > 300
             || self.list_quota.is_some_and(|n| !(1..=300).contains(&n))
@@ -628,6 +633,20 @@ fn rating_cached(
     }
 }
 
+/// The newest `limit` of `rows` (all of them without a limit), newest first.
+fn newest(mut rows: Vec<MatchSummary>, limit: Option<usize>) -> Vec<MatchSummary> {
+    rows.sort_by_key(|m| std::cmp::Reverse(m.started_at_ms));
+    if let Some(n) = limit {
+        rows.truncate(n);
+    }
+    rows
+}
+
+/// Whether a match's detail is stored.
+pub fn detail_stored(cache: &dyn StrengthCache, mode: Mode, match_id: &str, subject: &str) -> bool {
+    cache.detail(mode, match_id, subject).is_some()
+}
+
 /// Whether everything the lobby-strength analysis needs from this match is stored: its
 /// detail, and a current rank for every participant who can be looked up. Such a match is
 /// analysed without a single request.
@@ -783,8 +802,7 @@ pub async fn collect_player<F: Fetcher>(
             fetches.extend(pages.fetches);
             match_lists.push(pages.coverage);
             matches.extend(
-                pages
-                    .matches
+                newest(pages.matches, plan.match_limit)
                     .into_iter()
                     .filter(|m| seen.insert(m.id.clone())),
             );
@@ -808,8 +826,7 @@ pub async fn collect_player<F: Fetcher>(
         fetches.extend(pages.fetches);
         match_lists.push(pages.coverage);
         matches.extend(
-            pages
-                .matches
+            newest(pages.matches, plan.match_limit)
                 .into_iter()
                 .filter(|m| seen.insert(m.id.clone())),
         );

@@ -1493,3 +1493,43 @@ fn a_rating_prefers_the_role_played_then_the_best_other_role_this_season_then_ea
     assert_eq!(mk(vec![]).rating_for(Role::Tank), None);
     assert_eq!(p.rating_for(Role::Unknown), None);
 }
+
+#[tokio::test]
+async fn a_match_limit_keeps_the_newest_matches_of_each_mode() {
+    let h = History::new(25);
+    let cache: std::sync::Arc<dyn watch_core::StrengthCache> =
+        std::sync::Arc::new(watch_core::MemoryCache::new());
+    let plan = CollectPlan {
+        modes: vec![Mode::Quick],
+        max_pages: 10,
+        max_details: 0,
+        hero_board: false,
+        match_limit: Some(7),
+        cache: Some(cache.clone()),
+        ..CollectPlan::default()
+    };
+    let ds = collect::collect_player(&h, &catalog(), "T", &json!({"bnetId":"1001"}), &plan).await;
+    let ids: Vec<&str> = ds.matches.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(ids, ["m24", "m23", "m22", "m21", "m20", "m19", "m18"]);
+    // Everything is still kept locally; the limit only shapes the dataset.
+    let all = collect::collect_player(
+        &h,
+        &catalog(),
+        "T",
+        &json!({"bnetId":"1001"}),
+        &CollectPlan {
+            match_limit: None,
+            ..plan.clone()
+        },
+    )
+    .await;
+    assert_eq!(all.matches.len(), 25);
+    assert!(
+        CollectPlan {
+            match_limit: Some(0),
+            ..CollectPlan::default()
+        }
+        .validate()
+        .is_err()
+    );
+}
