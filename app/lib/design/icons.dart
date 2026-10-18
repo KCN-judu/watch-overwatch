@@ -121,8 +121,16 @@ class RankBadge extends StatelessWidget {
     this.stadium = false,
     this.size = 20,
     this.showText = false,
+    this.current = false,
+    this.otherRoles = false,
   });
   final Rank? rank;
+
+  /// The rank is the highest of the player's ranks in other roles (none for the role played).
+  final bool otherRoles;
+
+  /// The rank is the player's competitive rank now, not the one at the time of the match.
+  final bool current;
   final Catalog catalog;
   final bool stadium;
   final double size;
@@ -138,9 +146,14 @@ class RankBadge extends StatelessWidget {
       return Text(missing, style: Ty.cell.copyWith(color: c.textSecondary));
     final url = catalog.rankIcon(r.tier, stadium: stadium);
     final text = r.label;
-    final detail = r.skillRating == null
+    final base = r.skillRating == null
         ? text
         : '$text · ${fmtInt(r.skillRating)} 分';
+    final detail = otherRoles
+        ? '没有这个职责的段位，取其他职责里最高的竞技段位（不是这场比赛时的）：$base'
+        : current
+        ? '当前竞技段位（不是这场比赛时的）：$base'
+        : base;
     if (url == null)
       return Tooltip(
         message: detail,

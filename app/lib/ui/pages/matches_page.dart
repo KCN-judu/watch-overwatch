@@ -793,6 +793,14 @@ class _ScopeLine extends StatelessWidget {
                 ),
               ],
             ),
+        if (ws.prepareRemaining[mode] != null)
+          Tooltip(
+            message: '正在后台查询新对局里玩家的段位，之后分析对局强度时就不用再等了。',
+            child: Text(
+              '正在准备对局数据，还剩 ${ws.prepareRemaining[mode]} 场…',
+              style: secondary,
+            ),
+          ),
         LoadStatusBar(
           compact: true,
           at: load.at ?? load.value?.generatedAt,

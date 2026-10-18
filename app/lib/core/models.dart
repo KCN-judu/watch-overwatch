@@ -298,6 +298,8 @@ class Participant {
       role = Role.parse(_s(j['role'])),
       stats = StatLine.fromJson(_o(j['stats'])),
       rank = Rank.opt(j['rank']),
+      careerRank = Rank.opt(j['career_rank']),
+      careerOtherRoles = _b(j['career_other_roles']),
       perks = _list(j['perks'], PerkPick.new),
       partyBnetIds = [
         for (final e in (j['party_bnet_ids'] as List? ?? const [])) '$e',
@@ -311,7 +313,16 @@ class Participant {
   final EntityRef? hero;
   final Role role;
   final StatLine stats;
+
+  /// The rank the match itself reported (competitive and Stadium).
   final Rank? rank;
+
+  /// The player's own competitive rank now for this role, from what was looked up for the
+  /// strength analysis; not the rank at the time of the match.
+  final Rank? careerRank;
+
+  /// [careerRank] is the highest of the player's ranks in other roles.
+  final bool careerOtherRoles;
   final List<PerkPick> perks;
   final List<String> partyBnetIds;
   final bool suspended;
@@ -659,11 +670,16 @@ class SideStrength {
       min = RoleMeans(_o(j?['min'])),
       max = RoleMeans(_o(j?['max'])),
       rated = RoleCounts(_o(j?['rated'])),
+      otherRole = _i(j?['other_role']) ?? 0,
       players = _i(j?['players']) ?? 0;
 
   /// Lowest and highest rated player per slot: the spread behind [mean].
   final RoleMeans mean, min, max;
   final RoleCounts rated;
+
+  /// Of the rated players, how many have no rank for the role they played and are rated
+  /// by the highest of their ranks in other roles.
+  final int otherRole;
   final int players;
 }
 

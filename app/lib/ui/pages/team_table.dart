@@ -328,16 +328,23 @@ class TeamTable extends StatelessWidget {
           bestMit,
         ),
       ),
-      if (players.any((p) => p.rank != null))
-        Col(
-          id: 'rank',
-          label: '段位',
-          width: 76,
-          tooltip: '该场的段位（仅竞技、角斗提供）',
-          cell: (_, l) => l.isTotal
-              ? const SizedBox.shrink()
-              : RankBadge(l.player!.rank, catalog: catalog, stadium: stadium),
-        ),
+      Col(
+        id: 'rank',
+        label: '段位',
+        width: 76,
+        tooltip: '竞技、角斗显示该场的段位；快速比赛显示玩家当前的竞技段位。查不到的显示 —',
+        cell: (_, l) {
+          if (l.isTotal) return const SizedBox.shrink();
+          final p = l.player!;
+          return RankBadge(
+            p.rank ?? p.careerRank,
+            catalog: catalog,
+            stadium: stadium && p.rank != null,
+            current: p.rank == null && p.careerRank != null,
+            otherRoles: p.rank == null && p.careerOtherRoles,
+          );
+        },
+      ),
       Col(
         id: 'portrait',
         label: '英雄立绘',

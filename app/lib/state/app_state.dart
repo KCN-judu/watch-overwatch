@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../core/api.dart';
+import '../core/export_file.dart';
 import '../core/models.dart';
 import '../core/support.dart';
 import '../design/tokens.dart';
@@ -133,8 +135,47 @@ class PlayerWorkspace extends ChangeNotifier {
 
   @override
   void dispose() {
+    _closed = true;
     scroll.dispose();
     super.dispose();
+  }
+
+  bool _closed = false;
+
+  /// Matches of a mode still waiting for their players' ranks to be looked up in the
+  /// background; absent when nothing is running.
+  final prepareRemaining = <Mode, int>{};
+  final _preparing = <Mode>{};
+
+  /// Looks the ranks up for the newest matches a few at a time, after the list has been
+  /// updated, so that the strength analysis (and a match's detail) later only has to
+  /// compute. It waits while an analysis runs, and stops when a batch makes no progress.
+  Future<void> prepareInBackground(Mode mode) async {
+    if (mode == Mode.stadium || _closed || !_preparing.add(mode)) return;
+    try {
+      var last = -1;
+      while (!_closed) {
+        if (strengthFor(mode).loading) {
+          await Future<void>.delayed(const Duration(seconds: 2));
+          continue;
+        }
+        final window = math.max(30, strengthCount(mode) * 3);
+        final r = await _call((s) => app.api.prepare(s, mode, window: window));
+        if (!r.enabled || r.remaining == 0) break;
+        prepareRemaining[mode] = r.remaining;
+        notifyListeners();
+        // A batch that left as many waiting as before could not be prepared: stop.
+        if (last != -1 && r.remaining >= last) break;
+        last = r.remaining;
+        await Future<void>.delayed(const Duration(seconds: 1));
+      }
+    } on ApiError {
+      // A nicety: whatever is missing is looked up when it is needed.
+    } finally {
+      _preparing.remove(mode);
+      prepareRemaining.remove(mode);
+      if (!_closed) notifyListeners();
+    }
   }
 
   void touch() => notifyListeners();
@@ -270,6 +311,8 @@ class PlayerWorkspace extends ChangeNotifier {
       l.loading = false;
       notifyListeners();
     }
+    // The list is up to date: get the new matches' players looked up while it is quiet.
+    if (l.has && l.error == null) unawaited(prepareInBackground(mode));
   }
 
   Future<void> loadCompetitive({bool fresh = false}) => _run(
@@ -314,13 +357,14 @@ class PlayerWorkspace extends ChangeNotifier {
     final scope = strengthScope[mode];
     final roles = scope == null ? Role.playable : [scope];
     final n = strengthCount(mode);
-    final before = strengthFor(mode).at;
+    final result = strengthFor(mode);
+    // A run already going keeps its cancel token and progress; a second request is ignored.
+    if (result.loading) return;
+    final before = result.at;
     final token = CancelToken();
     _strengthCancel[mode] = token;
     strengthProgress.remove(mode);
     strengthSelected.remove(mode);
-    final result = strengthFor(mode);
-    if (result.loading) return;
     result.loading = true;
     result.error = null;
     strengthStatus[mode] = '正在读取对局…';
@@ -545,6 +589,9 @@ class AppState extends ChangeNotifier {
   ApiError? searchError;
   String? lastExportPath;
   bool exporting = false;
+
+  /// Shows the save dialog; replaced in tests.
+  SavePicker pickSavePath = pickJsonSaveLocation;
   CancelToken? _exportCancel;
 
   /// Shell hooks.
@@ -807,6 +854,11 @@ class AppState extends ChangeNotifier {
     _exportCancel = CancelToken();
     notifyListeners();
     try {
+      // Where the file goes is the user's choice, asked before the long read so a
+      // cancelled dialog costs nothing.
+      final safe = ws.name.replaceAll('#', '-');
+      final path = await pickSavePath('$safe-数据集.json');
+      if (path == null) return null;
       final session = await ws.ensureSession();
       final content = await api.exportDataset(
         session,
@@ -816,13 +868,15 @@ class AppState extends ChangeNotifier {
         lobby: lobby,
         cancel: _exportCancel,
       );
-      final safe = ws.name.replaceAll('#', '-');
-      final path = await api.saveExport('$safe-数据集', content);
+      await writeJsonFile(path, content);
       lastExportPath = path;
       toast?.call('数据集已保存：$path');
       return path;
     } on Cancelled {
       toast?.call('已取消导出，没有写入文件。');
+      return null;
+    } on FileSystemException {
+      toast?.call('无法保存到所选位置。请换一个文件夹，并检查权限和剩余空间。');
       return null;
     } on ApiError catch (e) {
       toast?.call('导出失败：${e.message}');

@@ -256,13 +256,35 @@ class Api {
     return StrengthResult(j);
   }
 
+  /// Has the service look up the ranks of the players in a small batch of the newest
+  /// matches that are not ready for the strength analysis yet. `remaining` is how many of
+  /// the newest [window] matches are still waiting; `enabled` is false without a local store.
+  Future<({int prepared, int remaining, bool enabled})> prepare(
+    String session,
+    Mode mode, {
+    int window = 30,
+    int batch = 3,
+  }) async {
+    final j = await post('/api/player/prepare', {
+      'session': session,
+      'mode': mode.id,
+      'window': window,
+      'batch': batch,
+    }, timeout: const Duration(seconds: 150));
+    return (
+      prepared: (j['prepared'] as num?)?.toInt() ?? 0,
+      remaining: (j['remaining'] as num?)?.toInt() ?? 0,
+      enabled: j['enabled'] == true,
+    );
+  }
+
   /// What the local strength cache holds: matches, players, bytes. Null if it is unavailable.
   Future<Json?> cacheStats() async =>
-      (await get('/api/cache'))['strength'] as Json?;
+      (await get('/api/cache'))['store'] as Json?;
 
   /// Empties the strength cache and returns what is left.
   Future<Json?> clearCache() async =>
-      (await post('/api/cache/clear', const {}))['strength'] as Json?;
+      (await post('/api/cache/clear', const {}))['store'] as Json?;
 
   /// Live progress of an analysis started with `progressId`; null until it exists.
   Future<Json?> progress(String id) async {
@@ -292,14 +314,6 @@ class Api {
       'lobby_ratings': lobby,
     },
   }, cancel: cancel);
-
-  Future<String> saveExport(String fileName, Json content) async {
-    final j = await post('/api/export/file', {
-      'file_name': fileName,
-      'content': content,
-    });
-    return '${j['path']}';
-  }
 
   Future<Json> state() => get('/api/state');
   Future<Json> catalog() => get('/api/catalog');

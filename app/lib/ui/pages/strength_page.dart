@@ -989,6 +989,7 @@ class _ChartSection extends StatelessWidget {
                 lows: [for (final m in shown) m.ally.min.overall],
                 highs: [for (final m in shown) m.ally.max.overall],
                 counts: [for (final m in shown) m.ally.rated.overall],
+                countNotes: [for (final m in shown) _otherRoleNote(m.ally)],
               ),
               ChartSeries(
                 label: '对方',
@@ -998,6 +999,7 @@ class _ChartSection extends StatelessWidget {
                 lows: [for (final m in shown) m.enemy.min.overall],
                 highs: [for (final m in shown) m.enemy.max.overall],
                 counts: [for (final m in shown) m.enemy.rated.overall],
+                countNotes: [for (final m in shown) _otherRoleNote(m.enemy)],
               ),
             ],
             countFormat: (n) => '已评定 $n 人',
@@ -1078,3 +1080,7 @@ class _ChartTable extends StatelessWidget {
     );
   }
 }
+
+/// Said in the readout when some rated players have no rank for the role they played.
+String? _otherRoleNote(SideStrength side) =>
+    side.otherRole == 0 ? null : '其中 ${side.otherRole} 人没有这个职责的段位，按其他职责的最高段位计';

@@ -297,12 +297,6 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               const SizedBox(height: Sp.withinGroup),
               _info('账号凭据位置', secretsPath ?? missing),
-              _info(
-                '导出文件夹',
-                secretsPath == null
-                    ? missing
-                    : '${secretsPath.substring(0, math.max(0, secretsPath.lastIndexOf(RegExp(r'[\\/]'))))}\\exports',
-              ),
               _info('最近导出', app.lastExportPath ?? '还没有导出'),
               _cacheRow(app),
               _info(

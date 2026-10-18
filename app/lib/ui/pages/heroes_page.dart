@@ -40,6 +40,19 @@ class _HeroesPageState extends State<HeroesPage> {
   String _sort = 'matches';
   bool _asc = false;
   String _query = '';
+  final _queryController = TextEditingController();
+
+  @override
+  void dispose() {
+    _queryController.dispose();
+    super.dispose();
+  }
+
+  void _clearQuery() {
+    _queryController.clear();
+    setState(() => _query = '');
+  }
+
   String? _activeKey;
 
   // Per-10-minute figures follow the rule in HeroStats: a number (0 included) where
@@ -135,6 +148,7 @@ class _HeroesPageState extends State<HeroesPage> {
             SizedBox(
               width: 220,
               child: TextField(
+                controller: _queryController,
                 onChanged: (v) => setState(() => _query = v),
                 decoration: const InputDecoration(
                   hintText: '搜索英雄',
@@ -149,11 +163,7 @@ class _HeroesPageState extends State<HeroesPage> {
               style: Ty.num(Ty.bodyStrong),
             ),
             if (_query.trim().isNotEmpty)
-              AppButton(
-                '清除搜索',
-                quiet: true,
-                onPressed: () => setState(() => _query = ''),
-              ),
+              AppButton('清除搜索', quiet: true, onPressed: _clearQuery),
             Text(
               '第 $season 赛季累计',
               style: Ty.body.copyWith(color: c.textSecondary),
@@ -251,11 +261,7 @@ class _HeroesPageState extends State<HeroesPage> {
                     title: '没有名称包含“${_query.trim()}”的英雄',
                     body: '已有 ${all.length} 个英雄记录。',
                     actions: [
-                      AppButton(
-                        '清除搜索',
-                        primary: true,
-                        onPressed: () => setState(() => _query = ''),
-                      ),
+                      AppButton('清除搜索', primary: true, onPressed: _clearQuery),
                     ],
                   ),
           ),

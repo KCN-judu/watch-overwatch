@@ -15,6 +15,7 @@ class ChartSeries {
     this.lows,
     this.highs,
     this.counts,
+    this.countNotes,
   });
   final String label;
   final Color color;
@@ -28,6 +29,9 @@ class ChartSeries {
 
   /// How many players each value averages (shown in the readout of that series).
   final List<int?>? counts;
+
+  /// A line under the count in the readout of that value, when there is something to say.
+  final List<String?>? countNotes;
   bool hasRange(int i) =>
       lows != null &&
       highs != null &&
@@ -614,6 +618,10 @@ class _LinePainter extends CustomPainter {
               null,
               null,
             ),
+          if (series[only].countNotes != null &&
+              i < series[only].countNotes!.length &&
+              series[only].countNotes![i] != null)
+            (series[only].countNotes![i]!, null, null),
           if (series[only].values[i] != null && series[only].hasRange(i)) ...[
             (
               '段位  ${valueFormat(series[only].lows![i]!)} – ${valueFormat(series[only].highs![i]!)}',
