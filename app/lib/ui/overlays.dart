@@ -412,19 +412,22 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
   final ws = app.current;
   if (ws == null) return;
   final modes = {...Mode.values.where((m) => m == app.mode)};
-  var pages = 5;
-  var details = 20;
-  var lobby = false;
+  // How many of the newest matches of each mode: a preset, all (0), or the typed number (-1).
+  var choice = 50;
+  final custom = TextEditingController(text: '200');
+  var ratings = false;
+  int? count() {
+    if (choice == 0) return null;
+    if (choice > 0) return choice;
+    return (int.tryParse(custom.text) ?? 0).clamp(1, 5000);
+  }
+
   final go = await showDialog<bool>(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) {
         final c = context.c;
-        final estimate =
-            1 +
-            modes.length * (pages + 1) +
-            details +
-            (lobby ? (details * 10 * 1.3).round() : 0);
+        final n = count();
         return Dialog(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
@@ -437,7 +440,7 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
                   Text('导出 ${ws.name} 的数据集', style: Ty.section),
                   const SizedBox(height: Sp.withinControl),
                   Text(
-                    '保存为新的 JSON 文件，不覆盖旧文件，不含凭据。',
+                    '保存为 JSON 文件，位置和文件名由你选，不含凭据。每场对局都带双方玩家的数据。',
                     style: Ty.body.copyWith(color: c.textSecondary),
                   ),
                   const SizedBox(height: Sp.betweenGroups),
@@ -454,50 +457,54 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
                       ),
                     ),
                   const SizedBox(height: Sp.withinGroup),
-                  Row(
-                    children: [
-                      Expanded(child: Text('每个模式读取的对局页数', style: Ty.body)),
-                      DropdownButton<int>(
-                        value: pages,
-                        items: [
-                          for (final p in [1, 3, 5, 10, 20])
-                            DropdownMenuItem(value: p, child: Text('$p 页')),
-                        ],
-                        onChanged: (v) => setState(() => pages = v ?? pages),
-                      ),
+                  Text('对局数量（每个模式取最近的）', style: Ty.bodyStrong),
+                  const SizedBox(height: Sp.withinControl),
+                  SegmentedBar<int>(
+                    semanticLabel: '导出的对局数量',
+                    value: choice,
+                    onChanged: (v) => setState(() => choice = v),
+                    segments: const [
+                      Segment(20, '20 场'),
+                      Segment(50, '50 场'),
+                      Segment(100, '100 场'),
+                      Segment(0, '全部'),
+                      Segment(-1, '自定义'),
                     ],
                   ),
-                  Row(
-                    children: [
-                      Expanded(child: Text('读取详情的最新对局数', style: Ty.body)),
-                      DropdownButton<int>(
-                        value: details,
-                        items: [
-                          for (final p in [0, 10, 20, 40, 100])
-                            DropdownMenuItem(value: p, child: Text('$p 场')),
+                  if (choice == -1) ...[
+                    const SizedBox(height: Sp.withinControl),
+                    SizedBox(
+                      width: 160,
+                      child: TextField(
+                        controller: custom,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
                         ],
-                        onChanged: (v) =>
-                            setState(() => details = v ?? details),
+                        decoration: const InputDecoration(
+                          labelText: '场数（1–5000）',
+                        ),
+                        onChanged: (_) => setState(() {}),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
+                  const SizedBox(height: Sp.withinGroup),
                   CheckboxListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: Text('包含参与者段位（用于对局强度）', style: Ty.body),
+                    title: Text('同时导出玩家段位', style: Ty.body),
                     subtitle: Text(
-                      '每名参与者额外一次查询，明显更慢。',
+                      '每名玩家的竞技段位，用于对局强度。第一次要逐个查询，每场约多花 7 秒；查过的下次直接用。',
                       style: Ty.meta.copyWith(color: c.textSecondary),
                     ),
-                    value: lobby,
-                    onChanged: details == 0
-                        ? null
-                        : (v) => setState(() => lobby = v == true),
+                    value: ratings,
+                    onChanged: (v) => setState(() => ratings = v == true),
                   ),
                   const SizedBox(height: Sp.withinGroup),
                   Text(
-                    '约 $estimate 次请求，后台进行，可随时取消。',
+                    '本机已有的对局直接使用，没有的才会读取，约每场 1 秒；在后台进行，可随时取消。',
                     style: Ty.meta.copyWith(color: c.textSecondary),
                   ),
                   const SizedBox(height: Sp.betweenGroups),
@@ -512,10 +519,10 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
                       AppButton(
                         '开始导出',
                         primary: true,
-                        onPressed: modes.isEmpty
+                        onPressed: modes.isEmpty || (choice == -1 && n == null)
                             ? null
                             : () => Navigator.of(context).pop(true),
-                        disabledReason: '至少选择一个模式。',
+                        disabledReason: modes.isEmpty ? '至少选择一个模式。' : '请输入场数。',
                       ),
                     ],
                   ),
@@ -527,12 +534,9 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
       },
     ),
   );
+  final chosen = count();
+  custom.dispose();
   if (go == true) {
-    app.exportDataset(
-      modes: modes.toList(),
-      pages: pages,
-      details: details,
-      lobby: lobby && details > 0,
-    );
+    app.exportDataset(modes: modes.toList(), count: chosen, ratings: ratings);
   }
 }

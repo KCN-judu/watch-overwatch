@@ -259,21 +259,30 @@ class Api {
   /// Has the service look up the ranks of the players in a small batch of the newest
   /// matches that are not ready for the strength analysis yet. `remaining` is how many of
   /// the newest [window] matches are still waiting; `enabled` is false without a local store.
-  Future<({int prepared, int remaining, bool enabled})> prepare(
+  Future<({int prepared, int remaining, int total, bool enabled})> prepare(
     String session,
     Mode mode, {
-    int window = 30,
+    int window = 300,
     int batch = 3,
+    bool ratings = true,
+    CancelToken? cancel,
   }) async {
-    final j = await post('/api/player/prepare', {
-      'session': session,
-      'mode': mode.id,
-      'window': window,
-      'batch': batch,
-    }, timeout: const Duration(seconds: 150));
+    final j = await post(
+      '/api/player/prepare',
+      {
+        'session': session,
+        'mode': mode.id,
+        'window': window,
+        'batch': batch,
+        'ratings': ratings,
+      },
+      cancel: cancel,
+      timeout: const Duration(seconds: 150),
+    );
     return (
       prepared: (j['prepared'] as num?)?.toInt() ?? 0,
       remaining: (j['remaining'] as num?)?.toInt() ?? 0,
+      total: (j['total'] as num?)?.toInt() ?? 0,
       enabled: j['enabled'] == true,
     );
   }
@@ -296,22 +305,24 @@ class Api {
     }
   }
 
-  /// Full dataset for export, as raw JSON.
+  /// Full dataset for export, as raw JSON: the newest [count] matches of each mode (all
+  /// when null), each with its detail, and with the players' ranks when [ratings].
   Future<Json> exportDataset(
     String session,
     List<Mode> modes, {
-    required int pages,
-    required int details,
-    required bool lobby,
+    int? count,
+    required bool ratings,
     CancelToken? cancel,
   }) => post('/api/player/dataset', {
     'session': session,
     'plan': {
       'modes': [for (final m in modes) m.id],
-      'max_pages': pages,
-      'max_details': details,
+      'max_pages': 10,
+      'max_details': ((count ?? 5000) * modes.length).clamp(1, 5000),
+      'match_limit': ?count,
       'hero_board': true,
-      'lobby_ratings': lobby,
+      'lobby_ratings': ratings,
+      'max_rated_players': 5000,
     },
   }, cancel: cancel);
 

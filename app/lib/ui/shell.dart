@@ -519,7 +519,7 @@ class _StatusBar extends StatelessWidget {
           const ImageProgress(),
           const SizedBox(width: 12),
           if (app.exporting) ...[
-            const RefreshingChip(label: '正在导出数据集…'),
+            RefreshingChip(label: app.exportStatus ?? '正在导出数据集…'),
             const SizedBox(width: 8),
             AppButton('取消导出', quiet: true, onPressed: app.cancelExport),
           ] else if (app.lastExportPath != null)

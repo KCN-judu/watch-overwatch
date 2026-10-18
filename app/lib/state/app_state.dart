@@ -159,8 +159,9 @@ class PlayerWorkspace extends ChangeNotifier {
           await Future<void>.delayed(const Duration(seconds: 2));
           continue;
         }
-        final window = math.max(30, strengthCount(mode) * 3);
-        final r = await _call((s) => app.api.prepare(s, mode, window: window));
+        // Every match of the list, newest first: the strength analysis can reach any of
+        // them (older ones when a role has too few), and a match's detail shows ranks too.
+        final r = await _call((s) => app.api.prepare(s, mode, window: 300));
         if (!r.enabled || r.remaining == 0) break;
         prepareRemaining[mode] = r.remaining;
         notifyListeners();
@@ -842,31 +843,43 @@ class AppState extends ChangeNotifier {
 
   // ---- Export ------------------------------------------------------------------
 
+  /// What the export is doing right now (shown beside the cancel button).
+  String? exportStatus;
+
+  /// Exports the newest [count] matches of each of [modes] (all when null), each with its
+  /// detail, and with the players' ranks when [ratings]. Where the file goes is asked
+  /// first; then each mode's list is read as far as needed and its matches are prepared in
+  /// small batches (what is already kept locally is not read again); the file is written
+  /// last.
   Future<String?> exportDataset({
     required List<Mode> modes,
-    required int pages,
-    required int details,
-    required bool lobby,
+    required int? count,
+    required bool ratings,
   }) async {
     final ws = current;
     if (ws == null || exporting) return null;
     exporting = true;
-    _exportCancel = CancelToken();
+    final token = _exportCancel = CancelToken();
+    exportStatus = '请选择保存位置…';
     notifyListeners();
     try {
-      // Where the file goes is the user's choice, asked before the long read so a
-      // cancelled dialog costs nothing.
+      // Asked before the long read so a cancelled dialog costs nothing.
       final safe = ws.name.replaceAll('#', '-');
       final path = await pickSavePath('$safe-数据集.json');
       if (path == null) return null;
+      for (final mode in modes) {
+        await _exportReadList(ws, mode, count, token);
+        await _exportPrepare(ws, mode, count, ratings, token);
+      }
+      exportStatus = '正在整理导出内容…';
+      notifyListeners();
       final session = await ws.ensureSession();
       final content = await api.exportDataset(
         session,
         modes,
-        pages: pages,
-        details: details,
-        lobby: lobby,
-        cancel: _exportCancel,
+        count: count,
+        ratings: ratings,
+        cancel: token,
       );
       await writeJsonFile(path, content);
       lastExportPath = path;
@@ -883,9 +896,74 @@ class AppState extends ChangeNotifier {
       return null;
     } finally {
       exporting = false;
+      exportStatus = null;
       _exportCancel = null;
       notifyListeners();
     }
+  }
+
+  /// Reads the list of [mode] into the local store until it holds [count] matches (all of
+  /// them when null) or has reached the oldest.
+  Future<void> _exportReadList(
+    PlayerWorkspace ws,
+    Mode mode,
+    int? count,
+    CancelToken token,
+  ) async {
+    var first = true;
+    var seen = 0;
+    while (!token.cancelled) {
+      exportStatus =
+          '读取${mode.shortLabel}对局列表${seen > 0 ? '（已读 $seen 场）' : ''}…';
+      notifyListeners();
+      final ds = await ws._call(
+        (s) => api.dataset(s, mode, fresh: first, cancel: token),
+      );
+      first = false;
+      final cover = ds.coverage.matchLists
+          .where((c) => c.mode == mode)
+          .firstOrNull;
+      if (cover == null || cover.exhausted) return;
+      if (count != null && ds.matches.length >= count) return;
+      if (ds.matches.length <= seen) return;
+      seen = ds.matches.length;
+    }
+    throw Cancelled();
+  }
+
+  /// Has each of the newest [count] matches of [mode] read in (with the players' ranks
+  /// when [ratings]), a few at a time, so that the export itself finds everything ready.
+  Future<void> _exportPrepare(
+    PlayerWorkspace ws,
+    Mode mode,
+    int? count,
+    bool ratings,
+    CancelToken token,
+  ) async {
+    // Stadium has no lobby ranks; its matches are only read in.
+    final withRanks = ratings && mode != Mode.stadium;
+    var last = -1;
+    while (!token.cancelled) {
+      final r = await ws._call(
+        (s) => api.prepare(
+          s,
+          mode,
+          window: count ?? 5000,
+          batch: 5,
+          ratings: withRanks,
+          cancel: token,
+        ),
+      );
+      if (!r.enabled) return;
+      exportStatus =
+          '准备${mode.shortLabel}对局数据 ${r.total - r.remaining}/${r.total}…';
+      notifyListeners();
+      if (r.remaining == 0) return;
+      // A batch that left as many waiting as before could not be prepared: go on without.
+      if (last != -1 && r.remaining >= last) return;
+      last = r.remaining;
+    }
+    throw Cancelled();
   }
 
   void cancelExport() => _exportCancel?.cancel();
