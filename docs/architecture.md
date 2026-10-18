@@ -62,7 +62,7 @@ Flutter 界面 (app/)  ──HTTP, 仅本机──▶  watchd (Rust)  ──HTTP
 | `POST /api/player/search` | 查玩家，返回会话编号 |
 | `POST /api/player/view` | 某个视图（资料、对局、详情等），返回 IR |
 | `POST /api/player/dataset` | 完整数据集和分析；可带 `progress_id` |
-| `POST /api/player/prepare` | 把最新几十场里还没准备好的对局，每次取一小批：读详情并查参与者段位，存进本机 |
+| `POST /api/player/prepare` | 把已读取的对局（最新的在前，`window` 最多 5000 场）里还没准备好的，每次取一小批：读详情并（`ratings` 为真时）查参与者段位，存进本机；导出和后台准备都用它 |
 | `GET /api/progress?id=…` | 上面那次采集的实时进度 |
 | `GET /api/cache`、`POST /api/cache/clear` | 查看、清除对局强度缓存 |
 | `POST /api/player/export` | 导出数据集 |
