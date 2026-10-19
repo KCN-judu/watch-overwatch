@@ -632,13 +632,21 @@ pub fn analyze(ds: &PlayerDataset, options: &AnalysisOptions) -> PlayerAnalysis 
 /// the match only. `None` when the player's final blows are unknown or the team has none.
 pub fn attach_fleta(detail: &mut MatchDetail) {
     for team in [&mut detail.allies, &mut detail.enemies] {
-        let total: f64 = team.iter().filter_map(|p| p.stats.final_blows).sum();
+        let total = team_final_blows(team);
         for p in team.iter_mut() {
-            p.fleta = p
-                .stats
-                .final_blows
-                .filter(|_| total > 0.0)
-                .map(|f| f / (total * 0.5) * 100.0);
+            p.fleta = fleta(p.stats.final_blows, total);
         }
     }
+}
+
+/// All the final blows a team is known to have made.
+pub fn team_final_blows(team: &[Participant]) -> f64 {
+    team.iter().filter_map(|p| p.stats.final_blows).sum()
+}
+
+/// Fleta index of a player with `final_blows` in a team that made `team_total`.
+pub fn fleta(final_blows: Option<f64>, team_total: f64) -> Option<f64> {
+    final_blows
+        .filter(|_| team_total > 0.0)
+        .map(|f| f / (team_total * 0.5) * 100.0)
 }

@@ -55,6 +55,8 @@ class LineChart extends StatefulWidget {
     this.pointNotes,
     this.height = 220,
     this.hollowMeaning,
+    this.shielded,
+    this.shieldMeaning,
     this.rangeMeaning,
     this.axisFormat,
     this.detailFormat,
@@ -77,6 +79,12 @@ class LineChart extends StatefulWidget {
   final List<String>? pointNotes;
   final double height;
   final String? hollowMeaning;
+
+  /// Per x index: a column the first series has no real value for in the usual sense (a
+  /// match without a death). Its point is drawn as a shield and the column behind it is
+  /// filled, so the stretch reads as "nothing happened here" rather than a data point.
+  final List<bool>? shielded;
+  final String? shieldMeaning;
 
   /// What the vertical bars show, when a series has [ChartSeries.lows].
   final String? rangeMeaning;
@@ -263,6 +271,7 @@ class _LineChartState extends State<LineChart> {
                           series: widget.series,
                           xLabels: widget.xLabels,
                           hollow: widget.hollow,
+                          shielded: widget.shielded,
                           valueFormat: widget.valueFormat,
                           axisFormat: axisFmt,
                           detailFormat: widget.detailFormat,
@@ -292,6 +301,11 @@ class _LineChartState extends State<LineChart> {
               if (widget.hollowMeaning != null)
                 Text(
                   widget.hollowMeaning!,
+                  style: Ty.meta.copyWith(color: c.textSecondary),
+                ),
+              if (widget.shieldMeaning != null)
+                Text(
+                  widget.shieldMeaning!,
                   style: Ty.meta.copyWith(color: c.textSecondary),
                 ),
               if (widget.rangeMeaning != null)
@@ -387,6 +401,7 @@ class _LinePainter extends CustomPainter {
     required this.series,
     required this.xLabels,
     required this.hollow,
+    required this.shielded,
     required this.valueFormat,
     required this.axisFormat,
     required this.detailFormat,
@@ -400,6 +415,7 @@ class _LinePainter extends CustomPainter {
   final List<ChartSeries> series;
   final List<String> xLabels;
   final List<bool>? hollow;
+  final List<bool>? shielded;
   final String Function(double) valueFormat;
   final String Function(double) axisFormat;
   final String Function(double)? detailFormat;
@@ -409,6 +425,32 @@ class _LinePainter extends CustomPainter {
   final int? seriesIndex;
   final String Function(int)? countFormat;
   final List<String>? notes;
+
+  /// A shield centred on [c], [r] wide on each side: filled, or an outline when [hollow].
+  void _shield(
+    Canvas canvas,
+    Offset c,
+    double r,
+    Color color,
+    Color back,
+    bool hollow,
+  ) {
+    final path = Path()
+      ..moveTo(c.dx - r, c.dy - r * 0.9)
+      ..lineTo(c.dx + r, c.dy - r * 0.9)
+      ..lineTo(c.dx + r, c.dy + r * 0.1)
+      ..quadraticBezierTo(c.dx + r, c.dy + r * 0.75, c.dx, c.dy + r * 1.15)
+      ..quadraticBezierTo(c.dx - r, c.dy + r * 0.75, c.dx - r, c.dy + r * 0.1)
+      ..close();
+    canvas.drawPath(path, Paint()..color = back);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..style = hollow ? PaintingStyle.stroke : PaintingStyle.fill
+        ..strokeWidth = 2,
+    );
+  }
 
   TextPainter _text(
     String s, {
@@ -449,6 +491,22 @@ class _LinePainter extends CustomPainter {
       );
       final tp = _text(axisFormat(t));
       tp.paint(canvas, Offset(_Geom.left - 8 - tp.width, y(t) - tp.height / 2));
+    }
+    // Columns without a death: the match's whole stretch of the x axis is filled.
+    final sh = shielded;
+    if (sh != null) {
+      final half = xLabels.length <= 1
+          ? g.w / 2
+          : g.w / (xLabels.length - 1) / 2;
+      for (var i = 0; i < xLabels.length && i < sh.length; i++) {
+        if (!sh[i]) continue;
+        final left = math.max(_Geom.left, g.x(i) - half);
+        final right = math.min(_Geom.left + g.w, g.x(i) + half);
+        canvas.drawRect(
+          Rect.fromLTRB(left, _Geom.top, right, _Geom.top + g.h),
+          Paint()..color = series.first.color.withValues(alpha: 0.14),
+        );
+      }
     }
     // X labels: at most ~8, always including the last.
     final every = math.max(1, (xLabels.length / 8).ceil());
@@ -545,6 +603,13 @@ class _LinePainter extends CustomPainter {
         if (v == null) continue;
         final p = Offset(g.x(i) + dx, y(v));
         final isHollow = hollow != null && i < hollow!.length && hollow![i];
+        if (identical(s, series.first) &&
+            sh != null &&
+            i < sh.length &&
+            sh[i]) {
+          _shield(canvas, p, 7, s.color, colors.raised, isHollow);
+          continue;
+        }
         canvas.drawCircle(p, 4, Paint()..color = colors.raised);
         canvas.drawCircle(
           p,

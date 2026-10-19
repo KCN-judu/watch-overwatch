@@ -63,7 +63,7 @@ Flutter 界面 (app/)  ──HTTP, 仅本机──▶  watchd (Rust)  ──HTTP
 | `POST /api/player/view` | 某个视图（资料、对局、详情等），返回 IR |
 | `POST /api/player/dataset` | 完整数据集和分析；可带 `progress_id` |
 | `POST /api/player/view`（`detail`） | 对局详情：立刻返回，带已知的玩家段位和 Fleta 指数，`ratings_pending` 说明段位是否还没查完；`prepare` 带 `match_id` 就先把这一场查完 |
-| `POST /api/player/survival` | 每局平均存活时长和成长分析：只用本机已存的对局详情，不发上游请求；返回逐局的样本、整体和分职责的走势，以及对局列表里有多少场详情已存 |
+| `POST /api/player/growth` | 成长面板：逐局的存活时长、Fleta、KDA 和各指标的走势（整体和分职责）；只用本机已存的对局详情，不发上游请求；同时返回对局列表里有多少场详情已存 |
 | `POST /api/player/stored` | 本机已有的某个名字的对局列表和最近的玩家资料，不发任何上游请求；名字没查过时 `known` 为假 |
 | `POST /api/player/prepare` | 把已读取的对局（最新的在前，`window` 最多 5000 场）里还没准备好的，每次取一小批：读详情并（`ratings` 为真时）查参与者段位，存进本机；导出和后台准备都用它 |
 | `GET /api/progress?id=…` | 上面那次采集的实时进度 |

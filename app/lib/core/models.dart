@@ -795,10 +795,10 @@ class StrengthResult {
   final LobbyStrength lobby;
 }
 
-/// One match: how long the subject lasted per life in it (`life_s` = match length over
-/// deaths + 1; see `survival.rs`).
-class LifeSample {
-  LifeSample(Json j)
+/// One match as the growth panel sees it (see `growth.rs`): how long the subject lasted
+/// per death, their Fleta index and their KDA.
+class GrowthPoint {
+  GrowthPoint(Json j)
     : matchId = _s(j['match_id']) ?? '',
       startedAtMs = _i(j['started_at_ms']),
       role = Role.parse(_s(j['role'])),
@@ -806,77 +806,115 @@ class LifeSample {
       outcome = Outcome.parse(_s(j['outcome'])),
       durationS = _d(j['duration_s']) ?? 0,
       deaths = _d(j['deaths']) ?? 0,
-      lifeS = _d(j['life_s']) ?? 0;
+      lifeS = _d(j['life_s']) ?? 0,
+      deathless = j['deathless'] == true,
+      fleta = _d(j['fleta']),
+      kda = _d(j['kda']);
   final String matchId;
   final int? startedAtMs;
   final Role role;
   final EntityRef? hero;
   final Outcome outcome;
-  final double durationS, deaths, lifeS;
+  final double durationS, deaths;
+
+  /// Seconds per death; the whole match when [deathless] (then it is a lower bound).
+  final double lifeS;
+  final bool deathless;
+  final double? fleta, kda;
 }
 
-enum LifeTrend {
-  longer,
-  shorter,
+enum GrowthMetric {
+  life,
+  fleta,
+  kda;
+
+  static GrowthMetric? parse(String? v) =>
+      GrowthMetric.values.where((m) => m.name == v).firstOrNull;
+}
+
+enum Trend {
+  up,
+  down,
   flat;
 
-  static LifeTrend parse(String? v) =>
-      LifeTrend.values.firstWhere((t) => t.name == v, orElse: () => flat);
+  static Trend parse(String? v) =>
+      Trend.values.firstWhere((t) => t.name == v, orElse: () => flat);
 }
 
-/// Whether lives are getting longer: older half against newer half, and the trend test.
-class LifeGrowth {
-  LifeGrowth(Json j)
+/// Whether a measure is going up: older half against newer half, and the trend test.
+class Growth {
+  Growth(Json j)
     : matches = _i(j['matches']) ?? 0,
-      olderMeanS = _d(j['older_mean_s']) ?? 0,
-      newerMeanS = _d(j['newer_mean_s']) ?? 0,
-      changeS = _d(j['change_s']) ?? 0,
+      olderMean = _d(j['older_mean']) ?? 0,
+      newerMean = _d(j['newer_mean']) ?? 0,
+      change = _d(j['change']) ?? 0,
       changePct = _d(j['change_pct']) ?? 0,
-      slopeSPerMatch = _d(j['slope_s_per_match']) ?? 0,
+      slopePerMatch = _d(j['slope_per_match']) ?? 0,
       p = _d(j['p']) ?? 1,
-      trend = LifeTrend.parse(_s(j['trend']));
+      trend = Trend.parse(_s(j['trend']));
   final int matches;
-  final double olderMeanS, newerMeanS, changeS, changePct, slopeSPerMatch, p;
-  final LifeTrend trend;
-  static LifeGrowth? opt(Object? v) =>
-      v is Map<String, dynamic> ? LifeGrowth(v) : null;
+  final double olderMean, newerMean, change, changePct, slopePerMatch, p;
+  final Trend trend;
+  static Growth? opt(Object? v) => v is Map<String, dynamic> ? Growth(v) : null;
 }
 
-class RoleLife {
-  RoleLife(Json j)
+class RoleGrowth {
+  RoleGrowth(Json j)
     : role = Role.parse(_s(j['role'])),
-      matches = _i((j['stat'] as Map?)?['matches']) ?? 0,
-      meanS = _d((j['stat'] as Map?)?['mean_s']),
-      growth = LifeGrowth.opt(j['growth']);
+      matches = _i(j['matches']) ?? 0,
+      mean = _d(j['mean']),
+      growth = Growth.opt(j['growth']);
   final Role role;
   final int matches;
-  final double? meanS;
-  final LifeGrowth? growth;
+  final double? mean;
+  final Growth? growth;
 }
 
-/// The service's answer about survival time: the matches it could analyse (oldest first),
-/// the growth for all of them and for each role.
-class SurvivalResult {
-  SurvivalResult(Json j)
+class MetricGrowth {
+  MetricGrowth(Json j)
+    : metric = GrowthMetric.parse(_s(j['metric'])),
+      matches = _i(j['matches']) ?? 0,
+      mean = _d(j['mean']),
+      growth = Growth.opt(j['growth']),
+      byRole = _list(j['by_role'], RoleGrowth.new);
+  final GrowthMetric? metric;
+  final int matches;
+  final double? mean;
+  final Growth? growth;
+  final List<RoleGrowth> byRole;
+
+  /// The trend for one role, or for all matches together when [role] is null.
+  Growth? growthFor(Role? role) => role == null
+      ? growth
+      : byRole.where((r) => r.role == role).firstOrNull?.growth;
+}
+
+/// The service's answer for the growth panel: the matches it could use (oldest first)
+/// and each measure's trend.
+class GrowthResult {
+  GrowthResult(Json j)
     : enabled = j['enabled'] == true,
       listed = _i(j['listed']) ?? 0,
       stored = _i(j['stored']) ?? 0,
-      samples = _list((j['report'] as Map?)?['samples'], LifeSample.new),
+      points = _list((j['report'] as Map?)?['points'], GrowthPoint.new),
       skipped = _i((j['report'] as Map?)?['skipped']) ?? 0,
-      growth = LifeGrowth.opt((j['report'] as Map?)?['growth']),
-      byRole = _list((j['report'] as Map?)?['by_role'], RoleLife.new);
+      metrics = _list((j['report'] as Map?)?['metrics'], MetricGrowth.new);
   final bool enabled;
 
   /// Matches in the stored list, and how many of them have a detail stored.
   final int listed, stored;
-  final List<LifeSample> samples;
+  final List<GrowthPoint> points;
 
   /// Stored matches that could not be used (too short, no deaths figure).
   final int skipped;
-  final LifeGrowth? growth;
-  final List<RoleLife> byRole;
+  final List<MetricGrowth> metrics;
 
-  LifeGrowth? growthFor(Role? role) => role == null
-      ? growth
-      : byRole.where((r) => r.role == role).firstOrNull?.growth;
+  MetricGrowth? metric(GrowthMetric m) =>
+      metrics.where((x) => x.metric == m).firstOrNull;
+
+  /// Roles that appear in the matches, in display order.
+  List<Role> get roles => [
+    for (final r in Role.playable)
+      if (points.any((p) => p.role == r)) r,
+  ];
 }

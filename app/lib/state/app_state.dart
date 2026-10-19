@@ -30,7 +30,7 @@ const tabLabels = {
   'matches': '对局',
   'heroes': '英雄',
   'strength': '对局强度',
-  'growth': '存活成长',
+  'growth': '成长',
   'trend': '赛季走势',
   'profile': '档案',
 };
@@ -48,7 +48,7 @@ class PlayerWorkspace extends ChangeNotifier {
   final matches = <Mode, Load<PlayerDataset>>{};
   final competitive = Load<CareerSnapshot>();
   final trend = <Mode, Load<List<SeasonPoint>>>{};
-  final survival = <Mode, Load<SurvivalResult>>{};
+  final growth = <Mode, Load<GrowthResult>>{};
   final strength = <Mode, Load<StrengthResult>>{};
   final _strengthCancel = <Mode, CancelToken>{};
 
@@ -107,7 +107,7 @@ class PlayerWorkspace extends ChangeNotifier {
 
   Load<PlayerDataset> matchesFor(Mode m) => matches.putIfAbsent(m, Load.new);
   Load<List<SeasonPoint>> trendFor(Mode m) => trend.putIfAbsent(m, Load.new);
-  Load<SurvivalResult> survivalFor(Mode m) => survival.putIfAbsent(m, Load.new);
+  Load<GrowthResult> growthFor(Mode m) => growth.putIfAbsent(m, Load.new);
   Load<StrengthResult> strengthFor(Mode m) => strength.putIfAbsent(m, Load.new);
   MatchFilters filtersFor(Mode m) => filters.putIfAbsent(m, MatchFilters.new);
   int strengthCount(Mode m) => strengthDetails[m] ?? 10;
@@ -361,10 +361,10 @@ class PlayerWorkspace extends ChangeNotifier {
     ),
   );
 
-  /// Reads survival time from what is stored locally: quick (a few milliseconds), so it
-  /// is read again whenever the tab is shown.
-  Future<void> loadSurvival(Mode mode) =>
-      _run(survivalFor(mode), () => _call((s) => app.api.survival(s, mode)));
+  /// Reads the growth measures from what is stored locally: quick (a few milliseconds),
+  /// so it is read again whenever the tab is shown.
+  Future<void> loadGrowth(Mode mode) =>
+      _run(growthFor(mode), () => _call((s) => app.api.growth(s, mode)));
 
   /// What the strength analysis is doing before the service starts (reading more of the
   /// match list), and how many matches it chose.
@@ -919,7 +919,7 @@ class AppState extends ChangeNotifier {
       final t = ws.trendFor(mode);
       if (!t.has && !t.loading) jobs.add(ws.loadTrend(mode));
     }
-    if (tab == 'growth') jobs.add(ws.loadSurvival(mode));
+    if (tab == 'growth') jobs.add(ws.loadGrowth(mode));
     await Future.wait(jobs);
   }
 
@@ -932,7 +932,7 @@ class AppState extends ChangeNotifier {
       ws.loadCompetitive(fresh: true),
     ];
     if (tab == 'trend') jobs.add(ws.loadTrend(mode, fresh: true));
-    if (tab == 'growth') jobs.add(ws.loadSurvival(mode));
+    if (tab == 'growth') jobs.add(ws.loadGrowth(mode));
     // The refresh button only looks for new matches. Looking every player's rank up
     // again is a few hundred requests, so it stays with "强制刷新" on the strength page.
     if (tab == 'strength' && ws.strengthFor(mode).has) {

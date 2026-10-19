@@ -20,8 +20,9 @@ use watch_core::{
     analysis::{self, AnalysisOptions, Clock, Window},
     collect::{self, CollectPlan, Fetched, Fetcher},
     dashen::{Endpoint, Mode, normalize},
+    growth,
     ir::{MatchDetail, MatchSummary},
-    summarize, survival, views,
+    summarize, views,
 };
 
 type QueryCache = Mutex<HashMap<String, (Instant, RequestMetric, Value)>>;
@@ -855,19 +856,19 @@ pub(crate) async fn player_prepare(
 }
 
 #[derive(Deserialize)]
-pub(crate) struct SurvivalInput {
+pub(crate) struct GrowthInput {
     session: String,
     #[serde(default = "sport")]
     mode: String,
 }
 
-/// How long the player lasts in each match (see [`survival`]), from the matches whose
-/// detail is already stored on this machine: no request goes to the upstream. `listed` is
-/// the matches of the stored list and `used` those that could be analysed, so the app can
-/// say how much of the history this covers.
-pub(crate) async fn player_survival(
+/// The growth measures (survival time, Fleta index, KDA) match by match and their trends
+/// (see [`growth`]), from the matches whose detail is already stored on this machine: no
+/// request goes to the upstream. `listed` is the matches of the stored list and `stored`
+/// those with a detail, so the app can say how much of the history this covers.
+pub(crate) async fn player_growth(
     State(s): State<AppState>,
-    Json(input): Json<SurvivalInput>,
+    Json(input): Json<GrowthInput>,
 ) -> Response {
     let Some(mode) = Mode::parse(&input.mode) else {
         return fail(error("validation", "无效的模式。 ")).into_response();
@@ -893,7 +894,7 @@ pub(crate) async fn player_survival(
         .map(|kept| kept.detail)
         .collect();
     let stored = details.len();
-    let report = survival::survival(&details);
+    let report = growth::growth(&details);
     Json(json!({
         "enabled": true,
         "listed": rows.len(),
