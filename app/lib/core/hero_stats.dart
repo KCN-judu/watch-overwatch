@@ -179,8 +179,21 @@ class HeroStats {
   /// with only self-healing in its list gets that row renamed.
   static List<HeroStatRow> _mergeSelfHealing(List<HeroStatRow> rows) {
     final self = rows.where((r) => r.name == '自我治疗量').firstOrNull;
-    if (self == null) return rows;
     final total = rows.where((r) => r.name == '治疗量').firstOrNull;
+    if (self == null) {
+      // The game lists no self-healing for this hero, so all of its healing goes to
+      // others (unless the figure came from matches, which do not say).
+      if (total != null &&
+          total.perMatchSource != StatSource.recent &&
+          total.per10Source != StatSource.recent) {
+        total
+          ..partPer10 = 0
+          ..partPerMatch = 0
+          ..partName = _selfHeal
+          ..restName = _otherHeal;
+      }
+      return rows;
+    }
     // A healing figure taken from matches already includes the self-healing.
     if (total != null &&
         (total.perMatchSource == StatSource.recent ||

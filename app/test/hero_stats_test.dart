@@ -119,6 +119,35 @@ void main() {
     expect(heal.restName, '对他人');
   });
 
+  test('a healer with no self-healing stat heals only others', () {
+    final cat = Catalog({
+      'heroes': {
+        _hero: {'name': '测试', 'role': 'healer'},
+      },
+      'statistics': [
+        {'heroGuid': _hero, 'valueGuid': '8', 'valueText': '治疗量'},
+      ],
+    });
+    final h = HeroUsage({
+      'queue': 'role_queue',
+      'hero': {'kind': 'hero', 'guid': _hero, 'name': '测试'},
+      'matches': 10,
+      'play_time_s': 6000.0,
+      'per_match': const [],
+      'per_10min': [
+        {'stat': stat('8', '治疗量'), 'value': 2000.0},
+      ],
+    });
+    final heal = HeroStats.rows(
+      h,
+      cat,
+      const [],
+    ).singleWhere((r) => r.name == '治疗量');
+    expect(heal.per10, 2000);
+    expect(heal.partPer10, 0);
+    expect(heal.partName, '自我治疗');
+  });
+
   test('final blows fold into eliminations as a split of one figure', () {
     final cat = Catalog({
       'heroes': {

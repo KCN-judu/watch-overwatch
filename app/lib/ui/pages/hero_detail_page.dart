@@ -521,30 +521,33 @@ class _SeasonStats extends StatelessWidget {
             ],
           ),
       ].where((e) => e.$2.isNotEmpty);
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Ty.bodyStrong.copyWith(color: accent)),
-          for (final (g, list) in shown) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 10, bottom: 6),
-              child: Text(
-                _groupTitles[g]!,
-                style: Ty.meta.copyWith(color: c.textSecondary),
+      return FoldSection(
+        title: title,
+        accent: accent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final (g, list) in shown) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 10, bottom: 6),
+                child: Text(
+                  _groupTitles[g]!,
+                  style: Ty.meta.copyWith(color: c.textSecondary),
+                ),
               ),
-            ),
-            CardGrid(
-              minWidth: 200,
-              height:
-                  list.any(
-                    (r) => (per10 ? r.partPer10 : r.partPerMatch) != null,
-                  )
-                  ? 124
-                  : 88,
-              [for (final r in list) card(r, per10)],
-            ),
+              CardGrid(
+                minWidth: 200,
+                height:
+                    list.any(
+                      (r) => (per10 ? r.partPer10 : r.partPerMatch) != null,
+                    )
+                    ? 124
+                    : 88,
+                [for (final r in list) card(r, per10)],
+              ),
+            ],
           ],
-        ],
+        ),
       );
     }
 

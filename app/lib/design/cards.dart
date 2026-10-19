@@ -24,6 +24,66 @@ class AccentTitle extends StatelessWidget {
   }
 }
 
+/// A titled block that folds away: the title row is a button with a chevron, and the
+/// content is not built while it is folded. Starts open.
+class FoldSection extends StatefulWidget {
+  const FoldSection({
+    super.key,
+    required this.title,
+    required this.accent,
+    required this.child,
+    this.open = true,
+  });
+  final String title;
+  final Color accent;
+  final Widget child;
+  final bool open;
+
+  @override
+  State<FoldSection> createState() => _FoldSectionState();
+}
+
+class _FoldSectionState extends State<FoldSection> {
+  late bool _open = widget.open;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _open,
+          label: widget.title,
+          excludeSemantics: true,
+          child: InkWell(
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    _open ? Icons.expand_more : Icons.chevron_right,
+                    size: 20,
+                    color: c.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    widget.title,
+                    style: Ty.bodyStrong.copyWith(color: widget.accent),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (_open) widget.child,
+      ],
+    );
+  }
+}
+
 /// Cards in equal columns (as many as fit, up to four), every row the same height.
 class CardGrid extends StatelessWidget {
   const CardGrid(

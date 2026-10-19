@@ -60,4 +60,25 @@ void main() {
     );
     expect(find.text('一级威能'), findsNothing);
   });
+
+  testWidgets('a fold section hides its content when folded and opens again', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(
+        const FoldSection(
+          title: '每 10 分钟',
+          accent: Colors.blue,
+          child: Text('内容'),
+        ),
+      ),
+    );
+    expect(find.text('内容'), findsOneWidget);
+    await tester.tap(find.text('每 10 分钟'));
+    await tester.pump();
+    expect(find.text('内容'), findsNothing);
+    await tester.tap(find.text('每 10 分钟'));
+    await tester.pump();
+    expect(find.text('内容'), findsOneWidget);
+  });
 }
