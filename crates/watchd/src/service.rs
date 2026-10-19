@@ -21,7 +21,7 @@ use watch_core::{
     collect::{self, CollectPlan, Fetched, Fetcher},
     dashen::{Endpoint, Mode, normalize},
     ir::{MatchDetail, MatchSummary},
-    summarize, views,
+    summarize, survival, views,
 };
 
 type QueryCache = Mutex<HashMap<String, (Instant, RequestMetric, Value)>>;
@@ -852,6 +852,55 @@ pub(crate) async fn player_prepare(
     let total = store.match_list(key).rows.len().min(input.window);
     Json(json!({"prepared":prepared,"remaining":remaining,"total":total,"enabled":true}))
         .into_response()
+}
+
+#[derive(Deserialize)]
+pub(crate) struct SurvivalInput {
+    session: String,
+    #[serde(default = "sport")]
+    mode: String,
+}
+
+/// How long the player lasts in each match (see [`survival`]), from the matches whose
+/// detail is already stored on this machine: no request goes to the upstream. `listed` is
+/// the matches of the stored list and `used` those that could be analysed, so the app can
+/// say how much of the history this covers.
+pub(crate) async fn player_survival(
+    State(s): State<AppState>,
+    Json(input): Json<SurvivalInput>,
+) -> Response {
+    let Some(mode) = Mode::parse(&input.mode) else {
+        return fail(error("validation", "无效的模式。 ")).into_response();
+    };
+    let player = match session(&s, &input.session, "玩家会话已过期，请重新查找玩家。 ").await
+    {
+        Ok(p) => p,
+        Err(e) => return fail(e).into_response(),
+    };
+    let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
+        return Json(json!({"enabled":false})).into_response();
+    };
+    let rows = store
+        .match_list(ListKey {
+            subject: &subject,
+            mode,
+            season: None,
+        })
+        .rows;
+    let details: Vec<MatchDetail> = rows
+        .iter()
+        .filter_map(|m| store.detail(mode, &m.id, &subject))
+        .map(|kept| kept.detail)
+        .collect();
+    let stored = details.len();
+    let report = survival::survival(&details);
+    Json(json!({
+        "enabled": true,
+        "listed": rows.len(),
+        "stored": stored,
+        "report": report,
+    }))
+    .into_response()
 }
 
 /// Full IR dataset for one player plus its analysis.

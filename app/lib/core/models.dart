@@ -794,3 +794,89 @@ class StrengthResult {
   final PlayerDataset dataset;
   final LobbyStrength lobby;
 }
+
+/// One match: how long the subject lasted per life in it (`life_s` = match length over
+/// deaths + 1; see `survival.rs`).
+class LifeSample {
+  LifeSample(Json j)
+    : matchId = _s(j['match_id']) ?? '',
+      startedAtMs = _i(j['started_at_ms']),
+      role = Role.parse(_s(j['role'])),
+      hero = EntityRef.opt(j['hero']),
+      outcome = Outcome.parse(_s(j['outcome'])),
+      durationS = _d(j['duration_s']) ?? 0,
+      deaths = _d(j['deaths']) ?? 0,
+      lifeS = _d(j['life_s']) ?? 0;
+  final String matchId;
+  final int? startedAtMs;
+  final Role role;
+  final EntityRef? hero;
+  final Outcome outcome;
+  final double durationS, deaths, lifeS;
+}
+
+enum LifeTrend {
+  longer,
+  shorter,
+  flat;
+
+  static LifeTrend parse(String? v) =>
+      LifeTrend.values.firstWhere((t) => t.name == v, orElse: () => flat);
+}
+
+/// Whether lives are getting longer: older half against newer half, and the trend test.
+class LifeGrowth {
+  LifeGrowth(Json j)
+    : matches = _i(j['matches']) ?? 0,
+      olderMeanS = _d(j['older_mean_s']) ?? 0,
+      newerMeanS = _d(j['newer_mean_s']) ?? 0,
+      changeS = _d(j['change_s']) ?? 0,
+      changePct = _d(j['change_pct']) ?? 0,
+      slopeSPerMatch = _d(j['slope_s_per_match']) ?? 0,
+      p = _d(j['p']) ?? 1,
+      trend = LifeTrend.parse(_s(j['trend']));
+  final int matches;
+  final double olderMeanS, newerMeanS, changeS, changePct, slopeSPerMatch, p;
+  final LifeTrend trend;
+  static LifeGrowth? opt(Object? v) =>
+      v is Map<String, dynamic> ? LifeGrowth(v) : null;
+}
+
+class RoleLife {
+  RoleLife(Json j)
+    : role = Role.parse(_s(j['role'])),
+      matches = _i((j['stat'] as Map?)?['matches']) ?? 0,
+      meanS = _d((j['stat'] as Map?)?['mean_s']),
+      growth = LifeGrowth.opt(j['growth']);
+  final Role role;
+  final int matches;
+  final double? meanS;
+  final LifeGrowth? growth;
+}
+
+/// The service's answer about survival time: the matches it could analyse (oldest first),
+/// the growth for all of them and for each role.
+class SurvivalResult {
+  SurvivalResult(Json j)
+    : enabled = j['enabled'] == true,
+      listed = _i(j['listed']) ?? 0,
+      stored = _i(j['stored']) ?? 0,
+      samples = _list((j['report'] as Map?)?['samples'], LifeSample.new),
+      skipped = _i((j['report'] as Map?)?['skipped']) ?? 0,
+      growth = LifeGrowth.opt((j['report'] as Map?)?['growth']),
+      byRole = _list((j['report'] as Map?)?['by_role'], RoleLife.new);
+  final bool enabled;
+
+  /// Matches in the stored list, and how many of them have a detail stored.
+  final int listed, stored;
+  final List<LifeSample> samples;
+
+  /// Stored matches that could not be used (too short, no deaths figure).
+  final int skipped;
+  final LifeGrowth? growth;
+  final List<RoleLife> byRole;
+
+  LifeGrowth? growthFor(Role? role) => role == null
+      ? growth
+      : byRole.where((r) => r.role == role).firstOrNull?.growth;
+}

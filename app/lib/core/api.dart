@@ -261,6 +261,16 @@ class Api {
     return StrengthResult(j);
   }
 
+  /// How long the player lasts in each match, from the details already stored on this
+  /// machine (no request goes to the upstream).
+  Future<SurvivalResult> survival(String session, Mode mode) async =>
+      SurvivalResult(
+        await post('/api/player/survival', {
+          'session': session,
+          'mode': mode.id,
+        }),
+      );
+
   /// Has the service look up the ranks of the players in a small batch of the newest
   /// matches that are not ready for the strength analysis yet. `remaining` is how many of
   /// the newest [window] matches are still waiting; `enabled` is false without a local store.

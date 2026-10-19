@@ -11,6 +11,7 @@ pub mod progress;
 mod report;
 mod scheduler;
 pub mod strength;
+pub mod survival;
 pub use cache::{CachedDetail, ListKey, MemoryCache, RATINGS_TTL, StoredList, StrengthCache};
 pub use catalog::*;
 pub use credentials::*;

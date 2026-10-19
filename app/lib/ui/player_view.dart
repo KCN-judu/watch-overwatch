@@ -12,6 +12,7 @@ import 'pages/heroes_page.dart';
 import 'pages/matches_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/strength_page.dart';
+import 'pages/growth_page.dart';
 import 'pages/trend_page.dart';
 import 'shell.dart' show ShellScope;
 import '../design/net_pic.dart';
@@ -20,6 +21,7 @@ const tabIcons = {
   'matches': Icons.sports_esports_outlined,
   'heroes': Icons.groups_2_outlined,
   'strength': Icons.balance,
+  'growth': Icons.trending_up,
   'trend': Icons.show_chart,
   'profile': Icons.badge_outlined,
 };
@@ -50,6 +52,7 @@ class PlayerView extends StatelessWidget {
                 child: switch (app.tab) {
                   'heroes' => HeroesPage(workspace: workspace),
                   'strength' => StrengthPage(workspace: workspace),
+                  'growth' => GrowthPage(workspace: workspace),
                   'trend' => TrendPage(workspace: workspace),
                   'profile' => ProfilePage(workspace: workspace),
                   _ => MatchesPage(workspace: workspace),
