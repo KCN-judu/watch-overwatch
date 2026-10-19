@@ -72,18 +72,26 @@ class CardGrid extends StatelessWidget {
   }
 }
 
-/// The surface every card sits on: raised, bordered, rounded, with an accent bar down the
-/// left edge. (A border whose sides differ in colour cannot be rounded, so the bar is a
-/// separate strip inside the clipped card.)
+/// The surface every card sits on: raised, bordered, rounded (or a plain rectangle when
+/// `square`), with an accent bar down the left edge. (A border whose sides differ in colour
+/// cannot be rounded, so the bar is a separate strip inside the clipped card.)
 class CardSurface extends StatelessWidget {
-  const CardSurface({super.key, required this.accent, required this.child});
+  const CardSurface({
+    super.key,
+    required this.accent,
+    required this.child,
+    this.square = false,
+  });
   final Color accent;
   final Widget child;
+  final bool square;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final radius = BorderRadius.circular(Radii.container);
+    final radius = square
+        ? BorderRadius.zero
+        : BorderRadius.circular(Radii.container);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: c.raised,
@@ -120,12 +128,20 @@ class InfoCard extends StatelessWidget {
     this.tag,
     this.asset,
     this.iconUrl,
+    this.glyph,
+    this.square = false,
   });
   final String name;
   final String description;
   final String? tag;
   final String? asset;
   final String? iconUrl;
+
+  /// A built-in glyph, for things that have no picture of their own.
+  final IconData? glyph;
+
+  /// Draw the card as a plain rectangle instead of a rounded one.
+  final bool square;
   final Color accent;
 
   @override
@@ -156,10 +172,13 @@ class InfoCard extends StatelessWidget {
                 error: const SizedBox(width: 48, height: 48),
               ),
             )
+          : glyph != null
+          ? Icon(glyph, size: 40, color: c.textPrimary)
           : null,
     );
     return CardSurface(
       accent: accent,
+      square: square,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

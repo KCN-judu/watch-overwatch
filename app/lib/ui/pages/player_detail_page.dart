@@ -287,6 +287,8 @@ class PlayerDetailPage extends StatelessWidget {
                 description: player.partyBnetIds.isEmpty
                     ? '没有组队信息'
                     : '与 ${player.partyBnetIds.length} 名玩家组队：${peopleText(player.partyBnetIds, '')}',
+                glyph: Icons.groups_outlined,
+                square: true,
                 accent: heroColor,
               ),
               InfoCard(
@@ -294,6 +296,8 @@ class PlayerDetailPage extends StatelessWidget {
                 description: player.endorsedBy.isEmpty
                     ? '没有收到点赞'
                     : '${player.endorsedBy.length} 人：${peopleText(player.endorsedBy, '')}',
+                glyph: Icons.thumb_up_outlined,
+                square: true,
                 accent: heroColor,
               ),
             ]),
@@ -311,31 +315,6 @@ class PlayerDetailPage extends StatelessWidget {
                   InfoCard(name: e.label, tag: '异能', accent: heroColor),
                 for (final e in stadium.items)
                   InfoCard(name: e.label, tag: '装备', accent: heroColor),
-              ]),
-            ],
-            if (player.isSubject && detail.subjectHeroes.isNotEmpty) ...[
-              const SizedBox(height: Sp.betweenSections),
-              AccentTitle(
-                '使用的英雄',
-                accent: heroColor,
-                info: '这一场里该玩家用过的每个英雄和占本场的时间。',
-              ),
-              const SizedBox(height: Sp.withinGroup + 2),
-              CardGrid([
-                for (final h in detail.subjectHeroes)
-                  InfoCard(
-                    name: h.hero.label,
-                    tag: h.share == null
-                        ? null
-                        : '占本场 ${fmtPct(h.share! * 100, digits: 0)}',
-                    description: [
-                      if (h.playTimeS != null) '使用 ${fmtClock(h.playTimeS)}',
-                      for (final v in h.stats)
-                        '${v.stat.label} ${fmtInt(v.value)}',
-                    ].join('　'),
-                    iconUrl: catalog.heroIcon(h.hero),
-                    accent: heroColor,
-                  ),
               ]),
             ],
             const SizedBox(height: Sp.betweenSections),
