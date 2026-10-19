@@ -180,7 +180,7 @@ class InfoCard extends StatelessWidget {
       accent: accent,
       square: square,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           icon,
           const SizedBox(width: 12),
