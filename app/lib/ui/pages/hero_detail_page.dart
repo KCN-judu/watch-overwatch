@@ -200,8 +200,7 @@ class _Poster extends StatelessWidget {
         ? null
         : (hero.winRatePct! >= 50 ? c.win : c.loss);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(Radii.container),
+    return ClipRect(
       child: SizedBox(
         height: 360,
         child: Stack(
@@ -538,7 +537,6 @@ class _SeasonStats extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: c.raised,
-              borderRadius: BorderRadius.circular(Radii.container),
               border: Border.all(color: c.border),
             ),
             child: Column(
@@ -768,7 +766,12 @@ class _Kit extends StatelessWidget {
         ),
         CardGrid([
           for (final p in perks)
-            card(asset: p.asset, name: p.name, description: p.description),
+            PerkCard(
+              asset: p.asset,
+              name: p.name,
+              description: p.description,
+              accent: accent,
+            ),
         ]),
       ],
     );

@@ -72,34 +72,22 @@ class CardGrid extends StatelessWidget {
   }
 }
 
-/// The surface every card sits on: raised, bordered, rounded (or a plain rectangle when
-/// `square`), with an accent bar down the left edge. (A border whose sides differ in colour
-/// cannot be rounded, so the bar is a separate strip inside the clipped card.)
+/// The surface every card sits on: a raised, bordered rectangle with an accent bar down
+/// the left edge. Square corners everywhere, so cards on different pages look the same.
 class CardSurface extends StatelessWidget {
-  const CardSurface({
-    super.key,
-    required this.accent,
-    required this.child,
-    this.square = false,
-  });
+  const CardSurface({super.key, required this.accent, required this.child});
   final Color accent;
   final Widget child;
-  final bool square;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final radius = square
-        ? BorderRadius.zero
-        : BorderRadius.circular(Radii.container);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: c.raised,
-        borderRadius: radius,
         border: Border.all(color: c.border),
       ),
-      child: ClipRRect(
-        borderRadius: radius,
+      child: ClipRect(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -129,7 +117,6 @@ class InfoCard extends StatelessWidget {
     this.asset,
     this.iconUrl,
     this.glyph,
-    this.square = false,
   });
   final String name;
   final String description;
@@ -140,8 +127,6 @@ class InfoCard extends StatelessWidget {
   /// A built-in glyph, for things that have no picture of their own.
   final IconData? glyph;
 
-  /// Draw the card as a plain rectangle instead of a rounded one.
-  final bool square;
   final Color accent;
 
   @override
@@ -178,7 +163,6 @@ class InfoCard extends StatelessWidget {
     );
     return CardSurface(
       accent: accent,
-      square: square,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -186,6 +170,8 @@ class InfoCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
+              // Only as tall as its text, so the Row centres it against the icon.
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -227,6 +213,42 @@ class InfoCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A hero perk: its name, what it does, and its icon. `level` (1 or 2) adds the tier as the
+/// tag; the hero page leaves it out because its rows are already titled by tier. `info` is
+/// the game's own entry for the perk, when there is one; `fallbackIconUrl` stands in for
+/// its picture when there is not.
+class PerkCard extends StatelessWidget {
+  const PerkCard({
+    super.key,
+    required this.name,
+    required this.accent,
+    this.description = '',
+    this.asset,
+    this.fallbackIconUrl,
+    this.level,
+  });
+  final String name;
+  final String description;
+  final String? asset;
+  final String? fallbackIconUrl;
+  final int? level;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => InfoCard(
+    name: name,
+    tag: switch (level) {
+      1 => '一级威能',
+      2 => '二级威能',
+      _ => null,
+    },
+    description: description,
+    asset: asset,
+    iconUrl: asset == null ? fallbackIconUrl : null,
+    accent: accent,
+  );
 }
 
 /// One figure with its label, an optional line under it and an optional bar showing a

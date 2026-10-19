@@ -82,7 +82,6 @@ class PlayerDetailPage extends StatelessWidget {
       padding: const EdgeInsets.all(Sp.betweenGroups),
       decoration: BoxDecoration(
         color: c.raised,
-        borderRadius: BorderRadius.circular(Radii.container),
         border: Border.all(color: c.border),
       ),
       child: Row(
@@ -196,18 +195,12 @@ class PlayerDetailPage extends StatelessWidget {
               for (final g in gameHero?.perks ?? const <GamePerk>[]) {
                 if (g.name == pick.perk.label) info = g;
               }
-              return InfoCard(
+              return PerkCard(
                 name: pick.perk.label,
-                tag: switch (pick.level) {
-                  1 => '一级威能',
-                  2 => '二级威能',
-                  _ => null,
-                },
+                level: pick.level,
                 description: info?.description ?? '',
                 asset: info?.asset,
-                iconUrl: info?.asset == null
-                    ? catalog.perkIcon(pick.perk)
-                    : null,
+                fallbackIconUrl: catalog.perkIcon(pick.perk),
                 accent: heroColor,
               );
             }(),
@@ -288,7 +281,6 @@ class PlayerDetailPage extends StatelessWidget {
                     ? '没有组队信息'
                     : '与 ${player.partyBnetIds.length} 名玩家组队：${peopleText(player.partyBnetIds, '')}',
                 glyph: Icons.groups_outlined,
-                square: true,
                 accent: heroColor,
               ),
               InfoCard(
@@ -297,7 +289,6 @@ class PlayerDetailPage extends StatelessWidget {
                     ? '没有收到点赞'
                     : '${player.endorsedBy.length} 人：${peopleText(player.endorsedBy, '')}',
                 glyph: Icons.thumb_up_outlined,
-                square: true,
                 accent: heroColor,
               ),
             ]),
