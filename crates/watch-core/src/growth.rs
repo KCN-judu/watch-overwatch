@@ -1,6 +1,6 @@
 //! Growth (成长): match by match, how the subject is doing on a few measures, and whether
 //! each is trending up or down. The measures are how long they last per death, their
-//! Fleta index, and their KDA.
+//! Fleta index, their KDA, and what a support heals and a tank mitigates.
 //!
 //! **Survival time.** The provider does not say when anyone died, only how many times, so
 //! the time between deaths is worked out as the match's length over its deaths: time at
@@ -50,6 +50,11 @@ pub struct MatchPoint {
     pub fleta: Option<f64>,
     /// `(kills + assists) / deaths`, with no deaths counted as one.
     pub kda: Option<f64>,
+    /// Healing per 10 minutes; only for a match played as support (other roles heal as a
+    /// side effect, and a figure that is zero for most of them would only drag a trend).
+    pub healing10: Option<f64>,
+    /// Damage mitigated per 10 minutes; only for a match played as tank.
+    pub mitigation10: Option<f64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -58,16 +63,26 @@ pub enum Metric {
     Life,
     Fleta,
     Kda,
+    Healing,
+    Mitigation,
 }
 
 impl Metric {
-    pub const ALL: [Metric; 3] = [Metric::Life, Metric::Fleta, Metric::Kda];
+    pub const ALL: [Metric; 5] = [
+        Metric::Life,
+        Metric::Fleta,
+        Metric::Kda,
+        Metric::Healing,
+        Metric::Mitigation,
+    ];
 
     fn of(self, p: &MatchPoint) -> Option<f64> {
         match self {
             Metric::Life => Some(p.life_s),
             Metric::Fleta => p.fleta,
             Metric::Kda => p.kda,
+            Metric::Healing => p.healing10,
+            Metric::Mitigation => p.mitigation10,
         }
     }
 }
@@ -200,6 +215,14 @@ fn point(d: &MatchDetail) -> Option<MatchPoint> {
             .kills
             .zip(s.assists)
             .map(|(k, a)| (k + a) / deaths.max(1.0)),
+        healing10: s
+            .healing
+            .filter(|_| me.role == Role::Support)
+            .map(|h| h / duration_s * 600.0),
+        mitigation10: s
+            .mitigation
+            .filter(|_| me.role == Role::Tank)
+            .map(|m| m / duration_s * 600.0),
     })
 }
 
@@ -393,6 +416,22 @@ mod tests {
         assert_eq!(p.kda, Some(2.0)); // (6 + 4) / 5
         // 2 of the team's 10 final blows: 2 / (10 * 0.5) = 40%.
         assert_eq!(p.fleta, Some(40.0));
+    }
+
+    #[test]
+    fn healing_is_a_support_figure_and_mitigation_a_tank_one_per_ten_minutes() {
+        let mut d = detail("a", 1, Role::Support, 2.0, 300.0, Outcome::Win);
+        d.allies[0].stats.healing = Some(3000.0);
+        d.allies[0].stats.mitigation = Some(900.0);
+        let p = point(&d).unwrap();
+        assert_eq!(p.healing10, Some(6000.0)); // 3000 in 5 minutes
+        assert_eq!(p.mitigation10, None);
+        let mut d = detail("b", 2, Role::Tank, 2.0, 600.0, Outcome::Win);
+        d.allies[0].stats.healing = Some(500.0);
+        d.allies[0].stats.mitigation = Some(9000.0);
+        let p = point(&d).unwrap();
+        assert_eq!(p.healing10, None);
+        assert_eq!(p.mitigation10, Some(9000.0));
     }
 
     #[test]

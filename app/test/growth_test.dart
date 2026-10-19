@@ -31,6 +31,7 @@ void main() {
           'deathless': false,
           'fleta': 40.0,
           'kda': 10.0,
+          'healing10': 6000.0,
         },
         {
           'match_id': 'b',
@@ -75,6 +76,8 @@ void main() {
     // A figure the service left out stays missing, not zero.
     expect(r.points.last.fleta, isNull);
     expect(r.points.last.kda, isNull);
+    expect(r.points.first.healing10, 6000);
+    expect(r.points.first.mitigation10, isNull);
     final life = r.metric(GrowthMetric.life)!;
     expect(life.growthFor(null)!.trend, Trend.up);
     expect(life.growthFor(Role.support)!.trend, Trend.flat);

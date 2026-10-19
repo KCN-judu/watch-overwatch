@@ -809,7 +809,9 @@ class GrowthPoint {
       lifeS = _d(j['life_s']) ?? 0,
       deathless = j['deathless'] == true,
       fleta = _d(j['fleta']),
-      kda = _d(j['kda']);
+      kda = _d(j['kda']),
+      healing10 = _d(j['healing10']),
+      mitigation10 = _d(j['mitigation10']);
   final String matchId;
   final int? startedAtMs;
   final Role role;
@@ -821,12 +823,17 @@ class GrowthPoint {
   final double lifeS;
   final bool deathless;
   final double? fleta, kda;
+
+  /// Per 10 minutes; only for a support match (healing) or a tank match (mitigation).
+  final double? healing10, mitigation10;
 }
 
 enum GrowthMetric {
   life,
   fleta,
-  kda;
+  kda,
+  healing,
+  mitigation;
 
   static GrowthMetric? parse(String? v) =>
       GrowthMetric.values.where((m) => m.name == v).firstOrNull;

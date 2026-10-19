@@ -39,8 +39,7 @@ class _Measure {
     required this.format,
     required this.axisFormat,
     required this.noteOf,
-    required this.up,
-    required this.down,
+    required this.card,
     required this.changeText,
     this.shieldMeaning,
   });
@@ -54,8 +53,8 @@ class _Measure {
   /// The line under the date in the readout about one match.
   final String Function(GrowthPoint) noteOf;
 
-  /// Wording of a trend that goes up or down.
-  final String up, down;
+  /// What the trend card calls the thing that is rising or falling ("保活能力").
+  final String card;
 
   /// A change of this size in the measure's own unit, signed.
   final String Function(double) changeText;
@@ -67,7 +66,7 @@ class _Measure {
 final _measures = [
   _Measure(
     metric: GrowthMetric.life,
-    title: '存活时长',
+    title: '存活时长（保活能力）',
     info:
         '每次阵亡之间平均隔多久 = 对局时长 ÷ 阵亡次数。上游只给阵亡次数、不给每次阵亡的时间点，所以只能这样平均着算。'
         '没有死亡的对局取整局时长（实际只会更长），用盾牌标出，背后的底色填满这一局；含重生等待。',
@@ -77,8 +76,7 @@ final _measures = [
     noteOf: (p) => p.deathless
         ? '对局时长 ${fmtClock(p.durationS)} · 没有死亡'
         : '对局时长 ${fmtClock(p.durationS)} · 阵亡 ${fmtInt(p.deaths)} 次',
-    up: '活得更久了',
-    down: '活得更短了',
+    card: '保活能力',
     changeText: (d) => '${d < 0 ? '−' : '+'}${fmtInt(d.abs())} 秒',
     shieldMeaning: '盾牌：这一局没有死亡，数值是整局时长，实际更长。',
   ),
@@ -92,8 +90,7 @@ final _measures = [
     format: (v) => fmtPct(v, digits: 0),
     axisFormat: (v) => fmtPct(v, digits: 0),
     noteOf: (_) => '',
-    up: '变高了',
-    down: '变低了',
+    card: 'Fleta 指数',
     changeText: (d) => '${d < 0 ? '−' : '+'}${fmtInt(d.abs())} 个百分点',
   ),
   _Measure(
@@ -104,10 +101,31 @@ final _measures = [
     format: fmtOne,
     axisFormat: fmtOne,
     noteOf: (p) => p.deathless ? '没有死亡' : '阵亡 ${fmtInt(p.deaths)} 次',
-    up: '变高了',
-    down: '变低了',
+    card: 'KDA',
     changeText: (d) => '${d < 0 ? '−' : '+'}${fmtOne(d.abs())}',
     shieldMeaning: '盾牌：这一局没有死亡，按 1 次阵亡算。',
+  ),
+  _Measure(
+    metric: GrowthMetric.healing,
+    title: '治疗量',
+    info: '每 10 分钟的治疗量（含自我治疗）。只算你打辅助的对局：别的职责的治疗是副产品，混进来会把数字拉低。',
+    value: (p) => p.healing10,
+    format: (v) => '${fmtInt(v)} / 10 分钟',
+    axisFormat: fmtInt,
+    noteOf: (_) => '',
+    card: '治疗量',
+    changeText: (d) => '${d < 0 ? '−' : '+'}${fmtInt(d.abs())}',
+  ),
+  _Measure(
+    metric: GrowthMetric.mitigation,
+    title: '阻挡量',
+    info: '每 10 分钟阻挡或减免的伤害。只算你打重装的对局：别的职责的阻挡量很少，混进来没有意义。',
+    value: (p) => p.mitigation10,
+    format: (v) => '${fmtInt(v)} / 10 分钟',
+    axisFormat: fmtInt,
+    noteOf: (_) => '',
+    card: '阻挡量',
+    changeText: (d) => '${d < 0 ? '−' : '+'}${fmtInt(d.abs())}',
   ),
 ];
 
@@ -154,6 +172,11 @@ class _GrowthPageState extends State<GrowthPage> {
     final points = [
       for (final p in data.points)
         if (role == null || p.role == role) p,
+    ];
+    // A measure with no figure for the matches on screen (healing for a tank) is left out.
+    final shown = [
+      for (final m in _measures)
+        if (points.any((p) => m.value(p) != null)) m,
     ];
 
     return ListView(
@@ -204,11 +227,19 @@ class _GrowthPageState extends State<GrowthPage> {
             style: Ty.meta.copyWith(color: c.textSecondary),
           ),
         ],
-        for (final m in _measures) ...[
+        const SizedBox(height: Sp.betweenSections),
+        CardGrid(minWidth: 230, height: 84, [
+          for (final m in shown)
+            _TrendCard(m, data.metric(m.metric)?.growthFor(role)),
+        ]),
+        const SizedBox(height: Sp.withinGroup),
+        Text(
+          'p：如果其实没有变化、只是每局运气有高有低，也出现这么明显走势的可能性。小于 0.1 才说有趋势，越小越可信；不到 8 场不下结论。',
+          style: Ty.meta.copyWith(color: c.textSecondary),
+        ),
+        for (final m in shown) ...[
           const SizedBox(height: Sp.betweenSections),
           AccentTitle(m.title, accent: c.accent, info: m.info),
-          const SizedBox(height: Sp.withinGroup),
-          _Trend(m, data.metric(m.metric)?.growthFor(role)),
           const SizedBox(height: Sp.withinGroup + 2),
           _MeasureChart(m, points),
         ],
@@ -218,9 +249,9 @@ class _GrowthPageState extends State<GrowthPage> {
   }
 }
 
-/// The trend of one measure in a line of text.
-class _Trend extends StatelessWidget {
-  const _Trend(this.m, this.g);
+/// One measure's trend as a card: what is rising or falling, and the p value under it.
+class _TrendCard extends StatelessWidget {
+  const _TrendCard(this.m, this.g);
   final _Measure m;
   final Growth? g;
 
@@ -228,20 +259,49 @@ class _Trend extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final g = this.g;
-    final text = g == null
-        ? '不到 8 场，看不出走势。'
-        : [
-            '较早一半 ${m.format(g.olderMean)} → 较新一半 ${m.format(g.newerMean)}'
-                '（${m.changeText(g.change)}，${g.changePct < 0 ? '−' : '+'}${fmtInt(g.changePct.abs())}%）',
-            switch (g.trend) {
-              Trend.up => m.up,
-              Trend.down => m.down,
-              Trend.flat => '没有明显变化',
-            },
-            g.p < 0.001 ? 'p < 0.001' : 'p = ${g.p.toStringAsFixed(3)}',
-            '共 ${g.matches} 场',
-          ].join(' · ');
-    return Text(text, style: Ty.body.copyWith(color: c.textSecondary));
+    final (text, icon, color) = switch (g?.trend) {
+      null => ('${m.card}：场次不足', Icons.remove, c.textSecondary),
+      Trend.up => ('${m.card}呈现上升趋势', Icons.trending_up, c.win),
+      Trend.down => ('${m.card}呈现下降趋势', Icons.trending_down, c.loss),
+      Trend.flat => ('${m.card}没有明显趋势', Icons.trending_flat, c.textSecondary),
+    };
+    final p = g == null
+        ? '不到 8 场，看不出走势'
+        : g.p < 0.001
+        ? 'p < 0.001'
+        : 'p = ${g.p.toStringAsFixed(3)}';
+    final card = CardSurface(
+      accent: color,
+      child: Row(
+        children: [
+          Icon(icon, size: 32, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  text,
+                  style: Ty.bodyStrong.copyWith(color: color),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(p, style: Ty.body.copyWith(color: c.textSecondary)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return g == null
+        ? card
+        : Tooltip(
+            message:
+                '较早一半 ${m.format(g.olderMean)} → 较新一半 ${m.format(g.newerMean)}'
+                '（${m.changeText(g.change)}，${g.changePct < 0 ? '−' : '+'}${fmtInt(g.changePct.abs())}%），共 ${g.matches} 场',
+            child: card,
+          );
   }
 }
 
@@ -295,12 +355,8 @@ class _MeasureChart extends StatelessWidget {
         height: 260,
         yMin: 0,
         series: [
-          ChartSeries(label: m.title, color: c.textSecondary, values: values),
-          ChartSeries(
-            label: '最近 $_window 局平均',
-            color: c.accent,
-            values: average,
-          ),
+          ChartSeries(label: m.card, color: c.textSecondary, values: values),
+          ChartSeries(label: '$_window 局平均', color: c.accent, values: average),
         ],
         xLabels: [
           for (final p in points)
