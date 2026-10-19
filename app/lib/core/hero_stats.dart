@@ -24,6 +24,15 @@ class HeroStatRow {
   /// Null where the stat has no per-10-minute meaning (rates, times).
   double? per10;
   double? perMatch;
+
+  /// A stat that is the sum of two parts says how much of the figures above is the
+  /// first one, named by [partName]; the rest is [restName]. Healing is self-healing plus
+  /// healing others; eliminations are final blows plus eliminations shared with
+  /// teammates. Null when the split is not known.
+  double? partPer10;
+  double? partPerMatch;
+  String partName = '';
+  String restName = '';
   StatSource per10Source = StatSource.provider;
   StatSource perMatchSource = StatSource.provider;
 }
@@ -116,7 +125,7 @@ class HeroStats {
         );
       }
     }
-    out = _mergeSelfHealing(out);
+    out = _foldFinalBlows(_mergeSelfHealing(out));
     // Some stats every hero can produce, and supports always heal: a missing record
     // for these is zero, never "cannot produce".
     final always = [
@@ -141,6 +150,31 @@ class HeroStats {
     return out;
   }
 
+  static const _selfHeal = '自我治疗';
+  static const _otherHeal = '对他人';
+
+  /// Every final blow is also an elimination (the game counts an elimination for each
+  /// enemy you damaged shortly before it died, and the one who lands the last hit also
+  /// gets a final blow), so the 最后一击 row folds into 消灭: what is left is the
+  /// eliminations shared with teammates. The two are shown as one figure split in two.
+  static List<HeroStatRow> _foldFinalBlows(List<HeroStatRow> rows) {
+    final kills = rows.where((r) => r.name == '消灭').firstOrNull;
+    final blows = rows.where((r) => r.name == '最后一击').firstOrNull;
+    if (kills == null || blows == null) return rows;
+    double? part(double? total, double? blow) => total == null || blow == null
+        ? null
+        : blow.clamp(0.0, total).toDouble();
+    kills
+      ..partPer10 = part(kills.per10, blows.per10)
+      ..partPerMatch = part(kills.perMatch, blows.perMatch)
+      ..partName = '最后一击'
+      ..restName = '共同消灭';
+    return [
+      for (final r in rows)
+        if (!identical(r, blows)) r,
+    ];
+  }
+
   /// Self-healing is healing: one row 治疗量, the two figures added together. A hero
   /// with only self-healing in its list gets that row renamed.
   static List<HeroStatRow> _mergeSelfHealing(List<HeroStatRow> rows) {
@@ -163,6 +197,10 @@ class HeroStats {
             HeroStatRow(self.guid, '治疗量')
               ..per10 = self.per10
               ..perMatch = self.perMatch
+              ..partPer10 = self.per10
+              ..partPerMatch = self.perMatch
+              ..partName = _selfHeal
+              ..restName = _otherHeal
               ..per10Source = self.per10Source
               ..perMatchSource = self.perMatchSource
           else
@@ -177,6 +215,10 @@ class HeroStats {
         ? StatSource.provider
         : (a == StatSource.zero ? b : a);
     total
+      ..partPer10 = self.per10 ?? 0
+      ..partPerMatch = self.perMatch ?? 0
+      ..partName = _selfHeal
+      ..restName = _otherHeal
       ..per10 = add(total.per10, self.per10)
       ..perMatch = add(total.perMatch, self.perMatch)
       ..per10Source = join(total.per10Source, self.per10Source)

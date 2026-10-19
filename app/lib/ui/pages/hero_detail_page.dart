@@ -476,34 +476,6 @@ class _SeasonStats extends StatelessWidget {
       StatSource.provider => null,
     };
 
-    Widget cell(HeroStatRow r, double? v, StatSource src) => SizedBox(
-      width: 130,
-      child: v == null
-          ? Tooltip(
-              message: '这个英雄无法产出这项数据',
-              child: Text(
-                missing,
-                textAlign: TextAlign.right,
-                style: Ty.num(Ty.body).copyWith(color: c.textSecondary),
-              ),
-            )
-          : Tooltip(
-              message: why(src) ?? '',
-              child: Text(
-                '${src == StatSource.derived || src == StatSource.recent ? '≈ ' : ''}${_fmtStat(r.name, v)}',
-                textAlign: TextAlign.right,
-                style: Ty.num(Ty.body).copyWith(
-                  color: src == StatSource.provider
-                      ? c.textPrimary
-                      : c.textSecondary,
-                  fontWeight: src == StatSource.provider
-                      ? FontWeight.w600
-                      : FontWeight.w400,
-                ),
-              ),
-            ),
-    );
-
     final groups = [
       for (final g in _Group.values)
         (
@@ -515,6 +487,67 @@ class _SeasonStats extends StatelessWidget {
         ),
     ].where((e) => e.$2.isNotEmpty).toList();
 
+    // One card per figure. A figure with no value for this basis (a hit rate has no
+    // per-10-minutes reading) has no card there. Healing is the sum of healing others
+    // and healing itself, and its bar shows how much of it was the hero's own.
+    Widget card(HeroStatRow r, bool per10) {
+      final v = per10 ? r.per10 : r.perMatch;
+      final src = per10 ? r.per10Source : r.perMatchSource;
+      final self = per10 ? r.partPer10 : r.partPerMatch;
+      final approx = src == StatSource.derived || src == StatSource.recent;
+      final split = v != null && v > 0 && self != null
+          ? self.clamp(0.0, v).toDouble()
+          : null;
+      return StatCard(
+        label: r.name,
+        value: '${approx ? '≈ ' : ''}${_fmtStat(r.name, v!)}',
+        accent: stripe(r) ?? accent,
+        share: split == null ? null : split / v,
+        caption: split == null
+            ? null
+            : '${r.partName} ${_fmtStat(r.name, split)}（${fmtPct(split / v * 100, digits: 0)}）· ${r.restName} ${_fmtStat(r.name, v - split)}',
+        tooltip: why(src),
+      );
+    }
+
+    Widget partition(String title, bool per10) {
+      final shown = [
+        for (final (g, list) in groups)
+          (
+            g,
+            [
+              for (final r in list)
+                if ((per10 ? r.per10 : r.perMatch) != null) r,
+            ],
+          ),
+      ].where((e) => e.$2.isNotEmpty);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Ty.bodyStrong.copyWith(color: accent)),
+          for (final (g, list) in shown) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 10, bottom: 6),
+              child: Text(
+                _groupTitles[g]!,
+                style: Ty.meta.copyWith(color: c.textSecondary),
+              ),
+            ),
+            CardGrid(
+              minWidth: 200,
+              height:
+                  list.any(
+                    (r) => (per10 ? r.partPer10 : r.partPerMatch) != null,
+                  )
+                  ? 124
+                  : 88,
+              [for (final r in list) card(r, per10)],
+            ),
+          ],
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -522,83 +555,22 @@ class _SeasonStats extends StatelessWidget {
           '赛季数据',
           accent: accent,
           info:
-              '整个赛季的累计，来自大神。上游常漏项，缺的按这个英雄能产出的内容补全：≈ 是推算或取自近期对局，灰色 0 是上游没有记录，— 是这个英雄无法产出。',
+              '整个赛季的累计，来自大神。上游常漏项，缺的按这个英雄能产出的内容补全：≈ 是推算或取自近期对局，灰色 0 是上游没有记录。消灭和治疗量是两部分相加，条里是第一部分占的比例：消灭 = 最后一击 + 共同消灭（造成过伤害、最后一击是队友打的），治疗量 = 自我治疗 + 对他人。',
         ),
         const SizedBox(height: Sp.withinGroup + 2),
         if (rows.isEmpty)
           Text('没有这个英雄的统计项。', style: Ty.body.copyWith(color: c.textSecondary))
-        else
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              Sp.betweenGroups + 4,
-              Sp.withinGroup,
-              Sp.betweenGroups + 4,
-              Sp.withinGroup,
-            ),
-            decoration: BoxDecoration(
-              color: c.raised,
-              border: Border.all(color: c.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    const Spacer(),
-                    for (final h in const ['每 10 分钟', '每场平均'])
-                      SizedBox(
-                        width: 130,
-                        child: Text(
-                          h,
-                          textAlign: TextAlign.right,
-                          style: Ty.meta.copyWith(color: c.textSecondary),
-                        ),
-                      ),
-                  ],
-                ),
-                for (final (g, list) in groups) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(top: 14, bottom: 4),
-                    child: Text(
-                      _groupTitles[g]!,
-                      style: Ty.bodyStrong.copyWith(color: accent),
-                    ),
-                  ),
-                  for (final r in list)
-                    Container(
-                      height: 34,
-                      decoration: BoxDecoration(
-                        border: Border(bottom: BorderSide(color: c.grid)),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 3,
-                            height: 18,
-                            margin: const EdgeInsets.only(right: 10),
-                            color: stripe(r) ?? Colors.transparent,
-                          ),
-                          Expanded(
-                            child: Text(
-                              r.name,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          cell(r, r.per10, r.per10Source),
-                          cell(r, r.perMatch, r.perMatchSource),
-                        ],
-                      ),
-                    ),
-                ],
-                if (unnamed > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Text(
-                      '另有 $unnamed 项统计目录里没有名称，未显示。',
-                      style: Ty.meta.copyWith(color: c.textSecondary),
-                    ),
-                  ),
-              ],
+        else ...[
+          partition('每 10 分钟', true),
+          const SizedBox(height: Sp.betweenGroups),
+          partition('每场平均', false),
+        ],
+        if (unnamed > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              '另有 $unnamed 项统计目录里没有名称，未显示。',
+              style: Ty.meta.copyWith(color: c.textSecondary),
             ),
           ),
       ],

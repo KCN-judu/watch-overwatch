@@ -113,6 +113,40 @@ void main() {
     final heal = rows.singleWhere((r) => r.name == '治疗量');
     expect(heal.per10, 2100);
     expect(heal.per10Source, StatSource.provider);
+    // The bar's two parts: what it healed itself, and the rest.
+    expect(heal.partPer10, 100);
+    expect(heal.partName, '自我治疗');
+    expect(heal.restName, '对他人');
+  });
+
+  test('final blows fold into eliminations as a split of one figure', () {
+    final cat = Catalog({
+      'heroes': {
+        _hero: {'name': '测试', 'role': 'damage'},
+      },
+      'statistics': [
+        {'heroGuid': _hero, 'valueGuid': '1', 'valueText': '消灭'},
+        {'heroGuid': _hero, 'valueGuid': '5', 'valueText': '最后一击'},
+      ],
+    });
+    final h = HeroUsage({
+      'queue': 'role_queue',
+      'hero': {'kind': 'hero', 'guid': _hero, 'name': '测试'},
+      'matches': 10,
+      'play_time_s': 6000.0,
+      'per_match': const [],
+      'per_10min': [
+        {'stat': stat('1', '消灭'), 'value': 8.4},
+        {'stat': stat('5', '最后一击'), 'value': 2.7},
+      ],
+    });
+    final rows = HeroStats.rows(h, cat, const []);
+    expect(rows.where((r) => r.name == '最后一击'), isEmpty);
+    final kills = rows.singleWhere((r) => r.name == '消灭');
+    expect(kills.per10, 8.4); // the total is not changed
+    expect(kills.partPer10, 2.7);
+    expect(kills.partName, '最后一击');
+    expect(kills.restName, '共同消灭');
   });
 
   test('healing read from matches is not topped up with self-healing', () {
