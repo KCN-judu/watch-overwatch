@@ -4,13 +4,15 @@
 //! Rust toolchain: no second language to install, and the tasks are tested like the rest.
 mod catalog;
 mod game_assets;
+mod package;
 
 use anyhow::{Context, bail};
 use std::path::{Path, PathBuf};
 
 const USAGE: &str = "usage:
   cargo xtask sync-assets                      copy resources/game into the app and register it in pubspec.yaml
-  cargo xtask slim-catalog <source> <target>   cut a full query_tool.json down to what the program reads";
+  cargo xtask slim-catalog <source> <target>   cut a full query_tool.json down to what the program reads
+  cargo xtask package                          zip the release builds into dist/ with its sha256";
 
 fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -25,6 +27,7 @@ fn main() -> anyhow::Result<()> {
         ["slim-catalog", source, target] => {
             catalog::slim_file(Path::new(source), Path::new(target))
         }
+        ["package"] => package::run(&root),
         _ => bail!("{USAGE}"),
     }
 }

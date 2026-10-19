@@ -14,11 +14,11 @@ role_id 和 token 怎么拿，见 [获取账号凭据](docs/credentials.md)。�
 
 ## 功能
 
-- **对局**：以地图图为背景的列表，只显示胜负、比分、地图和英雄；点开看双方 10 人的数据和最高值。
+- **对局**：以地图图为背景的列表，只显示胜负、比分、地图和英雄。首次查询读完全部历史，之后只补新对局。点开是两层页面：整场对局（双方 10 人的数据、段位徽标，查询中的显示“查询中”），再点一名玩家是他的个人卡片（数据、段位、Fleta 指数）。
 - **英雄**：每个英雄一行，可按场次、胜率、时长、熟练度和每 10 分钟的消灭、伤害、治疗、阻挡排序；点开是海报式的英雄详情页（赛季数据、近期对局、技能和威能）。
-- **对局强度**：可以分析全部职责，也可以只分析一个职责；每个职责取最近 N 场，比较己方与对方的段位，逐场画出平均和最低到最高的分布。对局列表和分析用到的数据都保存在本机，之后只读取新打的对局，再次分析几秒完成。
+- **对局强度**：可以分析全部职责，也可以只分析一个职责；每个职责取最近 N 场，比较己方与对方的段位，逐场画出平均和最低到最高的分布。对局和段位都保存在本机（对局库 `matches.db`、段位库 `ratings.db`，段位 3 天后重新查询，已结束赛季的不过期），后台分小批把段位查好，分析本身只是计算。没有定级的对局保留为空位，不被丢掉。
 - **赛季走势**、**档案**：往期赛季的胜率和段位，身份与近期表现。
-- **导出**：统一格式的 JSON 数据集，不含凭据。
+- **导出**：统一格式的 JSON 数据集，不含凭据。弹出系统保存对话框选路径和文件名；可选模式、对局数量（20 / 50 / 100 / 全部 / 自定义）和是否带段位。
 
 ## 文档
 
@@ -32,6 +32,8 @@ role_id 和 token 怎么拿，见 [获取账号凭据](docs/credentials.md)。�
 | [docs/icon-audit.md](docs/icon-audit.md) | 游戏里固定语义的图标盘点与实现状态 |
 | [docs/product-design.md](docs/product-design.md) | 产品设计约定 |
 | [docs/export.md](docs/export.md) | 导出协议 |
+| [docs/audit-2026-10.md](docs/audit-2026-10.md) | 数据、文字、一致性审计：已修复的和仍待处理的 |
+| [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 | [docs/credentials.md](docs/credentials.md) | 如何获取大神账号的 role_id 和 token |
 | [docs/reference-projects.md](docs/reference-projects.md) | 对标项目 Overstats：借鉴了什么、有什么不同、哪些功能还没做 |
 
@@ -40,12 +42,12 @@ role_id 和 token 怎么拿，见 [获取账号凭据](docs/credentials.md)。�
 | 位置 | 内容 |
 |---|---|
 | `crates/watch-core` | 请求调度、数据结构（`ir.rs`）、原始数据到 IR 的转换（`dashen/`）、采集（`collect.rs`）、分析（`analysis.rs`、`strength.rs`） |
-| `crates/watchd` | 本机 HTTP 服务与命令行 |
+| `crates/watchd` | 本机 HTTP 服务与命令行；`store/` 是本机数据库（对局库、段位库）和全部 SQL |
+| `crates/xtask` | 开发任务：`cargo xtask sync-assets`、`slim-catalog`、`package` |
 | `app/` | Flutter 界面 |
 | `resources/game/` | 从游戏解包的英雄资料与图标（`app/assets/game/` 是打进应用的副本） |
 | `resources/brand/` | 应用图标原图 |
 | `ui/` | 旧的网页界面，仍随 `watchd` 提供，不是主界面 |
-| `tools/` | 资源同步脚本 |
 
 ## 构建
 
@@ -55,7 +57,11 @@ role_id 和 token 怎么拿，见 [获取账号凭据](docs/credentials.md)。�
 cargo build --release -p watchd
 cd app
 flutter build windows --release
+cd ..
+cargo xtask package
 ```
+
+`cargo xtask package` 把上面两步的产物打成 `dist\watch-overwatch-v<版本>-windows-x64.zip`，并写出同名 `.sha256`。
 
 把 `target\release\watchd.exe` 和 `app\build\windows\x64\runner\Release\` 里的 `watch-overwatch.exe`、`flutter_windows.dll`、`data\` 放在同一个目录即可运行。
 
