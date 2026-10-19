@@ -234,7 +234,7 @@ class _GrowthPageState extends State<GrowthPage> {
         ]),
         const SizedBox(height: Sp.withinGroup),
         Text(
-          'p：如果其实没有变化、只是每局运气有高有低，也出现这么明显走势的可能性。小于 0.1 才说有趋势，越小越可信；不到 8 场不下结论。',
+          'p 值：Mann-Kendall 趋势检验的双侧 p 值，即原假设（序列没有单调趋势）成立时，出现当前或更极端的检验统计量的概率；p < 0.1 时拒绝原假设，判定存在趋势；样本不足 8 场不检验。',
           style: Ty.meta.copyWith(color: c.textSecondary),
         ),
         for (final m in shown) ...[
