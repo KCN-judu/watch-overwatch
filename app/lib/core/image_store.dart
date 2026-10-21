@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:http/http.dart' as http;
 
+import '../l10n/strings.dart';
+
 /// How many images are still loading, for the progress bar.
 class ImageLoadStats {
   const ImageLoadStats(this.done, this.total);
@@ -112,7 +114,7 @@ class ImageStore {
         last = e;
       }
     }
-    throw StateError('无法加载图片 $url：$last');
+    throw StateError(tr.core.imageLoadFailed(url, last));
   }
 
   /// Fetches [urls] ahead of use, a few at a time, so they are on disk and the first

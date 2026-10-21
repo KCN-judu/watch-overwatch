@@ -1,0 +1,56 @@
+/// The string table: every sentence, label and message the app shows the user.
+///
+/// Pages read their wording from here (`tr.matches.noRecord(name, mode)`), never from
+/// literals in widgets (docs/ui-design.md §8). Only `zh_CN` exists today; another
+/// language means making these classes abstract and adding an implementation.
+///
+/// Rules for every entry:
+///  - A whole sentence is one entry. Values go in as parameters (`noRecord(name, mode)`),
+///    never by gluing fragments together, so a translation can reorder them.
+///  - Words follow the glossary in docs/ui-design.md §2 (段位 / 段位分, 已定级 / 未定级,
+///    对局 / 场, 读取 / 加载 / 查询, 刷新 / 重新分析 / 重新查询段位 / 重试, 搜索 / 筛选,
+///    移除 / 清除, 己方 / 对方, 第 N 赛季, 该玩家 …).
+///  - The player being looked at is “该玩家”, never “你”: the user may be looking at
+///    someone else.
+///  - Not here: data from the game or the provider (hero, map and stat names, map
+///    modes, rank tiers as keys), which are matched against upstream values.
+library;
+
+import 'analysis.dart';
+import 'common.dart';
+import 'core.dart';
+import 'heroes.dart';
+import 'matches.dart';
+import 'shell.dart';
+
+export 'analysis.dart';
+export 'common.dart';
+export 'core.dart';
+export 'heroes.dart';
+export 'matches.dart';
+export 'shell.dart';
+
+class Strings {
+  const Strings();
+
+  /// Words and actions used on many pages.
+  CommonStrings get common => const CommonStrings();
+
+  /// Model labels, formatting, commands and app-state messages (core/, state/).
+  CoreStrings get core => const CoreStrings();
+
+  /// Lobby strength, growth and season trend pages.
+  AnalysisStrings get analysis => const AnalysisStrings();
+
+  /// Shell, navigator, player header, overlays, settings and shared design widgets.
+  ShellStrings get shell => const ShellStrings();
+
+  /// Heroes list, hero detail and profile pages.
+  HeroStrings get heroes => const HeroStrings();
+
+  /// Match list, match detail, team tables and the player card.
+  MatchStrings get matches => const MatchStrings();
+}
+
+/// The app's strings, for code with or without a `BuildContext`.
+const tr = Strings();

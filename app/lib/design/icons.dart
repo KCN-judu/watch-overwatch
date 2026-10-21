@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../core/models.dart';
 import '../core/support.dart';
+import '../l10n/strings.dart';
+import 'interaction.dart';
 import 'tokens.dart';
 import 'widgets.dart' show NetImage;
 import 'net_pic.dart';
@@ -41,7 +43,7 @@ class RoleIcon extends StatelessWidget {
     final glyph = asset == null
         ? Icon(Icons.remove, size: size, color: c.textSecondary)
         : _svg(asset, size, tint);
-    final label = role.label.isEmpty ? '未知职责' : role.label;
+    final label = role.label.isEmpty ? tr.shell.unknownRole : role.label;
     final body = showLabel
         ? Row(
             mainAxisSize: MainAxisSize.min,
@@ -65,7 +67,7 @@ class RoleIcon extends StatelessWidget {
 }
 
 /// Legend for the three role glyphs, used as the tooltip of every role column header.
-const roleLegend = '盾牌 = 重装　子弹 = 输出　十字 = 支援';
+String get roleLegend => tr.shell.roleLegend;
 
 /// Map picture as a recognition aid next to the map name. Never replaces the name.
 class MapThumb extends StatelessWidget {
@@ -149,11 +151,11 @@ class RankBadge extends StatelessWidget {
     final text = r.label;
     final base = r.skillRating == null
         ? text
-        : '$text · ${fmtInt(r.skillRating)} 分';
+        : tr.shell.rankWithRating(text, fmtInt(r.skillRating));
     final detail = otherRoles
-        ? '没有这个职责的段位，取其他职责里最高的竞技段位（不是这场比赛时的）：$base'
+        ? tr.shell.rankFromOtherRole(base)
         : current
-        ? '当前竞技段位（不是这场比赛时的）：$base'
+        ? tr.shell.currentRankNotThen(base)
         : base;
     if (url == null) {
       return Tooltip(
@@ -241,7 +243,7 @@ class HeroPortrait extends StatelessWidget {
       return NetImage(null, size: width, fallback: name, radius: 8);
     }
     return Semantics(
-      label: '$name 立绘',
+      label: tr.shell.heroPortrait(name),
       image: true,
       excludeSemantics: true,
       child: SizedBox(
@@ -262,21 +264,47 @@ class HeroPortrait extends StatelessWidget {
 }
 
 /// Small “i” that holds the explanatory sentence a screen used to print inline.
-class InfoTip extends StatelessWidget {
+///
+/// It is a tab stop: focusing it with the keyboard shows the sentence, as hovering
+/// does, so the explanation is never pointer-only. The hit area is 28px square.
+class InfoTip extends StatefulWidget {
   const InfoTip(this.message, {super.key});
   final String message;
+
+  @override
+  State<InfoTip> createState() => _InfoTipState();
+}
+
+class _InfoTipState extends State<InfoTip> {
+  final _tip = GlobalKey<TooltipState>();
+  bool _focused = false;
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return Tooltip(
-      message: message,
-      triggerMode: TooltipTriggerMode.tap,
-      showDuration: const Duration(seconds: 8),
-      child: Semantics(
-        label: message,
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Icon(Icons.info_outline, size: 14, color: c.textSecondary),
+    final ring = _focused && keyboardModality;
+    return Focus(
+      onFocusChange: (f) {
+        setState(() => _focused = f);
+        if (f && keyboardModality) _tip.currentState?.ensureTooltipVisible();
+      },
+      child: Tooltip(
+        key: _tip,
+        message: widget.message,
+        triggerMode: TooltipTriggerMode.tap,
+        showDuration: const Duration(seconds: 8),
+        child: Semantics(
+          label: widget.message,
+          child: Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(Radii.control),
+              border: c.itemOutline(focused: ring),
+            ),
+            child: Icon(Icons.info_outline, size: 14, color: c.textSecondary),
+          ),
         ),
       ),
     );
@@ -364,7 +392,7 @@ class LevelBadge extends StatelessWidget {
     final v = level;
     if (v == null) return const Text(missing);
     return Tooltip(
-      message: '熟练度 $v',
+      message: tr.shell.masteryLevel(v),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:intl/intl.dart';
 
+import '../l10n/strings.dart';
 import 'models.dart';
 
 // ---- Catalog: images only. Names always come from the IR. ------------------
@@ -159,8 +160,8 @@ String fmtClock(double? seconds) {
 String fmtPlayTime(double? seconds) {
   if (seconds == null) return missing;
   final minutes = (seconds / 60).round();
-  if (minutes < 60) return '$minutes 分钟';
-  return '${minutes ~/ 60} 小时 ${minutes % 60} 分钟';
+  if (minutes < 60) return tr.core.playTimeMinutes(minutes);
+  return tr.core.playTimeHours(minutes ~/ 60, minutes % 60);
 }
 
 /// `Name#1234` → (`Name`, `#1234`).

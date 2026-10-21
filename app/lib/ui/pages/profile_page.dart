@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/models.dart';
 import '../../core/support.dart';
+import '../../design/cards.dart';
 import '../../design/data_table.dart';
 import '../../design/icons.dart';
 import '../../state/match_view.dart';
@@ -11,6 +12,7 @@ import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../state/app_state.dart';
 import '../player_view.dart';
+import '../../l10n/strings.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key, required this.workspace});
@@ -25,15 +27,15 @@ class ProfilePage extends StatelessWidget {
     final c = context.c;
     if (load.failedWithoutData) {
       return ErrorPanel(
-        what: '无法读取玩家档案',
+        what: tr.heroes.profileLoadFailed,
         error: load.error!,
         onRetry: () => ws.loadMatches(mode, fresh: true),
       );
     }
     final data = load.value;
     if (data == null) {
-      return const AfterDelay(
-        child: Center(child: RefreshingChip(label: '正在读取档案…')),
+      return AfterDelay(
+        child: Center(child: RefreshingChip(label: tr.heroes.profileLoading)),
       );
     }
     final p = data.profile;
@@ -58,27 +60,33 @@ class ProfilePage extends StatelessWidget {
         ),
         const SizedBox(height: Sp.betweenGroups),
         _FactCard(
-          title: '身份',
+          title: tr.heroes.identity,
           facts: [
-            ('战网昵称', p.name ?? ws.name),
-            ('玩家编号', p.bnetId ?? missing),
-            if (p.title != null) ('称号', p.title!),
+            (tr.heroes.battleTag, p.name ?? ws.name),
+            (tr.heroes.playerId, p.bnetId ?? missing),
+            if (p.title != null) (tr.heroes.title, p.title!),
             (
-              '荣誉等级',
-              p.endorsementLevel == null ? missing : '${p.endorsementLevel} 级',
+              tr.heroes.endorsement,
+              p.endorsementLevel == null
+                  ? missing
+                  : tr.heroes.endorsementLevel(p.endorsementLevel!),
             ),
             (
-              '游戏时长',
+              tr.heroes.totalPlayTime,
               p.playTimeHours == null
                   ? missing
-                  : '${fmtOne(p.playTimeHours)} 小时',
+                  : tr.heroes.hours(fmtOne(p.playTimeHours)),
             ),
-            ('总场次', fmtInt(p.totalMatches)),
+            (tr.heroes.totalMatches, fmtInt(p.totalMatches)),
             (
-              '账号状态',
-              p.suspended
-                  ? '暂停${p.suspensionExpiresMs == null ? '' : '，到期 ${fmtDateTime(p.suspensionExpiresMs)}'}'
-                  : '正常',
+              tr.heroes.accountStatus,
+              !p.suspended
+                  ? tr.heroes.accountNormal
+                  : p.suspensionExpiresMs == null
+                  ? tr.heroes.accountSuspended
+                  : tr.heroes.accountSuspendedUntil(
+                      fmtDateTime(p.suspensionExpiresMs),
+                    ),
             ),
           ],
         ),
@@ -88,7 +96,10 @@ class ProfilePage extends StatelessWidget {
         Semantics(
           header: true,
           child: Text(
-            '${mode.label}生涯 · 第 ${career?.season ?? app.currentSeason} 赛季',
+            tr.heroes.careerHeading(
+              mode.label,
+              career?.season ?? app.currentSeason,
+            ),
             style: Ty.section,
           ),
         ),
@@ -96,11 +107,11 @@ class ProfilePage extends StatelessWidget {
         SizedBox(
           height: tableH,
           child: AppTable<RoleCareer>(
-            tableLabel: '${mode.label}各职责生涯',
+            tableLabel: tr.heroes.careerTableLabel(mode.label),
             columns: [
               Col(
                 id: 'role',
-                label: '职责',
+                label: tr.heroes.colRole,
                 width: 100,
                 flex: true,
                 tooltip: roleLegend,
@@ -108,7 +119,7 @@ class ProfilePage extends StatelessWidget {
               ),
               Col(
                 id: 'cur',
-                label: '当前段位',
+                label: tr.heroes.colCurrentRank,
                 width: 124,
                 cell: (_, r) => RankBadge(
                   r.current,
@@ -119,7 +130,7 @@ class ProfilePage extends StatelessWidget {
               ),
               Col(
                 id: 'peak',
-                label: '最高段位',
+                label: tr.heroes.colPeakRank,
                 width: 124,
                 cell: (_, r) => RankBadge(
                   r.peak,
@@ -130,14 +141,14 @@ class ProfilePage extends StatelessWidget {
               ),
               Col(
                 id: 'm',
-                label: '场次',
+                label: tr.heroes.matchesLabel,
                 width: 64,
                 numeric: true,
                 cell: (_, r) => Text(fmtInt(r.matches)),
               ),
               Col(
                 id: 'w',
-                label: '胜率',
+                label: tr.heroes.winRateLabel,
                 width: 76,
                 numeric: true,
                 cell: (_, r) => Text(fmtPct(r.winRatePct)),
@@ -151,7 +162,7 @@ class ProfilePage extends StatelessWidget {
               ),
               Col(
                 id: 's',
-                label: '最长连胜',
+                label: tr.heroes.colMaxStreak,
                 width: 88,
                 numeric: true,
                 cell: (_, r) => Text(fmtInt(r.maxWinStreak)),
@@ -162,11 +173,16 @@ class ProfilePage extends StatelessWidget {
                     .where((r) => Role.playable.contains(r.role))
                     .toList() ??
                 const [],
-            rowLabel: (r) =>
-                '${r.role.label}，当前${r.current?.label ?? '未定级'}，最高${r.peak?.label ?? '未定级'}，${fmtInt(r.matches)} 场，胜率${fmtPct(r.winRatePct)}',
+            rowLabel: (r) => tr.heroes.careerRowLabel(
+              r.role.label,
+              r.current?.label ?? tr.common.unranked,
+              r.peak?.label ?? tr.common.unranked,
+              fmtInt(r.matches),
+              fmtPct(r.winRatePct),
+            ),
             empty: Center(
               child: Text(
-                '${mode.label}本赛季没有分职责的生涯数据。',
+                tr.heroes.noCareer(mode.label),
                 style: Ty.body.copyWith(color: c.textSecondary),
               ),
             ),
@@ -176,32 +192,35 @@ class ProfilePage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              '${mode.label}不提供段位，段位列为 —。',
+              tr.heroes.noRanksInMode(mode.label),
               style: Ty.meta.copyWith(color: c.textSecondary),
             ),
           ),
         if (career?.behavior != null) ...[
           const SizedBox(height: Sp.betweenSections),
           _FactCard(
-            title: '行为与荣誉',
+            title: tr.heroes.behavior,
             facts: [
-              ('收到的荣誉', fmtInt(career!.behavior!.honorsReceived)),
-              ('送出的荣誉', fmtInt(career.behavior!.honorsSent)),
-              ('被举报次数', fmtInt(career.behavior!.reports)),
+              (
+                tr.heroes.honorsReceived,
+                fmtInt(career!.behavior!.honorsReceived),
+              ),
+              (tr.heroes.honorsSent, fmtInt(career.behavior!.honorsSent)),
+              (tr.heroes.reports, fmtInt(career.behavior!.reports)),
               if (career.behavior!.comment != null)
-                ('本周评语', career.behavior!.comment!),
+                (tr.heroes.weeklyComment, career.behavior!.comment!),
             ],
           ),
         ],
         if (career != null && career.provinceRanks.isNotEmpty) ...[
           const SizedBox(height: Sp.betweenSections),
           _FactCard(
-            title: '省榜排名',
+            title: tr.heroes.provinceRanks,
             facts: [
               for (final r in career.provinceRanks)
                 (
-                  '${r.role.label.isEmpty ? '综合' : r.role.label}${r.province == null ? '' : ' · ${r.province}'}',
-                  '第 ${fmtInt(r.rank)} 名',
+                  tr.heroes.provinceRankLabel(r.role.label, r.province),
+                  tr.heroes.rankPosition(fmtInt(r.rank)),
                 ),
             ],
           ),
@@ -224,16 +243,10 @@ class _FactCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Semantics(header: true, child: Text(title, style: Ty.section)),
+        SectionHeader(title),
         const SizedBox(height: Sp.withinGroup),
-        Container(
+        Panel(
           width: double.infinity,
-          padding: const EdgeInsets.all(Sp.betweenGroups),
-          decoration: BoxDecoration(
-            color: c.raised,
-            borderRadius: BorderRadius.circular(Radii.container),
-            border: Border.all(color: c.border),
-          ),
           child: Wrap(
             spacing: 40,
             runSpacing: Sp.withinGroup + 4,
@@ -264,36 +277,6 @@ class _FactCard extends StatelessWidget {
   }
 }
 
-/// One headline number: label above, big figure, optional note, optional stat colour.
-class _Tile extends StatelessWidget {
-  const _Tile(this.label, this.value, {this.note, this.color});
-  final String label, value;
-  final String? note;
-  final Color? color;
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Container(
-      width: 176,
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-      decoration: BoxDecoration(
-        color: color == null ? c.raised : c.barFill(color!),
-        border: Border(left: BorderSide(color: color ?? c.border, width: 3)),
-        borderRadius: const BorderRadius.horizontal(right: Radius.circular(2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
-          Text(value, style: Ty.num(Ty.figure)),
-          if (note != null)
-            Text(note!, style: Ty.meta.copyWith(color: c.textSecondary)),
-        ],
-      ),
-    );
-  }
-}
-
 /// Averages over the matches that were read. The match list no longer carries these:
 /// the list is for recognising a match, this is for judging recent form.
 class _Recent extends StatelessWidget {
@@ -315,46 +298,50 @@ class _Recent extends StatelessWidget {
           children: [
             Semantics(
               header: true,
-              child: Text('近期表现 · ${mode.label}', style: Ty.section),
+              child: Text(
+                tr.heroes.recentHeading(mode.label),
+                style: Ty.section,
+              ),
             ),
-            const InfoTip(
-              '只统计“对局”页已读取的对局。胜率 = 胜 ÷ （胜 + 负）；平均值只计入提供了该数据的对局，数量不足时标注 n。',
-            ),
+            InfoTip(tr.heroes.recentFormInfo),
           ],
         ),
         const SizedBox(height: Sp.withinGroup),
         if (rows.isEmpty)
-          Text('还没有读取到对局。', style: Ty.body.copyWith(color: c.textSecondary))
+          Text(
+            tr.heroes.noMatchesRead,
+            style: Ty.body.copyWith(color: c.textSecondary),
+          )
         else
           Wrap(
             spacing: 10,
             runSpacing: 10,
             children: [
-              _Tile('场次', '${a.matches}'),
-              _Tile(
-                '战绩',
-                '${a.wins} 胜 ${a.losses} 负',
+              KpiTile(tr.heroes.matchesLabel, '${a.matches}'),
+              KpiTile(
+                tr.heroes.record,
+                tr.heroes.winLoss(a.wins, a.losses),
                 note: a.draws + a.unknown > 0
-                    ? '${a.draws} 平${a.unknown > 0 ? ' · ${a.unknown} 未知' : ''}'
+                    ? tr.heroes.drawsNote(a.draws, a.unknown)
                     : null,
               ),
-              _Tile('胜率', fmtPct(a.winRatePct)),
-              _Tile('KDA', fmtTwo(a.kda)),
+              KpiTile(tr.heroes.winRateLabel, fmtPct(a.winRatePct)),
+              KpiTile('KDA', fmtTwo(a.kda)),
               const SizedBox(width: 100000, height: 0),
-              _Tile(
-                '场均伤害',
+              KpiTile(
+                tr.heroes.avgDamage,
                 mean('damage'),
                 note: partial('damage'),
                 color: c.statDamage,
               ),
-              _Tile(
-                '场均治疗',
+              KpiTile(
+                tr.heroes.avgHealing,
                 mean('healing'),
                 note: partial('healing'),
                 color: c.statHealing,
               ),
-              _Tile(
-                '场均阻挡',
+              KpiTile(
+                tr.heroes.avgMitigation,
                 mean('mitigation'),
                 note: partial('mitigation'),
                 color: c.statMitigation,

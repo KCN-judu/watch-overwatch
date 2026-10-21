@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 
 import '../core/models.dart';
 import '../core/support.dart';
-import '../design/data_table.dart' show keyboardModality;
 import '../design/icons.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
+import '../l10n/strings.dart';
 import '../state/app_state.dart';
 import 'pages/heroes_page.dart';
 import 'pages/matches_page.dart';
@@ -115,19 +115,19 @@ class PlayerHeader extends StatelessWidget {
                   ),
                 ),
           '${profile!.endorsementLevel}',
-          '荣誉等级',
+          tr.shell.endorsementLevel,
         ),
       if (profile?.playTimeHours != null)
         fact(
           Icon(Icons.schedule, size: 14, color: c.textSecondary),
-          '${fmtOne(profile!.playTimeHours)} 小时',
-          '游戏时长',
+          tr.shell.playTimeHours(fmtOne(profile!.playTimeHours)),
+          tr.shell.playTime,
         ),
       if (profile?.totalMatches != null)
         fact(
           Icon(Icons.sports_esports_outlined, size: 14, color: c.textSecondary),
-          '${fmtInt(profile!.totalMatches)} 场',
-          '总场次',
+          tr.shell.matchCountFormatted(fmtInt(profile!.totalMatches)),
+          tr.shell.totalMatches,
         ),
     ];
     return Container(
@@ -177,7 +177,7 @@ class PlayerHeader extends StatelessWidget {
                   const SizedBox(height: 2),
                   facts.isEmpty
                       ? Text(
-                          '正在读取玩家资料…',
+                          tr.shell.loadingProfile,
                           style: Ty.meta.copyWith(color: c.textSecondary),
                         )
                       : Wrap(
@@ -202,7 +202,11 @@ class PlayerHeader extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '账号处于暂停状态${profile!.suspensionExpiresMs == null ? '' : '，到期 ${fmtDateTime(profile.suspensionExpiresMs)}'}',
+                            profile!.suspensionExpiresMs == null
+                                ? tr.shell.accountSuspended
+                                : tr.shell.accountSuspendedUntil(
+                                    fmtDateTime(profile.suspensionExpiresMs),
+                                  ),
                             style: Ty.meta.copyWith(color: c.warning),
                           ),
                         ],
@@ -216,7 +220,7 @@ class PlayerHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               SegmentedBar<Mode>(
-                semanticLabel: '模式',
+                semanticLabel: tr.shell.mode,
                 value: app.mode,
                 onChanged: app.setMode,
                 segments: [
@@ -232,13 +236,13 @@ class PlayerHeader extends StatelessWidget {
               const SizedBox(width: Sp.withinGroup),
               IconAction(
                 icon: Icons.refresh,
-                label: '刷新数据',
+                label: tr.shell.refreshData,
                 shortcut: 'F5',
                 onPressed: app.refreshCurrent,
               ),
               IconAction(
                 icon: Icons.ios_share,
-                label: '导出数据集',
+                label: tr.shell.exportDataset,
                 shortcut: 'Ctrl+E',
                 onPressed: app.exporting
                     ? null
@@ -269,7 +273,9 @@ class _Avatar extends StatelessWidget {
       return NetImage(url, size: size, fallback: fallback, radius: 8);
     }
     return Tooltip(
-      message: heroName == null ? '未设置头像' : '未设置头像，显示最常用英雄：$heroName',
+      message: heroName == null
+          ? tr.shell.noAvatar
+          : tr.shell.noAvatarShowingHero(heroName!),
       child: NetImage(heroUrl, size: size, fallback: fallback, radius: 8),
     );
   }
@@ -287,9 +293,9 @@ class _RankLine extends StatelessWidget {
     final label = Ty.meta.copyWith(color: c.textSecondary);
     if (career == null) {
       if (l.error != null) {
-        return Text('竞技段位暂时无法读取：${l.error!.message}', style: label);
+        return Text(tr.shell.rankUnavailable(l.error!.message), style: label);
       }
-      return Text('竞技段位  —', style: label);
+      return Text(tr.shell.rankMissing, style: label);
     }
     return Wrap(
       spacing: Sp.betweenGroups,
@@ -297,7 +303,7 @@ class _RankLine extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Tooltip(
-          message: '竞技段位',
+          message: tr.shell.competitiveRank,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -307,7 +313,7 @@ class _RankLine extends StatelessWidget {
                 color: c.textSecondary,
               ),
               const SizedBox(width: 4),
-              Text('竞技', style: label),
+              Text(tr.shell.competitive, style: label),
             ],
           ),
         ),
@@ -316,8 +322,14 @@ class _RankLine extends StatelessWidget {
             builder: (context) {
               final rc = career.role(r);
               final detail = rc == null
-                  ? '本赛季没有${r.label}的竞技记录'
-                  : '${r.label}：当前 ${rc.current?.label ?? '未定级'}（${fmtInt(rc.current?.skillRating)} 分），最高 ${rc.peak?.label ?? '—'}，${fmtInt(rc.matches)} 场';
+                  ? tr.shell.noRoleRankThisSeason(r.label)
+                  : tr.shell.roleRank(
+                      r.label,
+                      rc.current?.label ?? tr.common.unranked,
+                      fmtInt(rc.current?.skillRating),
+                      rc.peak?.label ?? tr.common.missing,
+                      fmtInt(rc.matches),
+                    );
               return Tooltip(
                 message: detail,
                 child: Semantics(
@@ -329,7 +341,7 @@ class _RankLine extends StatelessWidget {
                       RoleIcon(r, size: 16, tooltip: false),
                       const SizedBox(width: 6),
                       rc?.current == null
-                          ? Text('未定级', style: label)
+                          ? Text(tr.common.unranked, style: label)
                           : RankBadge(
                               rc!.current,
                               catalog: catalog,
@@ -374,7 +386,7 @@ class _TabStripState extends State<TabStrip> {
       ),
       child: Semantics(
         container: true,
-        label: '玩家视图',
+        label: tr.shell.playerViews,
         child: Focus(
           focusNode: _focus,
           onKeyEvent: (_, e) {
@@ -417,7 +429,9 @@ class _TabStripState extends State<TabStrip> {
   }
 }
 
-class _Tab extends StatelessWidget {
+/// A tab is the one item whose selection is an underline rather than an outline
+/// ([ItemState]): it names the page below it. Hover and focus are the usual ones.
+class _Tab extends StatefulWidget {
   const _Tab({
     required this.icon,
     required this.label,
@@ -430,11 +444,25 @@ class _Tab extends StatelessWidget {
   final String label, hint;
   final bool selected, ring;
   final VoidCallback onTap;
+
+  @override
+  State<_Tab> createState() => _TabState();
+}
+
+class _TabState extends State<_Tab> {
+  bool _hovered = false;
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final (icon, label, selected) = (
+      widget.icon,
+      widget.label,
+      widget.selected,
+    );
+    final onTap = widget.onTap;
     return Tooltip(
-      message: hint,
+      message: widget.hint,
       child: Semantics(
         button: true,
         selected: selected,
@@ -443,6 +471,8 @@ class _Tab extends StatelessWidget {
         onTap: onTap,
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onTap,
@@ -457,8 +487,11 @@ class _Tab extends StatelessWidget {
                     width: 2,
                   ),
                 ),
-                color: ring ? c.selected : null,
+                color: c.itemFill(hovered: _hovered),
               ),
+              foregroundDecoration: widget.ring
+                  ? BoxDecoration(border: c.itemOutline(focused: true))
+                  : null,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -514,7 +547,9 @@ class LoadStatusBar extends StatelessWidget {
         DateTime.now().difference(at!) > const Duration(minutes: 5);
     Widget stamp() {
       final text = fmtTime(at!);
-      final tip = '采集于 $text${stale ? '，已超过 5 分钟，可以刷新' : ''}';
+      final tip = stale
+          ? tr.shell.updatedAtStaleTip(text)
+          : tr.shell.updatedAt(text);
       return Tooltip(
         message: tip,
         child: Semantics(
@@ -551,7 +586,9 @@ class LoadStatusBar extends StatelessWidget {
             stamp()
           else
             Text(
-              '采集于 ${fmtTime(at!)}${stale ? '（已超过 5 分钟）' : ''}',
+              stale
+                  ? tr.shell.updatedAtStale(fmtTime(at!))
+                  : tr.shell.updatedAt(fmtTime(at!)),
               style: style,
             ),
         for (final e in extra) Text(e, style: style),
@@ -563,42 +600,14 @@ class LoadStatusBar extends StatelessWidget {
               Icon(Icons.error_outline, size: 14, color: c.error),
               const SizedBox(width: 4),
               Text(
-                '刷新失败，显示的是旧数据：$error',
+                tr.shell.refreshFailedShowingOld('$error'),
                 style: Ty.meta.copyWith(color: c.error),
               ),
               const SizedBox(width: 4),
-              AppButton('重试', quiet: true, onPressed: onRetry),
+              AppButton(tr.common.retry, quiet: true, onPressed: onRetry),
             ],
           ),
       ],
     );
   }
-}
-
-/// Renders nothing for the first 300 ms so fast loads never flash a skeleton.
-class AfterDelay extends StatefulWidget {
-  const AfterDelay({
-    super.key,
-    required this.child,
-    this.delay = const Duration(milliseconds: 300),
-  });
-  final Widget child;
-  final Duration delay;
-  @override
-  State<AfterDelay> createState() => _AfterDelayState();
-}
-
-class _AfterDelayState extends State<AfterDelay> {
-  bool _show = false;
-  @override
-  void initState() {
-    super.initState();
-    Future<void>.delayed(widget.delay, () {
-      if (mounted) setState(() => _show = true);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) =>
-      _show ? widget.child : const SizedBox.shrink();
 }

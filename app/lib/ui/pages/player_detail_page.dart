@@ -7,6 +7,7 @@ import '../../design/cards.dart';
 import '../../design/icons.dart';
 import '../../design/net_pic.dart';
 import '../../design/tokens.dart';
+import '../../l10n/strings.dart';
 
 /// One player of a match, as a page of cards: who they are, how they played, the Fleta
 /// index, their perks, who they queued with and who endorsed them.
@@ -47,10 +48,11 @@ class PlayerDetailPage extends StatelessWidget {
     final heroColor = c.accent;
     final portrait = catalog.heroPortrait(hero);
     final s = player.stats;
-    final name = player.name ?? '未知玩家';
+    final name = player.name ?? tr.common.unknownPlayer;
 
-    String shareText(double? share) =>
-        share == null ? '' : '占本队 ${fmtPct(share * 100, digits: 0)}';
+    String shareText(double? share) => share == null
+        ? ''
+        : tr.matches.shareOfTeam(fmtPct(share * 100, digits: 0));
 
     final kda = (s.kills != null && s.assists != null && (s.deaths ?? 0) > 0)
         ? fmtOne((s.kills! + s.assists!) / s.deaths!)
@@ -78,12 +80,7 @@ class PlayerDetailPage extends StatelessWidget {
       (sum, p) => sum + (p.stats.finalBlows ?? 0),
     );
 
-    Widget header() => Container(
-      padding: const EdgeInsets.all(Sp.betweenGroups),
-      decoration: BoxDecoration(
-        color: c.raised,
-        border: Border.all(color: c.border),
-      ),
+    Widget header() => Panel(
       child: Row(
         children: [
           ClipRRect(
@@ -119,23 +116,23 @@ class PlayerDetailPage extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
-                      ally ? '己方' : '对方',
+                      ally ? tr.common.ally : tr.common.enemy,
                       style: Ty.bodyStrong.copyWith(
                         color: ally ? c.ally : c.enemy,
                       ),
                     ),
                     if (player.isSubject)
                       Text(
-                        '查询对象',
+                        tr.matches.subject,
                         style: Ty.body.copyWith(color: c.textSecondary),
                       ),
                     RoleIcon(player.role, size: 16, showLabel: true),
-                    Text(hero?.label ?? '未知英雄', style: Ty.body),
+                    Text(hero?.label ?? tr.common.unknownHero, style: Ty.body),
                     ratingsLoading &&
                             player.rank == null &&
                             player.careerRank == null
                         ? Text(
-                            '段位查询中',
+                            tr.matches.rankLookupLong,
                             style: Ty.body.copyWith(color: c.textSecondary),
                           )
                         : RankBadge(
@@ -153,9 +150,9 @@ class PlayerDetailPage extends StatelessWidget {
                           ),
                     if (player.suspended)
                       Tooltip(
-                        message: '这个账号正处于处罚或风险状态。',
+                        message: tr.matches.restrictedTip,
                         child: Text(
-                          '账号受限',
+                          tr.matches.restricted,
                           style: Ty.body.copyWith(color: c.warning),
                         ),
                       ),
@@ -174,18 +171,19 @@ class PlayerDetailPage extends StatelessWidget {
       if (ids.isEmpty) return none;
       final byId = {
         for (final p in [...detail.allies, ...detail.enemies])
-          if (p.bnetId != null) p.bnetId!: p.name ?? '未知玩家',
+          if (p.bnetId != null) p.bnetId!: p.name ?? tr.common.unknownPlayer,
       };
       final names = [for (final id in ids) ?byId[id]];
       final rest = ids.length - names.length;
-      return [
-        if (names.isNotEmpty) names.join('、'),
-        if (rest > 0) '另有 $rest 名不在这场对局里',
-      ].join('；');
+      return tr.matches.peopleParts([
+        if (names.isNotEmpty) tr.common.list(names),
+        if (rest > 0) tr.matches.peopleNotInMatch(rest),
+      ]);
     }
 
     return FutureBuilder<GameData>(
       future: game,
+      initialData: GameData.loaded,
       builder: (context, snapshot) {
         final gameHero = snapshot.data?.hero(hero?.label);
         final perks = <Widget>[
@@ -211,31 +209,39 @@ class PlayerDetailPage extends StatelessWidget {
           children: [
             header(),
             const SizedBox(height: Sp.betweenSections),
-            AccentTitle(
-              '本场数据',
+            SectionHeader(
+              tr.matches.matchStats,
               accent: heroColor,
-              info: '占本队的比例按本队 5 人的合计算；— 表示上游没有提供，不等于 0。',
+              info: tr.matches.matchStatsInfo,
             ),
             const SizedBox(height: Sp.withinGroup + 2),
             CardGrid(minWidth: 200, height: 124, [
-              stat('消灭', s.kills, of: (l) => l.kills),
-              stat('助攻', s.assists, of: (l) => l.assists),
-              stat('阵亡', s.deaths, of: (l) => l.deaths),
+              stat(tr.matches.kills, s.kills, of: (l) => l.kills),
+              stat(tr.matches.assists, s.assists, of: (l) => l.assists),
+              stat(tr.matches.deaths, s.deaths, of: (l) => l.deaths),
               StatCard(
                 label: 'KDA',
                 value: kda,
                 accent: heroColor,
-                caption: '（消灭 + 助攻）÷ 阵亡',
+                caption: tr.matches.kdaFormula,
               ),
-              stat('伤害', s.damage, of: (l) => l.damage),
-              stat('治疗', s.healing, of: (l) => l.healing),
-              stat('阻挡', s.mitigation, of: (l) => l.mitigation),
-              stat('最后一击', s.finalBlows, of: (l) => l.finalBlows),
-              stat('单独消灭', s.soloKills),
-              stat('承受伤害', s.damageTaken),
-              stat('承受治疗', s.healingTaken),
+              stat(tr.matches.damage, s.damage, of: (l) => l.damage),
+              stat(tr.matches.healing, s.healing, of: (l) => l.healing),
+              stat(
+                tr.matches.mitigation,
+                s.mitigation,
+                of: (l) => l.mitigation,
+              ),
+              stat(
+                tr.matches.finalBlows,
+                s.finalBlows,
+                of: (l) => l.finalBlows,
+              ),
+              stat(tr.matches.soloKills, s.soloKills),
+              stat(tr.matches.damageTaken, s.damageTaken),
+              stat(tr.matches.healingTaken, s.healingTaken),
               StatCard(
-                label: '目标争夺',
+                label: tr.matches.objectiveTime,
                 value: s.objectiveTimeS == null
                     ? missing
                     : fmtClock(s.objectiveTimeS),
@@ -243,69 +249,83 @@ class PlayerDetailPage extends StatelessWidget {
               ),
             ]),
             const SizedBox(height: Sp.betweenSections),
-            AccentTitle(
-              'Fleta 指数',
+            SectionHeader(
+              tr.matches.fleta,
               accent: heroColor,
-              info:
-                  '最后一击 ÷（本队最后一击合计 × 0.5）× 100%。100% 表示拿下了本队一半的最后一击；'
-                  '越高，说明这支队伍的击杀越多是由他收尾的。只看这一场、只和本队比，不分职责，'
-                  '辅助和重装通常偏低，输出偏高。',
+              info: tr.matches.fletaInfo,
             ),
             const SizedBox(height: Sp.withinGroup + 2),
             CardGrid(minWidth: 320, height: 124, [
               StatCard(
-                label: 'Fleta 指数',
+                label: tr.matches.fleta,
                 value: player.fleta == null
                     ? missing
                     : fmtPct(player.fleta, digits: 1),
                 accent: heroColor,
                 share: player.fleta == null ? null : player.fleta! / 200,
                 caption: player.fleta == null
-                    ? '没有最后一击数据，或本队没有最后一击'
-                    : '最后一击 ${fmtInt(s.finalBlows)} ÷（本队 ${fmtInt(teamFinals)} × 0.5）',
+                    ? tr.matches.fletaNoData
+                    : tr.matches.fletaFormula(
+                        fmtInt(s.finalBlows),
+                        fmtInt(teamFinals),
+                      ),
               ),
             ]),
             if (perks.isNotEmpty) ...[
               const SizedBox(height: Sp.betweenSections),
-              AccentTitle('威能', accent: heroColor),
+              SectionHeader(tr.matches.perks, accent: heroColor),
               const SizedBox(height: Sp.withinGroup + 2),
               CardGrid(perks),
             ],
             const SizedBox(height: Sp.betweenSections),
-            AccentTitle('组队与点赞', accent: heroColor),
+            SectionHeader(tr.matches.partyAndEndorsements, accent: heroColor),
             const SizedBox(height: Sp.withinGroup + 2),
             CardGrid([
               InfoCard(
-                name: '组队',
+                name: tr.matches.party,
                 description: player.partyBnetIds.isEmpty
-                    ? '没有组队信息'
-                    : '与 ${player.partyBnetIds.length} 名玩家组队：${peopleText(player.partyBnetIds, '')}',
+                    ? tr.matches.noParty
+                    : tr.matches.partyWith(
+                        player.partyBnetIds.length,
+                        peopleText(player.partyBnetIds, ''),
+                      ),
                 glyph: Icons.groups_outlined,
                 accent: heroColor,
               ),
               InfoCard(
-                name: '获得点赞',
+                name: tr.matches.endorsements,
                 description: player.endorsedBy.isEmpty
-                    ? '没有收到点赞'
-                    : '${player.endorsedBy.length} 人：${peopleText(player.endorsedBy, '')}',
+                    ? tr.matches.noEndorsements
+                    : tr.matches.endorsedBy(
+                        player.endorsedBy.length,
+                        peopleText(player.endorsedBy, ''),
+                      ),
                 glyph: Icons.thumb_up_outlined,
                 accent: heroColor,
               ),
             ]),
             if (stadium != null) ...[
               const SizedBox(height: Sp.betweenSections),
-              AccentTitle('角斗构筑', accent: heroColor),
+              SectionHeader(tr.matches.stadiumBuild, accent: heroColor),
               const SizedBox(height: Sp.withinGroup + 2),
               CardGrid([
                 StatCard(
-                  label: '局内货币',
+                  label: tr.matches.stadiumCash,
                   value: fmtInt(stadium.worth),
                   accent: heroColor,
                 ),
                 for (final e in stadium.powers)
-                  InfoCard(name: e.label, tag: '异能', accent: heroColor),
+                  InfoCard(
+                    name: e.label,
+                    tag: tr.matches.power,
+                    accent: heroColor,
+                  ),
                 for (final e in stadium.items)
-                  InfoCard(name: e.label, tag: '装备', accent: heroColor),
+                  InfoCard(
+                    name: e.label,
+                    tag: tr.matches.item,
+                    accent: heroColor,
+                  ),
               ]),
             ],
             const SizedBox(height: Sp.betweenSections),

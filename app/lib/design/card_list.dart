@@ -3,8 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'data_table.dart' show keyboardModality;
+import '../l10n/strings.dart';
+import 'interaction.dart';
+import 'net_pic.dart';
 import 'tokens.dart';
+import 'widgets.dart' show AfterDelay;
 
 class CardState {
   const CardState({
@@ -19,6 +22,100 @@ class CardState {
 
   /// Keyboard focus is on this row (shown for keyboard users only).
   final bool ring;
+}
+
+/// A recognition row drawn over a picture (a map, a hero banner): the picture is
+/// dense behind the text on the left and fades out to the right, under a scrim that
+/// keeps the text readable. Selection, hover and focus are painted as everywhere
+/// else ([ItemState]). Shared by the match and hero lists so the two stay identical.
+class ArtRow extends StatelessWidget {
+  const ArtRow({
+    super.key,
+    required this.state,
+    required this.art,
+    required this.content,
+    this.artAlignment = Alignment.center,
+    this.layers,
+  });
+  final CardState state;
+  final String? art;
+  final Alignment artAlignment;
+
+  /// Drawn over the picture and under the selection tint, given the row height.
+  final List<Widget> Function(double side)? layers;
+
+  /// The row's content, given the row height (a square portrait is that wide).
+  final Widget Function(double side) content;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final light = Theme.of(context).brightness == Brightness.light;
+    final fill = c.itemFill(selected: state.active, hovered: state.hovered);
+    final outline = c.itemOutline(selected: state.active, focused: state.ring);
+    return LayoutBuilder(
+      builder: (context, box) {
+        final side = box.maxHeight;
+        // Sharp rectangle: no rounding.
+        return Container(
+          foregroundDecoration: outline == null
+              ? null
+              : BoxDecoration(border: outline),
+          child: ClipRect(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ShaderMask(
+                    blendMode: BlendMode.dstIn,
+                    shaderCallback: (rect) => const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: AppColors.artFade,
+                      stops: [0, 0.55, 1],
+                    ).createShader(rect),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ColoredBox(color: c.raised),
+                        if (art != null)
+                          ExcludeSemantics(
+                            child: NetPic(
+                              art!,
+                              fit: BoxFit.cover,
+                              alignment: artAlignment,
+                              placeholder: const SizedBox.expand(
+                                child: Skeleton(radius: 0),
+                              ),
+                            ),
+                          ),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                for (final a in AppColors.artScrim(light))
+                                  c.raised.withValues(alpha: a),
+                              ],
+                              stops: const [0, 0.5, 1],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                ...?layers?.call(side),
+                if (fill != null)
+                  Positioned.fill(child: ColoredBox(color: fill)),
+                Positioned.fill(child: content(side)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// A virtualised list of tall "recognition" rows: each row is a picture-led card the
@@ -127,7 +224,7 @@ class _CardListState<T> extends State<CardList<T>> {
     return LayoutBuilder(
       builder: (context, box) {
         if (widget.loading && widget.rows.isEmpty) {
-          return _Skeleton(extent: extent);
+          return AfterDelay(child: _Skeleton(extent: extent));
         }
         if (widget.rows.isEmpty) return widget.empty ?? const SizedBox.shrink();
         final viewport = box.maxHeight;
@@ -197,9 +294,8 @@ class _Skeleton extends StatelessWidget {
   final double extent;
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
     return Semantics(
-      label: '正在加载',
+      label: tr.common.loading,
       liveRegion: true,
       child: ExcludeSemantics(
         child: ListView(
@@ -208,13 +304,9 @@ class _Skeleton extends StatelessWidget {
             for (var i = 0; i < 6; i++)
               SizedBox(
                 height: extent,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: c.hover.withValues(alpha: 0.10),
-                    ),
-                  ),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  child: Skeleton(radius: 0),
                 ),
               ),
           ],

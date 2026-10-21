@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/support.dart';
-import '../design/data_table.dart' show keyboardModality;
 import '../design/tokens.dart';
 import '../design/widgets.dart';
+import '../l10n/strings.dart';
 import '../state/app_state.dart';
 import 'shell.dart';
 
@@ -47,7 +47,7 @@ class _NavigatorPaneState extends State<NavigatorPane> {
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
             child: Semantics(
               textField: true,
-              label: '战网昵称',
+              label: tr.shell.battleTag,
               child: TextField(
                 controller: _text,
                 focusNode: scope.searchFocus,
@@ -56,16 +56,12 @@ class _NavigatorPaneState extends State<NavigatorPane> {
                 onSubmitted: (_) => _submit(app),
                 onChanged: (_) => app.clearSearchError(),
                 decoration: InputDecoration(
-                  hintText: '战网昵称，如 Player#12345',
+                  hintText: tr.shell.battleTagHint,
                   prefixIcon: const Icon(Icons.search, size: 18),
                   suffixIcon: app.searching
                       ? const Padding(
                           padding: EdgeInsets.all(10),
-                          child: SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
+                          child: Spinner(),
                         )
                       : null,
                 ),
@@ -81,7 +77,7 @@ class _NavigatorPaneState extends State<NavigatorPane> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '没有找到这名玩家',
+                      tr.shell.playerNotFound,
                       style: Ty.bodyStrong.copyWith(color: c.error),
                     ),
                     Text(
@@ -92,7 +88,7 @@ class _NavigatorPaneState extends State<NavigatorPane> {
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: AppButton(
-                          '打开设置',
+                          tr.common.openSettings,
                           quiet: true,
                           onPressed: () => app.showSettings(true),
                         ),
@@ -105,14 +101,14 @@ class _NavigatorPaneState extends State<NavigatorPane> {
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
               child: Text(
-                '输入完整昵称后按 Enter。',
+                tr.shell.searchHint,
                 style: Ty.meta.copyWith(color: c.textSecondary),
               ),
             ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 16, 12, 4),
             child: Text(
-              '玩家库 · ${app.players.length}',
+              tr.shell.playerLibraryCount(app.players.length),
               style: Ty.meta.copyWith(
                 color: c.textSecondary,
                 fontWeight: FontWeight.w600,
@@ -124,7 +120,7 @@ class _NavigatorPaneState extends State<NavigatorPane> {
                 ? Padding(
                     padding: const EdgeInsets.all(12),
                     child: Text(
-                      '还没有玩家。查找成功的玩家会保存在这里，重启后仍然可选。',
+                      tr.shell.playerLibraryEmpty,
                       style: Ty.body.copyWith(color: c.textSecondary),
                     ),
                   )
@@ -139,7 +135,7 @@ class _NavigatorPaneState extends State<NavigatorPane> {
               children: [
                 Expanded(
                   child: AppButton(
-                    '设置',
+                    tr.shell.settings,
                     quiet: true,
                     icon: Icons.settings_outlined,
                     tooltip: 'Ctrl+,',
@@ -148,7 +144,7 @@ class _NavigatorPaneState extends State<NavigatorPane> {
                 ),
                 IconAction(
                   icon: Icons.keyboard_double_arrow_left,
-                  label: '折叠玩家库',
+                  label: tr.shell.collapseLibrary,
                   shortcut: 'Ctrl+B',
                   onPressed: () => app.setNav(collapsed: true),
                 ),
@@ -229,7 +225,9 @@ class _PlayerListState extends State<_PlayerList> {
               return Semantics(
                 button: true,
                 selected: selected,
-                label: '玩家 $name${selected ? '，当前' : ''}',
+                label: selected
+                    ? tr.shell.playerItemCurrent(name)
+                    : tr.shell.playerItem(name),
                 excludeSemantics: true,
                 onTap: () => app.selectPlayer(name),
                 onDismiss: () => app.removePlayer(name),
@@ -250,22 +248,19 @@ class _PlayerListState extends State<_PlayerList> {
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-                        color: selected
-                            ? c.selected
-                            : (_hover == i ? c.hover : null),
+                        color: c.itemFill(
+                          selected: selected,
+                          hovered: _hover == i,
+                        ),
                         borderRadius: BorderRadius.circular(Radii.control),
-                        border: isCursor
-                            ? Border.all(color: c.accent, width: 2)
-                            : null,
+                        border: c.itemOutline(
+                          selected: selected,
+                          focused: isCursor,
+                        ),
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            width: 3,
-                            height: 20,
-                            margin: const EdgeInsets.only(left: 2, right: 8),
-                            color: selected ? c.accent : Colors.transparent,
-                          ),
+                          const SizedBox(width: 13),
                           Expanded(
                             child: Text.rich(
                               TextSpan(
@@ -294,7 +289,7 @@ class _PlayerListState extends State<_PlayerList> {
                           if (showRemove)
                             IconAction(
                               icon: Icons.close,
-                              label: '从玩家库移除 $name',
+                              label: tr.shell.removeFromLibrary(name),
                               shortcut: 'Delete',
                               onPressed: () => app.removePlayer(name),
                             )
@@ -328,14 +323,14 @@ class _Rail extends StatelessWidget {
           const SizedBox(height: 8),
           IconAction(
             icon: Icons.search,
-            label: '查找玩家',
+            label: tr.shell.findPlayer,
             shortcut: 'Ctrl+L',
             onPressed: scope.actions.focusSearch,
           ),
           const SizedBox(height: 4),
           IconAction(
             icon: Icons.keyboard_double_arrow_right,
-            label: '展开玩家库',
+            label: tr.shell.expandLibrary,
             shortcut: 'Ctrl+B',
             onPressed: () => app.setNav(collapsed: false),
           ),
@@ -355,7 +350,7 @@ class _Rail extends StatelessWidget {
                         child: Semantics(
                           button: true,
                           selected: selected,
-                          label: '玩家 $name',
+                          label: tr.shell.playerItem(name),
                           excludeSemantics: true,
                           onTap: () => app.selectPlayer(name),
                           child: InkWell(
@@ -364,15 +359,8 @@ class _Rail extends StatelessWidget {
                               height: 40,
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: selected ? c.selected : null,
-                                border: Border(
-                                  left: BorderSide(
-                                    color: selected
-                                        ? c.accent
-                                        : Colors.transparent,
-                                    width: 3,
-                                  ),
-                                ),
+                                color: c.itemFill(selected: selected),
+                                border: c.itemOutline(selected: selected),
                               ),
                               child: Text(
                                 name.characters.first.toUpperCase(),
@@ -391,7 +379,7 @@ class _Rail extends StatelessWidget {
           const SizedBox(height: 8),
           IconAction(
             icon: Icons.settings_outlined,
-            label: '设置',
+            label: tr.shell.settings,
             shortcut: 'Ctrl+,',
             onPressed: () => app.showSettings(true),
           ),

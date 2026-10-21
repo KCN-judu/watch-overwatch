@@ -4,6 +4,7 @@ import 'package:watch_overwatch/core/api.dart';
 import 'package:watch_overwatch/core/models.dart';
 import 'package:watch_overwatch/core/support.dart';
 import 'package:watch_overwatch/design/tokens.dart';
+import 'package:watch_overwatch/l10n/strings.dart';
 import 'package:watch_overwatch/design/widgets.dart';
 import 'package:watch_overwatch/state/app_state.dart';
 import 'package:watch_overwatch/state/commands.dart';
@@ -74,7 +75,10 @@ void main() {
     await tester.pumpWidget(t.page);
     expect(find.byType(EmptyState), findsNothing);
     expect(find.byType(ErrorPanel), findsNothing);
-    expect(find.bySemanticsLabel('正在加载'), findsOneWidget);
+    // Nothing for the first second, so a fast load never flashes a skeleton.
+    expect(find.bySemanticsLabel(tr.common.loading), findsNothing);
+    await tester.pump(Dur.loadingHint);
+    expect(find.bySemanticsLabel(tr.common.loading), findsOneWidget);
   });
 
   testWidgets('a failure with nothing read offers a retry', (tester) async {

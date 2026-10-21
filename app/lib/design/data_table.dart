@@ -3,7 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/strings.dart';
+import 'interaction.dart';
+import 'net_pic.dart';
 import 'tokens.dart';
+import 'widgets.dart' show AfterDelay;
 
 /// One column. Identity column goes first; numeric columns are right-aligned
 /// with fixed widths so digits keep their place across sorts and refreshes.
@@ -39,11 +43,6 @@ class Col<T> {
   final Widget Function(BuildContext context, T row) cell;
   bool get sortable => sortKey != null;
 }
-
-/// Tracks whether the last input was the keyboard, so focus rings appear for
-/// keyboard users only (Flutter has no `:focus-visible`).
-bool get keyboardModality =>
-    FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
 
 class AppTable<T> extends StatefulWidget {
   const AppTable({
@@ -248,7 +247,9 @@ class _AppTableState<T> extends State<AppTable<T>> {
 
         Widget body() {
           if (widget.loading && widget.rows.isEmpty) {
-            return _SkeletonRows(widths: widths, rowH: rowH, count: 8);
+            return AfterDelay(
+              child: _SkeletonRows(widths: widths, rowH: rowH, count: 8),
+            );
           }
           if (widget.rows.isEmpty) {
             return widget.empty ?? const SizedBox.shrink();
@@ -347,7 +348,7 @@ class _AppTableState<T> extends State<AppTable<T>> {
   }
 }
 
-class _HeaderCell<T> extends StatelessWidget {
+class _HeaderCell<T> extends StatefulWidget {
   const _HeaderCell({
     required this.col,
     required this.width,
@@ -362,8 +363,23 @@ class _HeaderCell<T> extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<_HeaderCell<T>> createState() => _HeaderCellState<T>();
+}
+
+class _HeaderCellState<T> extends State<_HeaderCell<T>> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final (col, width, sorted, ascending, focused, onTap) = (
+      widget.col,
+      widget.width,
+      widget.sorted,
+      widget.ascending,
+      widget.focused,
+      widget.onTap,
+    );
     final label =
         col.headerChild ??
         Text(
@@ -388,12 +404,10 @@ class _HeaderCell<T> extends StatelessWidget {
       width: width,
       height: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: focused
-          ? BoxDecoration(
-              border: Border.all(color: c.accent, width: 2),
-              borderRadius: BorderRadius.circular(4),
-            )
-          : null,
+      decoration: BoxDecoration(
+        color: c.itemFill(hovered: _hovered && onTap != null),
+        border: c.itemOutline(focused: focused),
+      ),
       child: Row(
         mainAxisAlignment: col.numeric
             ? MainAxisAlignment.end
@@ -418,11 +432,13 @@ class _HeaderCell<T> extends StatelessWidget {
       header: true,
       button: onTap != null,
       sortKey: null,
-      label: '${col.label}${sorted ? '，按${ascending ? '升序' : '降序'}排序' : ''}',
+      label: sorted ? tr.shell.sortedColumn(col.label, ascending) : col.label,
       excludeSemantics: true,
       onTap: onTap,
       child: MouseRegion(
         cursor: onTap != null ? SystemMouseCursors.click : MouseCursor.defer,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
@@ -460,11 +476,8 @@ class _BodyRow<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     // Selection, focus and hover are independent signals and may all be on at once.
-    final fill = active
-        ? c.selected
-        : hovered
-        ? c.hover
-        : null;
+    final fill = c.itemFill(selected: active, hovered: hovered);
+    final outline = c.itemOutline(selected: active, focused: showRing);
     return Semantics(
       container: true,
       label: label,
@@ -486,15 +499,13 @@ class _BodyRow<T> extends StatelessWidget {
                   bottom: BorderSide(color: c.border.withValues(alpha: 0.5)),
                 ),
               ),
-              foregroundDecoration: showRing
-                  ? BoxDecoration(border: Border.all(color: c.accent, width: 2))
-                  : null,
+              foregroundDecoration: outline == null
+                  ? null
+                  : BoxDecoration(border: outline),
               child: Row(
                 children: [
-                  Container(
-                    width: 3,
-                    color: active ? c.accent : (marker ?? Colors.transparent),
-                  ),
+                  // Data only (e.g. the result); selection is the fill and outline.
+                  Container(width: 3, color: marker ?? Colors.transparent),
                   for (var i = 0; i < columns.length; i++)
                     SizedBox(
                       width: widths[i],
@@ -548,9 +559,8 @@ class _SkeletonRows extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
     return Semantics(
-      label: '正在加载',
+      label: tr.common.loading,
       liveRegion: true,
       child: ExcludeSemantics(
         child: ListView(
@@ -570,12 +580,7 @@ class _SkeletonRows extends StatelessWidget {
                             horizontal: 8,
                             vertical: 10,
                           ),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: c.hover.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          ),
+                          child: const Skeleton(radius: 3),
                         ),
                       ),
                   ],

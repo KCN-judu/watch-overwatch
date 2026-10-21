@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../core/models.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
+import '../l10n/strings.dart';
 import '../state/app_state.dart';
 import '../state/commands.dart';
 
@@ -15,11 +16,11 @@ class _Entry {
   _Entry.command(this.cmd, this.app)
     : player = null,
       label = cmd!.menuLabel,
-      group = '命令';
+      group = tr.shell.paletteGroupCommands;
   _Entry.player(this.player, this.app)
     : cmd = null,
-      label = '打开玩家  $player',
-      group = '玩家';
+      label = tr.shell.openPlayer(player!),
+      group = tr.shell.paletteGroupPlayers;
   final Cmd? cmd;
   final String? player;
   final AppState app;
@@ -82,8 +83,8 @@ Future<void> showCommandPalette(
   final result = await showGeneralDialog<_Entry>(
     context: context,
     barrierDismissible: true,
-    barrierLabel: '关闭命令面板',
-    barrierColor: Colors.black.withValues(alpha: 0.28),
+    barrierLabel: tr.shell.closePalette,
+    barrierColor: AppColors.barrier,
     transitionDuration: Dur.of(context, Dur.fast),
     pageBuilder: (context, _, _) => Align(
       alignment: const Alignment(0, -0.55),
@@ -158,7 +159,7 @@ class _PaletteState extends State<_Palette> {
             border: Border.all(color: c.border),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x55000000),
+                color: AppColors.shadow,
                 blurRadius: 24,
                 offset: Offset(0, 8),
               ),
@@ -174,9 +175,9 @@ class _PaletteState extends State<_Palette> {
                   focusNode: _focus,
                   autofocus: true,
                   onChanged: (_) => setState(() => _active = 0),
-                  decoration: const InputDecoration(
-                    hintText: '输入命令或玩家名，例如“导出”“快速”',
-                    prefixIcon: Icon(Icons.search, size: 18),
+                  decoration: InputDecoration(
+                    hintText: tr.shell.paletteHint,
+                    prefixIcon: const Icon(Icons.search, size: 18),
                   ),
                 ),
               ),
@@ -185,7 +186,7 @@ class _PaletteState extends State<_Palette> {
                     ? Padding(
                         padding: const EdgeInsets.all(Sp.betweenSections),
                         child: Text(
-                          '没有匹配“${_text.text.trim()}”的命令或玩家。',
+                          tr.shell.paletteNoMatch(_text.text.trim()),
                           style: Ty.body.copyWith(color: c.textSecondary),
                         ),
                       )
@@ -217,22 +218,31 @@ class _PaletteState extends State<_Palette> {
                   children: [
                     Text(
                       results.length > _limit
-                          ? '显示 $_limit / ${results.length} 项'
-                          : '共 ${results.length} 项',
+                          ? tr.shell.paletteShowing(_limit, results.length)
+                          : tr.shell.paletteTotal(results.length),
                       style: Ty.meta.copyWith(color: c.textSecondary),
                     ),
                     const Spacer(),
                     const Kbd('↑↓'),
                     const SizedBox(width: 4),
-                    Text('选择', style: Ty.meta.copyWith(color: c.textSecondary)),
+                    Text(
+                      tr.shell.paletteSelect,
+                      style: Ty.meta.copyWith(color: c.textSecondary),
+                    ),
                     const SizedBox(width: 12),
                     const Kbd('Enter'),
                     const SizedBox(width: 4),
-                    Text('执行', style: Ty.meta.copyWith(color: c.textSecondary)),
+                    Text(
+                      tr.shell.paletteRun,
+                      style: Ty.meta.copyWith(color: c.textSecondary),
+                    ),
                     const SizedBox(width: 12),
                     const Kbd('Esc'),
                     const SizedBox(width: 4),
-                    Text('关闭', style: Ty.meta.copyWith(color: c.textSecondary)),
+                    Text(
+                      tr.common.close,
+                      style: Ty.meta.copyWith(color: c.textSecondary),
+                    ),
                   ],
                 ),
               ),
@@ -274,23 +284,24 @@ class _PaletteRow extends StatelessWidget {
           button: true,
           enabled: enabled,
           selected: active,
-          label:
-              '${entry.label}${cmd == null ? '' : '，${cmd.category}'}${enabled ? '' : '，不可用：${entry.disabledReason ?? ''}'}',
+          label: tr.shell.paletteEntry(
+            entry.label,
+            category: cmd?.category,
+            unavailable: enabled ? null : entry.disabledReason ?? '',
+          ),
           excludeSemantics: true,
           onTap: onTap,
           child: InkWell(
             onTap: onTap,
             child: Container(
-              color: active ? c.selected : null,
+              decoration: BoxDecoration(
+                color: c.itemFill(selected: active),
+                border: c.itemOutline(selected: active),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: Row(
                 children: [
-                  Container(
-                    width: 3,
-                    height: 20,
-                    color: active ? c.accent : Colors.transparent,
-                  ),
-                  const SizedBox(width: 9),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,16 +360,18 @@ Future<void> showShortcuts(BuildContext context, List<Cmd> cmds) {
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text('快捷键参考', style: Ty.section)),
+                    Expanded(
+                      child: Text(tr.shell.shortcutsTitle, style: Ty.section),
+                    ),
                     AppButton(
-                      '关闭',
+                      tr.common.close,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
                 const SizedBox(height: Sp.withinControl),
                 Text(
-                  '所有命令也在菜单和命令面板（Ctrl+K）里。输入文字时，单键快捷键不起作用。',
+                  tr.shell.shortcutsNote,
                   style: Ty.body.copyWith(color: c.textSecondary),
                 ),
                 const SizedBox(height: Sp.betweenGroups),
@@ -385,7 +398,7 @@ Future<void> showShortcuts(BuildContext context, List<Cmd> cmds) {
                                   Kbd(cmd.shortcutLabel!)
                                 else
                                   Text(
-                                    '—',
+                                    tr.common.missing,
                                     style: Ty.meta.copyWith(
                                       color: c.textSecondary,
                                     ),
@@ -438,20 +451,20 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('导出 ${ws.name} 的数据集', style: Ty.section),
+                  Text(tr.shell.exportTitle(ws.name), style: Ty.section),
                   const SizedBox(height: Sp.withinControl),
                   Text(
-                    '保存为 JSON 文件，位置和文件名由你选，不含凭据。每场对局都带双方玩家的数据。',
+                    tr.shell.exportIntro,
                     style: Ty.body.copyWith(color: c.textSecondary),
                   ),
                   const SizedBox(height: Sp.betweenGroups),
-                  Text('包含的模式', style: Ty.bodyStrong),
+                  Text(tr.shell.exportModes, style: Ty.bodyStrong),
                   CheckboxListTile(
                     dense: true,
                     tristate: true,
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: Text('全部模式', style: Ty.body),
+                    title: Text(tr.shell.exportAllModes, style: Ty.body),
                     value: modes.length == Mode.values.length
                         ? true
                         : modes.isEmpty
@@ -477,18 +490,18 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
                       ),
                     ),
                   const SizedBox(height: Sp.withinGroup),
-                  Text('对局数量（每个模式取最近的）', style: Ty.bodyStrong),
+                  Text(tr.shell.exportCount, style: Ty.bodyStrong),
                   const SizedBox(height: Sp.withinControl),
                   SegmentedBar<int>(
-                    semanticLabel: '导出的对局数量',
+                    semanticLabel: tr.shell.exportCountLabel,
                     value: choice,
                     onChanged: (v) => setState(() => choice = v),
-                    segments: const [
-                      Segment(20, '20 场'),
-                      Segment(50, '50 场'),
-                      Segment(100, '100 场'),
-                      Segment(0, '全部'),
-                      Segment(-1, '自定义'),
+                    segments: [
+                      Segment(20, tr.common.matchCount(20)),
+                      Segment(50, tr.common.matchCount(50)),
+                      Segment(100, tr.common.matchCount(100)),
+                      Segment(0, tr.shell.exportCountAll),
+                      Segment(-1, tr.shell.exportCountCustom),
                     ],
                   ),
                   if (choice == -1) ...[
@@ -502,8 +515,8 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(4),
                         ],
-                        decoration: const InputDecoration(
-                          labelText: '场数（1–5000）',
+                        decoration: InputDecoration(
+                          labelText: tr.shell.exportCountField,
                         ),
                         onChanged: (_) => setState(() {}),
                       ),
@@ -514,9 +527,9 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: Text('同时导出玩家段位', style: Ty.body),
+                    title: Text(tr.shell.exportRanks, style: Ty.body),
                     subtitle: Text(
-                      '每名玩家的竞技段位，用于对局强度。第一次要逐个查询，每场约多花 7 秒；查过的下次直接用。',
+                      tr.shell.exportRanksNote,
                       style: Ty.meta.copyWith(color: c.textSecondary),
                     ),
                     value: ratings,
@@ -524,7 +537,7 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
                   ),
                   const SizedBox(height: Sp.withinGroup),
                   Text(
-                    '本机已有的对局直接使用，没有的才会读取，约每场 1 秒；在后台进行，可随时取消。',
+                    tr.shell.exportReadNote,
                     style: Ty.meta.copyWith(color: c.textSecondary),
                   ),
                   const SizedBox(height: Sp.betweenGroups),
@@ -532,17 +545,19 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       AppButton(
-                        '取消',
+                        tr.common.cancel,
                         onPressed: () => Navigator.of(context).pop(false),
                       ),
                       const SizedBox(width: Sp.withinGroup),
                       AppButton(
-                        '开始导出',
+                        tr.shell.startExport,
                         primary: true,
                         onPressed: modes.isEmpty || (choice == -1 && n == null)
                             ? null
                             : () => Navigator.of(context).pop(true),
-                        disabledReason: modes.isEmpty ? '至少选择一个模式。' : '请输入场数。',
+                        disabledReason: modes.isEmpty
+                            ? tr.shell.exportNeedMode
+                            : tr.shell.exportNeedCount,
                       ),
                     ],
                   ),

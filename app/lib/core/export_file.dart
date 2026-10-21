@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
 
+import '../l10n/strings.dart';
+
 /// Asks where to save, with the system's save dialog, starting from [suggestedName].
 /// Returns the path the user chose (the dialog already asked about overwriting), or null
 /// when they cancelled.
@@ -14,7 +16,7 @@ Future<String?> pickJsonSaveLocation(String suggestedName) async {
     acceptedTypeGroups: const [
       XTypeGroup(label: 'JSON', extensions: ['json']),
     ],
-    confirmButtonText: '保存',
+    confirmButtonText: tr.core.save,
   );
   return location?.path;
 }

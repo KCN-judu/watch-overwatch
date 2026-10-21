@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
+import '../l10n/strings.dart';
 import 'models.dart';
 
 /// A failure reported by `watchd` or by reaching it.
@@ -70,7 +71,9 @@ class Api {
         final e = value is Map ? value['error'] : null;
         throw ApiError(
           e is Map ? '${e['kind'] ?? 'upstream'}' : 'upstream',
-          e is Map ? '${e['message'] ?? '请求失败。'}' : '本地服务返回了无法读取的响应。',
+          e is Map
+              ? '${e['message'] ?? tr.core.requestFailed}'
+              : tr.core.unreadableResponse,
           retryAfterMs: e is Map
               ? (e['retry_after_ms'] as num?)?.toInt()
               : null,
@@ -81,10 +84,10 @@ class Api {
     } on ApiError {
       rethrow;
     } on TimeoutException {
-      throw ApiError('timeout', '本地服务超过 ${timeout.inSeconds} 秒没有响应。');
+      throw ApiError('timeout', tr.core.serviceTimeout(timeout.inSeconds));
     } catch (e) {
       if (cancel?.cancelled ?? false) throw Cancelled();
-      throw ApiError('offline', '无法连接本地服务（端口 $port）。它可能还在启动或已退出。');
+      throw ApiError('offline', tr.core.serviceUnreachable(port));
     } finally {
       client.close();
     }
@@ -409,7 +412,7 @@ class Backend {
     if (await api.healthy()) return true;
     binaryPath = locate();
     if (binaryPath == null) {
-      lastLaunchError = '找不到 watchd.exe，请放在应用同一目录。';
+      lastLaunchError = tr.core.serviceNotFound;
       return false;
     }
     try {
@@ -423,7 +426,7 @@ class Backend {
       _process!.stdout.drain<void>();
       _process!.stderr.drain<void>();
     } catch (e) {
-      lastLaunchError = '无法启动 watchd：$e';
+      lastLaunchError = tr.core.serviceStartFailed(e);
       return false;
     }
     // The service is up in about half a second: look often, so the app does not sit
@@ -432,7 +435,7 @@ class Backend {
       if (await api.healthy()) return true;
       await Future<void>.delayed(const Duration(milliseconds: 80));
     }
-    lastLaunchError = 'watchd 已启动，但 10 秒内没有响应。';
+    lastLaunchError = tr.core.serviceStartTimeout;
     return false;
   }
 

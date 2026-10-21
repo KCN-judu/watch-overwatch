@@ -5,12 +5,12 @@ import '../../core/models.dart';
 import '../../core/support.dart';
 import '../../design/card_list.dart';
 import '../../design/icons.dart';
-import '../../design/net_pic.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../state/app_state.dart';
 import '../player_view.dart';
 import 'hero_detail_page.dart';
+import '../../l10n/strings.dart';
 
 /// Win rates over fewer matches than this carry an annotation, not a colour.
 const _minSample = 5;
@@ -18,15 +18,15 @@ const _minSample = 5;
 const _rowExtent = 84.0;
 
 /// What the list can be ordered by, and the label of the figure it then highlights.
-const _sorts = [
-  ('matches', '场次'),
-  ('win', '胜率'),
-  ('time', '时长'),
-  ('level', '熟练度'),
-  ('kills', '消灭'),
-  ('damage', '伤害'),
-  ('healing', '治疗'),
-  ('mitigation', '阻挡'),
+final _sorts = [
+  ('matches', tr.heroes.matchesLabel),
+  ('win', tr.heroes.winRateLabel),
+  ('time', tr.heroes.sortTime),
+  ('level', tr.heroes.proficiency),
+  ('kills', tr.heroes.sortKills),
+  ('damage', tr.heroes.sortDamage),
+  ('healing', tr.heroes.sortHealing),
+  ('mitigation', tr.heroes.sortMitigation),
 ];
 
 class HeroesPage extends StatefulWidget {
@@ -100,7 +100,7 @@ class _HeroesPageState extends State<HeroesPage> {
 
     if (load.failedWithoutData) {
       return ErrorPanel(
-        what: '无法读取${mode.label}的英雄统计',
+        what: tr.heroes.loadFailed(mode.label),
         error: load.error!,
         onRetry: () => ws.loadMatches(mode, fresh: true),
       );
@@ -150,22 +150,26 @@ class _HeroesPageState extends State<HeroesPage> {
               child: TextField(
                 controller: _queryController,
                 onChanged: (v) => setState(() => _query = v),
-                decoration: const InputDecoration(
-                  hintText: '搜索英雄',
-                  prefixIcon: Icon(Icons.search, size: 18),
+                decoration: InputDecoration(
+                  hintText: tr.heroes.searchHint,
+                  prefixIcon: const Icon(Icons.search, size: 18),
                 ),
               ),
             ),
             Text(
               _query.trim().isEmpty
-                  ? '${all.length} 个英雄'
-                  : '${rows.length} / ${all.length} 个英雄',
+                  ? tr.heroes.heroCount(all.length)
+                  : tr.heroes.heroCountFiltered(rows.length, all.length),
               style: Ty.num(Ty.bodyStrong),
             ),
             if (_query.trim().isNotEmpty)
-              AppButton('清除搜索', quiet: true, onPressed: _clearQuery),
+              AppButton(
+                tr.heroes.clearSearch,
+                quiet: true,
+                onPressed: _clearQuery,
+              ),
             Text(
-              '第 $season 赛季累计',
+              tr.heroes.seasonTotal(season),
               style: Ty.body.copyWith(color: c.textSecondary),
             ),
             LoadStatusBar(
@@ -175,9 +179,7 @@ class _HeroesPageState extends State<HeroesPage> {
               error: load.error?.message,
               onRetry: () => ws.loadMatches(mode, fresh: true),
             ),
-            const InfoTip(
-              '整个赛季的累计，来自大神，不是“对局”页读取的最近对局。点一个英雄看详情。消灭、伤害、治疗、阻挡为每 10 分钟；— 表示这个英雄无法产出。',
-            ),
+            InfoTip(tr.heroes.listInfo),
           ],
         ),
         const SizedBox(height: Sp.withinGroup),
@@ -186,9 +188,12 @@ class _HeroesPageState extends State<HeroesPage> {
           runSpacing: Sp.withinGroup,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text('排序', style: Ty.body.copyWith(color: c.textSecondary)),
+            Text(
+              tr.heroes.sortBy,
+              style: Ty.body.copyWith(color: c.textSecondary),
+            ),
             SegmentedBar<String>(
-              semanticLabel: '排序依据',
+              semanticLabel: tr.heroes.sortBasis,
               value: _sort,
               onChanged: (v) => setState(() {
                 _sort = v;
@@ -203,7 +208,7 @@ class _HeroesPageState extends State<HeroesPage> {
                       'kills' ||
                       'damage' ||
                       'healing' ||
-                      'mitigation' => '$label，每 10 分钟',
+                      'mitigation' => tr.heroes.per10Hint(label),
                       _ => null,
                     },
                   ),
@@ -211,7 +216,9 @@ class _HeroesPageState extends State<HeroesPage> {
             ),
             IconAction(
               icon: _asc ? Icons.arrow_upward : Icons.arrow_downward,
-              label: _asc ? '$sortLabel 从低到高' : '$sortLabel 从高到低',
+              label: _asc
+                  ? tr.heroes.sortAscending(sortLabel)
+                  : tr.heroes.sortDescending(sortLabel),
               onPressed: () => setState(() => _asc = !_asc),
             ),
           ],
@@ -219,7 +226,7 @@ class _HeroesPageState extends State<HeroesPage> {
         const SizedBox(height: Sp.withinGroup),
         Expanded(
           child: CardList<HeroUsage>(
-            listLabel: '${mode.label}英雄使用统计',
+            listLabel: tr.heroes.listLabel(mode.label),
             itemExtent: _rowExtent,
             rows: rows,
             loading: load.firstLoad,
@@ -230,8 +237,13 @@ class _HeroesPageState extends State<HeroesPage> {
                   ),
             onActiveChanged: (i) =>
                 _activeKey = PlayerWorkspace.heroKey(rows[i]),
-            rowLabel: (h) =>
-                '${h.hero.label}，${_cat.heroRole(h.hero).label}，${fmtInt(h.matches)} 场，胜率${fmtPct(h.winRatePct)}，使用${fmtPlayTime(h.playTimeS)}',
+            rowLabel: (h) => tr.heroes.heroRowLabel(
+              h.hero.label,
+              _cat.heroRole(h.hero).label,
+              fmtInt(h.matches),
+              fmtPct(h.winRatePct),
+              fmtPlayTime(h.playTimeS),
+            ),
             onOpen: (h, _) => ws.openHero(h, rows),
             builder: (context, h, state) => _HeroCard(
               hero: h,
@@ -246,22 +258,26 @@ class _HeroesPageState extends State<HeroesPage> {
                 : all.isEmpty
                 ? EmptyState(
                     icon: Icons.groups_outlined,
-                    title: '第 $season 赛季没有${mode.label}的英雄记录',
-                    body: '该赛季没有打过这个模式，或资料为私密。可换个模式，或到“赛季走势”看往期。',
+                    title: tr.heroes.noHeroesTitle(season, mode.label),
+                    body: tr.heroes.noHeroesBody,
                     actions: [
                       for (final m in Mode.values.where((m) => m != mode))
                         AppButton(
-                          '切换到${m.label}',
+                          tr.heroes.switchTo(m.label),
                           onPressed: () => app.setMode(m),
                         ),
                     ],
                   )
                 : EmptyState(
                     icon: Icons.search_off,
-                    title: '没有名称包含“${_query.trim()}”的英雄',
-                    body: '已有 ${all.length} 个英雄记录。',
+                    title: tr.heroes.noSearchMatchTitle(_query.trim()),
+                    body: tr.heroes.noSearchMatchBody(all.length),
                     actions: [
-                      AppButton('清除搜索', primary: true, onPressed: _clearQuery),
+                      AppButton(
+                        tr.heroes.clearSearch,
+                        primary: true,
+                        onPressed: _clearQuery,
+                      ),
                     ],
                   ),
           ),
@@ -292,14 +308,13 @@ class _HeroCard extends StatelessWidget {
     if (seconds == null) return missing;
     final minutes = (seconds / 60).round();
     return minutes < 60
-        ? '$minutes 分钟'
-        : '${(seconds / 3600).toStringAsFixed(1)} 小时';
+        ? tr.heroes.minutes(minutes)
+        : tr.heroes.hours((seconds / 3600).toStringAsFixed(1));
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final light = Theme.of(context).brightness == Brightness.light;
     final h = hero;
     final role = catalog.heroRole(h.hero);
     final banner = catalog.heroBanner(h.hero);
@@ -311,9 +326,6 @@ class _HeroCard extends StatelessWidget {
     final bar = h.winRatePct == null || !enough
         ? c.textSecondary.withValues(alpha: 0.5)
         : (h.winRatePct! >= 50 ? c.win : c.loss);
-    final overlay = state.active
-        ? c.selected
-        : (state.hovered ? c.hover : null);
 
     // The figure the list is currently ordered by, so the order is visible on the row.
     final extraSort = const {
@@ -354,150 +366,81 @@ class _HeroCard extends StatelessWidget {
       return tip == null ? body : Tooltip(message: tip, child: body);
     }
 
-    return LayoutBuilder(
-      builder: (context, box) {
-        final side = box.maxHeight;
-        return Container(
-          decoration: BoxDecoration(
-            border: state.ring
-                ? Border.all(color: c.accent, width: 2)
-                : state.active
-                ? Border.all(color: c.accent.withValues(alpha: 0.7), width: 1)
-                : null,
+    // The hero's banner, dense behind the text and faded out to the right.
+    return ArtRow(
+      state: state,
+      art: banner,
+      artAlignment: const Alignment(0.2, -0.2),
+      content: (side) => Row(
+        children: [
+          // Win rate as a hard bar; grey while the sample is too small to judge.
+          Container(width: 4, color: bar),
+          // The hero's face, a plain square the height of the row.
+          SizedBox(
+            width: side,
+            child: PortraitCell(catalog.heroPortrait(h.hero)),
           ),
-          child: ClipRect(
-            child: Stack(
+          const SizedBox(width: Sp.betweenGroups + 4),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // The hero's banner, dense behind the text and faded out to the right.
-                Positioned.fill(
-                  child: ShaderMask(
-                    blendMode: BlendMode.dstIn,
-                    shaderCallback: (rect) => const LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        Color(0xFF000000),
-                        Color(0xB3000000),
-                        Color(0x00000000),
-                      ],
-                      stops: [0, 0.55, 1],
-                    ).createShader(rect),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        ColoredBox(color: c.raised),
-                        if (banner != null)
-                          ExcludeSemantics(
-                            child: NetPic(
-                              banner,
-                              fit: BoxFit.cover,
-                              alignment: const Alignment(0.2, -0.2),
-                              placeholder: const SizedBox.expand(
-                                child: Skeleton(radius: 0),
-                              ),
-                            ),
-                          ),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                c.raised.withValues(alpha: light ? 0.88 : 0.94),
-                                c.raised.withValues(alpha: light ? 0.50 : 0.72),
-                                c.raised.withValues(alpha: light ? 0.08 : 0.30),
-                              ],
-                              stops: const [0, 0.5, 1],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                Text(
+                  h.hero.label,
+                  style: Ty.section,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                if (overlay != null)
-                  Positioned.fill(child: ColoredBox(color: overlay)),
-                Positioned.fill(
-                  child: Row(
-                    children: [
-                      // Win rate as a hard bar; grey while the sample is too small to judge.
-                      Container(width: 4, color: bar),
-                      // The hero's face, a plain square the height of the row.
-                      SizedBox(
-                        width: side,
-                        child: PortraitCell(catalog.heroPortrait(h.hero)),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    RoleIcon(role, size: 18),
+                    const SizedBox(width: 8),
+                    SubroleIcon(h.hero.name, size: 18),
+                    if (subName != null) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        subName,
+                        style: Ty.meta.copyWith(color: c.textSecondary),
                       ),
-                      const SizedBox(width: Sp.betweenGroups + 4),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              h.hero.label,
-                              style: Ty.section,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                RoleIcon(role, size: 18),
-                                const SizedBox(width: 8),
-                                SubroleIcon(h.hero.name, size: 18),
-                                if (subName != null) ...[
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    subName,
-                                    style: Ty.meta.copyWith(
-                                      color: c.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                                if (h.queue.label.isNotEmpty) ...[
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    h.queue.label,
-                                    style: Ty.meta.copyWith(
-                                      color: c.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        width: 78,
-                        child: Center(child: LevelBadge(h.heroLevel, size: 28)),
-                      ),
-                      metric('场次', fmtInt(h.matches), width: 76),
-                      metric(
-                        '胜率',
-                        fmtPct(h.winRatePct),
-                        width: 96,
-                        color: enough ? null : c.textSecondary,
-                        tip: enough ? null : '只有 ${h.matches ?? 0} 场，样本太少，仅供参考',
-                      ),
-                      metric('使用时长', _time(h.playTimeS), width: 108),
-                      if (extraSort)
-                        metric(
-                          '$sortLabel /10分',
-                          sortValue == null ? missing : fmtInt(sortValue),
-                          width: 116,
-                          color: extraColor,
-                          tip: sortValue == null ? '这个英雄无法产出这项数据' : null,
-                        ),
-                      const SizedBox(width: Sp.betweenGroups),
                     ],
-                  ),
+                    if (h.queue.label.isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      Text(
+                        h.queue.label,
+                        style: Ty.meta.copyWith(color: c.textSecondary),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
           ),
-        );
-      },
+          SizedBox(
+            width: 78,
+            child: Center(child: LevelBadge(h.heroLevel, size: 28)),
+          ),
+          metric(tr.heroes.matchesLabel, fmtInt(h.matches), width: 76),
+          metric(
+            tr.heroes.winRateLabel,
+            fmtPct(h.winRatePct),
+            width: 96,
+            color: enough ? null : c.textSecondary,
+            tip: enough ? null : tr.heroes.smallSample(h.matches ?? 0),
+          ),
+          metric(tr.heroes.playTimeLabel, _time(h.playTimeS), width: 108),
+          if (extraSort)
+            metric(
+              tr.heroes.per10Metric(sortLabel),
+              sortValue == null ? missing : fmtInt(sortValue),
+              width: 116,
+              color: extraColor,
+              tip: sortValue == null ? tr.heroes.cannotProduce : null,
+            ),
+          const SizedBox(width: Sp.betweenGroups),
+        ],
+      ),
     );
   }
 }
