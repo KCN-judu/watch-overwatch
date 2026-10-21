@@ -696,9 +696,12 @@ pub fn attach_career_ranks(detail: &mut MatchDetail, cache: &dyn StrengthCache, 
                 p.career_rank = player.for_role(p.role).map(|r| r.rank.clone());
             }
             Some((best, RatingFit::OtherRoles)) => {
+                // Tier and division from the rating, so the rank shows its emblem like
+                // any other rank instead of only a label.
+                let tier = crate::strength::rating_tier(best);
                 p.career_rank = Some(Rank {
-                    tier: None,
-                    division: None,
+                    tier: tier.map(|(t, _)| t.to_owned()),
+                    division: tier.map(|(_, d)| d),
                     score: None,
                     skill_rating: Some(best.round() as i64),
                     at_ms: None,
