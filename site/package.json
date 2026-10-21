@@ -1,0 +1,17 @@
+{
+  "name": "watch-overwatch-docs",
+  "private": true,
+  "type": "module",
+  "description": "Documentation site of Watch Overwatch (built from ../docs and ../CHANGELOG.md)",
+  "scripts": {
+    "prepare-docs": "node scripts/prepare.mjs",
+    "dev": "npm run prepare-docs && astro dev",
+    "build": "npm run prepare-docs && astro build",
+    "preview": "astro preview",
+    "test": "node --test scripts/lib.test.mjs"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.42.6",
+    "astro": "^7.4.1"
+  }
+}

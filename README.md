@@ -23,20 +23,25 @@ role_id 和 token 怎么拿，见 [获取账号凭据](docs/credentials.md)。�
 
 ## 文档
 
+文档站：<https://kcn-judu.github.io/watch-overwatch/>（内容就是 `docs/` 下的这些文件，加上截图；本地预览见 [命令行](docs/cli.md) 末尾）。
+
 | 文档 | 内容 |
 |---|---|
-| [docs/user-guide.md](docs/user-guide.md) | 使用指引：首次使用、各页面、读数符号、快捷键、常见问题 |
-| [docs/architecture.md](docs/architecture.md) | 说明文档：模块、数据流、请求的接口、本机接口、缓存与存放位置 |
-| [docs/algorithms.md](docs/algorithms.md) | 算法文档：段位换算、对局强度、英雄数据补全、胜率与推算公式 |
-| [docs/game-data.md](docs/game-data.md) | 从本机游戏解包出的数据与图标，以及重新解包的方法 |
-| [docs/ui-design.md](docs/ui-design.md) | 界面设计：任务模型、信息架构、状态、视觉令牌、设计复盘 |
-| [docs/icon-audit.md](docs/icon-audit.md) | 游戏里固定语义的图标盘点与实现状态 |
-| [docs/product-design.md](docs/product-design.md) | 产品设计约定 |
-| [docs/export.md](docs/export.md) | 导出协议 |
-| [docs/audit-2026-10.md](docs/audit-2026-10.md) | 数据、文字、一致性审计：已修复的和仍待处理的 |
-| [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
+| [docs/overview.md](docs/overview.md) | 概览：能做什么、安装、页面表、阅读路径 |
+| [docs/getting-started.md](docs/getting-started.md) | 快速开始，以及从源码构建 |
+| [docs/user-guide.md](docs/user-guide.md) | 使用指引：各页面、读数符号、快捷键、常见问题 |
 | [docs/credentials.md](docs/credentials.md) | 如何获取大神账号的 role_id 和 token |
-| [docs/reference-projects.md](docs/reference-projects.md) | 对标项目 Overstats：借鉴了什么、有什么不同、哪些功能还没做 |
+| [docs/http-api.md](docs/http-api.md) | 本机接口（`watchd` 的 HTTP 接口） |
+| [docs/cli.md](docs/cli.md) | 命令行：`watchd`、`cargo xtask`、文档站 |
+| [docs/data-model.md](docs/data-model.md) | 统一数据结构（IR） |
+| [docs/export.md](docs/export.md) | 导出协议 |
+| [docs/architecture.md](docs/architecture.md) | 架构：模块、数据流、本地数据库、图片缓存 |
+| [docs/algorithms.md](docs/algorithms.md) | 算法：段位换算、对局强度、成长、英雄数据补全 |
+| [docs/ui-design.md](docs/ui-design.md)、[docs/product-design.md](docs/product-design.md) | 界面设计、产品设计 |
+| [docs/game-data.md](docs/game-data.md)、[docs/icon-audit.md](docs/icon-audit.md) | 游戏数据与图标盘点 |
+| [docs/reference-projects.md](docs/reference-projects.md) | 对标项目 |
+| [docs/audit-2026-10.md](docs/audit-2026-10.md) | 审计记录 |
+| [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 
 ## 目录
 
@@ -44,6 +49,7 @@ role_id 和 token 怎么拿，见 [获取账号凭据](docs/credentials.md)。�
 |---|---|
 | `crates/watch-core` | 请求调度、数据结构（`ir.rs`）、原始数据到 IR 的转换（`dashen/`）、采集（`collect.rs`）、分析（`analysis.rs`、`strength.rs`） |
 | `crates/watchd` | 本机 HTTP 服务与命令行；`store/` 是本机数据库（对局库、段位库）和全部 SQL |
+| `site/` | 文档站（Astro Starlight），内容取自 `docs/` 和 `CHANGELOG.md` |
 | `crates/xtask` | 开发任务：`cargo xtask sync-assets`、`slim-catalog`、`package` |
 | `app/` | Flutter 界面 |
 | `resources/game/` | 从游戏解包的英雄资料与图标（`app/assets/game/` 是打进应用的副本） |

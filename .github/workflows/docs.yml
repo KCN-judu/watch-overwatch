@@ -1,0 +1,53 @@
+# Builds the documentation site (site/, from docs/ and CHANGELOG.md) on every change to
+# them, and publishes it to GitHub Pages when the change is on main.
+name: Docs
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**', 'CHANGELOG.md', 'site/**', '.github/workflows/docs.yml']
+  pull_request:
+    paths: ['docs/**', 'CHANGELOG.md', 'site/**', '.github/workflows/docs.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      - run: npm test
+      # Fails when a page has no title, a link leaves the repository, or an image is missing.
+      - run: npm run build
+      - run: node scripts/check-links.mjs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,4 +1,4 @@
-# 说明文档
+# 架构
 
 ## 总体结构
 
@@ -17,35 +17,9 @@ Flutter 界面 (app/)  ──HTTP, 仅本机──▶  watchd (Rust)  ──HTTP
 
 > 大神原始 JSON → `dashen::normalize` → IR → `analysis` / `strength` → 界面或导出
 
-### IR（`crates/watch-core/src/ir.rs`）
+### 统一数据结构（IR）
 
-字段名用 snake_case；缺失用 `null`，不用 0。主要类型：
-
-| 类型 | 内容 |
-|---|---|
-| `PlayerDataset` | 一个玩家的完整数据集：资料、生涯、对局、对局详情、英雄榜、参与者段位、采集覆盖情况 |
-| `PlayerProfile` | 昵称、玩家编号、头像、称号、荣誉等级、游戏时长、总场次、封禁状态 |
-| `CareerSnapshot` | 某模式某赛季的生涯：各职责数据、英雄使用统计、省榜、行为与荣誉 |
-| `MatchSummary` | 列表里的一场：地图、结果、比分、英雄、职责、统计 |
-| `MatchDetail`、`Participant` | 一场的详情：双方各 5 人，每人的英雄、职责、统计、段位、威能 |
-| `HeroUsage` | 一个英雄的赛季统计：场次、胜率、时长、熟练度、每场平均、每 10 分钟 |
-| `EntityRef` | 英雄、地图、统计项、威能的引用：大神 `guid`、官方 `official_id`（`0x…`）、名称。名称可能缺失，不能靠名称做连接 |
-| `Rank` | 段位名、小段、分数、段位分 |
-
-`Coverage` 记录每个请求是否成功，部分失败不会让整个采集失败，会在覆盖情况里写明。
-
-### 请求的上游接口（`dashen/endpoint.rs`）
-
-| 接口 | 用途 |
-|---|---|
-| `searchBnetAccount` | 按战网昵称查玩家，拿到 token（POST，其余为 GET） |
-| `customer/queryCard` | 玩家资料卡 |
-| `customer/queryCountInfo` | 竞技、快速的生涯：各职责、英雄使用统计、近期对局、省榜、荣誉 |
-| `customer/queryMatchList`、`queryMatchInfo` | 对局列表、对局详情 |
-| `customer/fight/queryCount`、`queryMatchList`、`queryMatchInfo` | 角斗领域的对应接口 |
-| `queryProvinceRank`、`billboard/*` | 省榜、英雄榜 |
-
-英雄统计和段位、近期对局来自同一个 `queryCountInfo`：一次请求返回你本赛季打过的全部英雄，与界面是否显示无关。
+界面和导出都读统一数据结构，不读上游的原始 JSON：类型、约定（缺失用 `null`、引用不靠名称）和请求的上游接口见 [数据结构](data-model.md)。
 
 ### 目录
 
@@ -53,26 +27,7 @@ Flutter 界面 (app/)  ──HTTP, 仅本机──▶  watchd (Rust)  ──HTTP
 
 ## 本机接口（`watchd`）
 
-| 路径 | 作用 |
-|---|---|
-| `GET /healthz` | 存活检查 |
-| `GET /api/state` | 服务状态、账号状态、请求记录 |
-| `GET/POST /api/players` | 玩家库 |
-| `POST /api/accounts` | 添加、更新、移除大神账号 |
-| `POST /api/player/search` | 查玩家，返回会话编号 |
-| `POST /api/player/view` | 某个视图（资料、对局、详情等），返回 IR |
-| `POST /api/player/dataset` | 完整数据集和分析；可带 `progress_id` |
-| `POST /api/player/view`（`detail`） | 对局详情：立刻返回，带已知的玩家段位和 Fleta 指数，`ratings_pending` 说明段位是否还没查完；`prepare` 带 `match_id` 就先把这一场查完 |
-| `POST /api/player/growth` | 成长面板：逐局的存活时长、Fleta、KDA 和各指标的走势（整体和分职责）；只用本机已存的对局详情，不发上游请求；同时返回对局列表里有多少场详情已存 |
-| `POST /api/player/stored` | 本机已有的某个名字的对局列表和最近的玩家资料，不发任何上游请求；名字没查过时 `known` 为假 |
-| `POST /api/player/prepare` | 把已读取的对局（最新的在前，`window` 最多 5000 场）里还没准备好的，每次取一小批：读详情并（`ratings` 为真时）查参与者段位，存进本机；导出和后台准备都用它 |
-| `GET /api/progress?id=…` | 上面那次采集的实时进度 |
-| `GET /api/cache`、`POST /api/cache/clear` | 查看、清除本机保存的对局和段位（`matches.db`、`ratings.db`） |
-| `POST /api/player/export` | 导出数据集 |
-| `GET /api/catalog` | 目录 |
-| `POST /api/request` | 白名单内的原始接口转发（调试用） |
-
-会话只存在内存里，约一小时过期，过期后界面会自动重新查找。
+路径、请求、返回和约定（只接受本机、会话、错误码）见 [本机接口](http-api.md)；命令行见 [命令行](cli.md)。会话只存在内存里，约一小时过期，过期后界面会自动重新查找。
 
 ## 界面（`app/lib`）
 

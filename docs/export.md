@@ -1,6 +1,6 @@
-# JSON 协议 1.1.0
+# 导出协议
 
-所有导出含 schema_version、generated_at_unix_ms、source、query、completeness、units、entities、records、provider_data。兼容性变更升级主版本；仅新增可选字段升级次版本。
+当前协议版本 1.1.0（`schema_version`）。所有导出含 schema_version、generated_at_unix_ms、source、query、completeness、units、entities、records、provider_data。兼容性变更升级主版本；仅新增可选字段升级次版本。
 
 默认导出是第三方分析友好的匿名化视图。records.player_name 是玩家显示名；records.matches 使用 match_index、player_name、outcome、started_at_unix_ms、hero_name、hero_role、map_name、score、stats、teammates 和 enemies。每个队友/敌人包含 player_name、hero_name、hero_role 和 stats。stats 包含 kills、assists、deaths、damage、healing、blocked_damage、mitigation；其中 blocked_damage 与上游 resistDamage 相同，表示阻挡/减免的伤害量，不是阻挡次数。默认不输出 match ID、官方 UID、大神 GUID 或原始上游 JSON。
 

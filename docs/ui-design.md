@@ -1,4 +1,4 @@
-# Watch Overwatch 桌面界面设计
+# 界面设计
 
 依据：`yata/.claude/skills/software-ui-ux-design`。设计顺序为 领域模型 → 用户目标与任务 → 信息架构 → 交互 → 层级与布局 → 视觉语言 → 实现。本文按此顺序，视觉部分排在最后。技术栈为 Flutter（Windows 桌面），数据来自本机 `watchd` 的 IR 接口。
 

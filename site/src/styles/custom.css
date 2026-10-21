@@ -1,0 +1,18 @@
+/* The app's own accent (the indigo of its dark theme) is the only colour the site adds. */
+:root {
+  --sl-color-accent-low: #1f2150;
+  --sl-color-accent: #5560e8;
+  --sl-color-accent-high: #b6baff;
+  --sl-font: 'Segoe UI', 'Microsoft YaHei UI', 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
+}
+:root[data-theme='light'] {
+  --sl-color-accent-low: #dcdeff;
+  --sl-color-accent: #3b42c4;
+  --sl-color-accent-high: #232885;
+}
+
+/* Screenshots: full width of the column, a quiet frame. */
+.sl-markdown-content img {
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 4px;
+}
