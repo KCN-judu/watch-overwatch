@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 const USAGE: &str = "usage:
   cargo xtask sync-assets                      copy resources/game into the app and register it in pubspec.yaml
   cargo xtask slim-catalog <source> <target>   cut a full query_tool.json down to what the program reads
+  cargo xtask update-catalog <dir>             rebuild the bundled catalog from the live files downloaded into <dir>
   cargo xtask package                          zip the release builds into dist/ with its sha256";
 
 fn main() -> anyhow::Result<()> {
@@ -27,6 +28,10 @@ fn main() -> anyhow::Result<()> {
         ["slim-catalog", source, target] => {
             catalog::slim_file(Path::new(source), Path::new(target))
         }
+        ["update-catalog", dir] => catalog::update_file(
+            Path::new(dir),
+            &root.join("crates/watch-core/data/query_tool.min.json"),
+        ),
         ["package"] => package::run(&root),
         _ => bail!("{USAGE}"),
     }

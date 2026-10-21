@@ -147,9 +147,10 @@ class RankBadge extends StatelessWidget {
     if (r == null) {
       return Text(missing, style: Ty.cell.copyWith(color: c.textSecondary));
     }
-    final url = catalog.rankIcon(r.tierKey, stadium: stadium);
-    final text = r.label;
-    final base = r.skillRating == null
+    final url = catalog.rankIcon(r.tierKey(stadium: stadium), stadium: stadium);
+    final text = r.labelOn(stadium: stadium);
+    // A Stadium rank known only by its rating already reads “段位分 N”.
+    final base = r.skillRating == null || (stadium && r.tier == null)
         ? text
         : tr.shell.rankWithRating(text, fmtInt(r.skillRating));
     final detail = otherRoles
@@ -180,7 +181,9 @@ class RankBadge extends StatelessWidget {
             const SizedBox(width: 3),
             // The division is the number inside the tier; showing it keeps ranks comparable at a glance.
             Text(
-              showText ? text : (r.divisionOrRating?.toString() ?? ''),
+              showText
+                  ? text
+                  : (r.divisionOrRating(stadium: stadium)?.toString() ?? ''),
               style: Ty.num(Ty.cell).copyWith(fontWeight: FontWeight.w600),
             ),
           ],

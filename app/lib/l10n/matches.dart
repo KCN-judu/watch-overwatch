@@ -213,4 +213,9 @@ class MatchStrings {
   String get stadiumCash => '局内货币';
   String get power => '异能';
   String get item => '装备';
+
+  /// The tag on a Stadium power or item card: its kind (异能, or the item's 武器 / 技能 /
+  /// 生存 category) and rarity when known: 武器 · 史诗.
+  String upgradeTag(String kind, String? rarity) =>
+      rarity == null ? kind : '$kind · $rarity';
 }

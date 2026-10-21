@@ -158,7 +158,8 @@ class CoreStrings {
 
   // ---- rank tiers ----
 
-  /// Provider tier keys to the game's own tier names.
+  /// Provider tier keys to the normal ladder's names. The catalog's names win when it has
+  /// them (`Catalog.rankName`); these are the same names for an older service.
   Map<String, String> get tiers => const {
     'Bronze': '青铜',
     'Silver': '白银',
@@ -168,6 +169,20 @@ class CoreStrings {
     'Diamond': '钻石',
     'Master': '大师',
     'Grandmaster': '宗师',
-    'Champion': '冠军',
+    'Champion': '英杰',
   };
+
+  /// The Stadium ladder's own tier names (it has no 翡翠 and no 英杰).
+  Map<String, String> get tiersStadium => const {
+    'Bronze': '菜鸟',
+    'Silver': '新秀',
+    'Gold': '斗士',
+    'Platinum': '精英',
+    'Diamond': '专家',
+    'Master': '全明星',
+    'Grandmaster': '传奇',
+  };
+
+  /// A rank known only by its rating (Stadium ratings are not turned into tiers).
+  String ratingOnly(String rating) => '段位分 $rating';
 }

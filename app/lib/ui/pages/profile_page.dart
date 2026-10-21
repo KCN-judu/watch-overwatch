@@ -182,8 +182,10 @@ class ProfilePage extends StatelessWidget {
                 const [],
             rowLabel: (r) => tr.heroes.careerRowLabel(
               r.role.label,
-              r.current?.label ?? tr.common.unranked,
-              r.peak?.label ?? tr.common.unranked,
+              r.current?.labelOn(stadium: mode == Mode.stadium) ??
+                  tr.common.unranked,
+              r.peak?.labelOn(stadium: mode == Mode.stadium) ??
+                  tr.common.unranked,
               fmtInt(r.matches),
               fmtPct(r.winRatePct),
             ),

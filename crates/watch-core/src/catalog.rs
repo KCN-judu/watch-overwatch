@@ -109,12 +109,18 @@ impl Catalog {
         Some(known.to_owned())
     }
     fn icons_from(raw: &Value) -> Value {
-        let tiers = |key: &str| -> serde_json::Map<String, Value> {
+        let tiers = |key: &str, field: &str| -> serde_json::Map<String, Value> {
             raw[key]
                 .as_array()
                 .into_iter()
                 .flatten()
-                .filter_map(|r| Some((r["key"].as_str()?.to_owned(), r["icon"].clone())))
+                .filter_map(|r| {
+                    let value = match field {
+                        "name" => json!(clean_name(r[field].as_str()?)?),
+                        _ => r[field].clone(),
+                    };
+                    Some((r["key"].as_str()?.to_owned(), value))
+                })
                 .collect()
         };
         // Perk icons by `0x…` id, from the shared list and the per-hero list.
@@ -138,8 +144,12 @@ impl Catalog {
         }
         json!({
             "perks": perks,
-            "ranks": tiers("rankList"),
-            "ranks_stadium": tiers("rankListFight"),
+            "ranks": tiers("rankList", "icon"),
+            "ranks_stadium": tiers("rankListFight", "icon"),
+            // The provider's own tier names: 英杰 for the top normal tier, and the Stadium
+            // ladder's own names (菜鸟 … 传奇), which differ from the normal ones.
+            "rank_names": tiers("rankList", "name"),
+            "rank_names_stadium": tiers("rankListFight", "name"),
             "endorsement": raw["appreciationLevelIcon"],
         })
     }
@@ -309,6 +319,36 @@ impl Catalog {
             EntityKind::StadiumUpgrade => self.index().upgrades.get(&official_id(guid)?).cloned(),
         }
     }
+    /// Stadium powers and items by `0x…` id: name, picture, description (with the game's
+    /// `[ability]` and `{value}` markup), category (异能 / 武器 / 技能 / 生存) and rarity.
+    pub fn stadium_upgrades(&self) -> Value {
+        let mut out = serde_json::Map::new();
+        for upgrade in self
+            .mod_traits
+            .as_object()
+            .into_iter()
+            .flat_map(|o| o.values())
+            .filter_map(Value::as_array)
+            .flatten()
+        {
+            let Some(id) = upgrade["id"]
+                .as_str()
+                .map(|s| s.to_ascii_uppercase().replacen("0X", "0x", 1))
+            else {
+                continue;
+            };
+            out.entry(id).or_insert_with(|| {
+                json!({
+                    "name": upgrade["name"].as_str().and_then(clean_name),
+                    "icon": upgrade["icon"].as_str().filter(|u| u.starts_with("https://")),
+                    "desc": upgrade["desc"].as_str().and_then(clean_name),
+                    "category": upgrade["category"],
+                    "level": upgrade["level"].as_str().filter(|s| !s.is_empty()),
+                })
+            });
+        }
+        Value::Object(out)
+    }
     /// True for `特色数据` (hero-specific) stats, false for `通用数据`.
     pub fn stat_is_hero_specific(&self, guid: &str) -> Option<bool> {
         self.index().stats.get(&official_id(guid)?).map(|s| s.1)
@@ -371,5 +411,54 @@ impl Catalog {
             }
             index
         })
+    }
+}
+
+/// A provider string with stray invisible characters removed (`全明星` arrives as
+/// `全明星\u{200C}`), trimmed; `None` when nothing is left.
+fn clean_name(s: &str) -> Option<String> {
+    let cleaned: String = s
+        .chars()
+        .filter(|c| !matches!(c, '\u{200B}'..='\u{200F}' | '\u{2060}' | '\u{FEFF}'))
+        .collect();
+    let cleaned = cleaned.trim();
+    (!cleaned.is_empty()).then(|| cleaned.to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn invisible_characters_are_dropped_from_names() {
+        assert_eq!(clean_name("全明星\u{200C}").as_deref(), Some("全明星"));
+        assert_eq!(clean_name(" 英杰 ").as_deref(), Some("英杰"));
+        assert_eq!(clean_name("\u{200B}"), None);
+    }
+
+    #[test]
+    fn the_bundled_catalog_names_both_ladders() {
+        let c = Catalog::bundled();
+        let names = &c.icons["rank_names"];
+        assert_eq!(names["Champion"], "英杰");
+        assert_eq!(names["Emerald"], "翡翠");
+        let stadium = &c.icons["rank_names_stadium"];
+        assert_eq!(stadium["Bronze"], "菜鸟");
+        assert_eq!(stadium["Master"], "全明星");
+        assert_eq!(stadium["Grandmaster"], "传奇");
+        assert!(stadium.get("Emerald").is_none());
+    }
+
+    #[test]
+    fn stadium_upgrades_carry_picture_and_description() {
+        let all = Catalog::bundled().stadium_upgrades();
+        let all = all.as_object().unwrap();
+        assert!(all.len() > 900);
+        let with_icon = all.values().filter(|u| u["icon"].is_string()).count();
+        assert_eq!(with_icon, all.len());
+        let one = &all["0x0CC800000000099B"];
+        assert_eq!(one["name"], "邪恶飞翼");
+        assert_eq!(one["category"], "生存");
+        assert!(one["desc"].as_str().unwrap().contains("幽灵形态"));
     }
 }

@@ -46,7 +46,28 @@
 |---|---|
 | `cargo xtask sync-assets` | 把 `resources/game/` 复制进 `app/assets/game/`，并登记到 `app/pubspec.yaml` |
 | `cargo xtask slim-catalog <完整文件> <输出文件>` | 把完整的 `query_tool.json` 精简成程序读取的快照 |
+| `cargo xtask update-catalog <目录>` | 用下载到 `<目录>` 的大神线上配置重建内置快照（见下） |
 | `cargo xtask package` | 把 `cargo build --release -p watchd` 和 `flutter build windows --release` 的产物打成 `dist\watch-overwatch-v<版本>-windows-x64.zip`，并写出 `.sha256` |
+
+### 更新内置目录
+
+内置快照 `crates/watch-core/data/query_tool.min.json` 来自网易大神公开的配置文件。英雄、地图、段位名称和图标、角斗领域的异能与装备都在里面。大神更新后（新英雄、新地图、改名、换图），按下面的步骤更新：
+
+```powershell
+$dir = "$env:TEMP\ds_ow"; New-Item -ItemType Directory -Force $dir | Out-Null
+foreach ($f in 'ow_record_query_tool','ow_hero_config','ow_map_config','ow_record_query_tool_mod_trait','ow_hero_attr','ow_perk_list') {
+  Invoke-WebRequest "https://s.166.net/config/ds_ow/$f.json" -OutFile "$dir\$f.json"
+}
+cargo xtask update-catalog $dir
+```
+
+`update-catalog` 不联网，合并规则和大神自己的查询工具一致：
+
+- 先取 `ow_record_query_tool.json`，去掉其中由其他文件提供的部分。
+- 再合并另外五个文件：英雄、地图、异能与装备、统计项、威能。
+- `seasonList` 没有线上文件提供，沿用现有快照里的。
+
+合并后精简，覆盖快照。改完运行 `cargo test`，并看一下 `git diff` 里有哪些变化。
 
 ## 文档站
 
