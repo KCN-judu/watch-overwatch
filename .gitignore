@@ -29,3 +29,6 @@ Thumbs.db
 
 # Release packages
 /dist/
+
+# Claude Code local settings
+/.claude/
