@@ -141,15 +141,21 @@ const _tierBases = [
   ('Champion', 4500),
 ];
 
-/// `2350` → `白金 2`. Null when the rating is outside the ladder.
-String? ratingLabel(num? skillRating) {
+/// `2350` → `('Platinum', 2)`. Null when the rating is outside the ladder.
+(String, int)? ratingTier(num? skillRating) {
   if (skillRating == null || skillRating < 500) return null;
   var tier = _tierBases.first;
   for (final t in _tierBases) {
     if (skillRating >= t.$2) tier = t;
   }
   final step = ((skillRating - tier.$2) / 100).floor().clamp(0, 4);
-  return tr.core.rank(_tierZh[tier.$1]!, 5 - step);
+  return (tier.$1, 5 - step);
+}
+
+/// `2350` → `白金 2`. Null when the rating is outside the ladder.
+String? ratingLabel(num? skillRating) {
+  final t = ratingTier(skillRating);
+  return t == null ? null : tr.core.rank(_tierZh[t.$1]!, t.$2);
 }
 
 class Rank {
@@ -165,6 +171,14 @@ class Rank {
     _i(j['skill_rating']),
   );
   static Rank? opt(Object? v) => _o(v) == null ? null : Rank.fromJson(_o(v)!);
+
+  /// The provider's tier key, or the one the rating falls in when only a rating is
+  /// known (a rank borrowed from another role), so the emblem can still be shown.
+  String? get tierKey => tier ?? ratingTier(skillRating)?.$1;
+
+  /// The division, worked out from the rating the same way when the provider gave none.
+  int? get divisionOrRating =>
+      division ?? (tier == null ? ratingTier(skillRating)?.$2 : null);
 
   /// Tier and division from the provider; falls back to the rating's own position on the ladder.
   String get label {
