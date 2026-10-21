@@ -436,6 +436,7 @@ class PlayerProfile {
       bnetId = _s(j['bnet_id']),
       avatarUrl = _s(j['avatar_url']),
       title = _s(j['title']),
+      titleIconUrl = _s(j['title_icon_url']),
       endorsementLevel = _i(j['endorsement_level']),
       playTimeHours = _d(j['play_time_hours']),
       totalMatches = _i(j['total_matches']),
@@ -443,6 +444,9 @@ class PlayerProfile {
       suspensionExpiresMs = _i(_o(j['suspension'])?['expires_at_ms']),
       suspended = _o(j['suspension']) != null;
   final String? name, bnetId, avatarUrl, title;
+
+  /// The title's own picture, when the provider has one.
+  final String? titleIconUrl;
   final int? endorsementLevel, totalMatches;
   final double? playTimeHours;
   final bool suspended;

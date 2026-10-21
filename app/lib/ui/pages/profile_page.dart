@@ -7,6 +7,7 @@ import '../../core/support.dart';
 import '../../design/cards.dart';
 import '../../design/data_table.dart';
 import '../../design/icons.dart';
+import '../../design/net_pic.dart';
 import '../../state/match_view.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
@@ -61,6 +62,12 @@ class ProfilePage extends StatelessWidget {
         const SizedBox(height: Sp.betweenGroups),
         _FactCard(
           title: tr.heroes.identity,
+          icons: {
+            tr.heroes.title: p.titleIconUrl,
+            tr.heroes.endorsement: app.catalog.endorsementIcon(
+              p.endorsementLevel,
+            ),
+          },
           facts: [
             (tr.heroes.battleTag, p.name ?? ws.name),
             (tr.heroes.playerId, p.bnetId ?? missing),
@@ -234,9 +241,16 @@ class ProfilePage extends StatelessWidget {
 /// Read-only facts as label-over-value blocks in one card: grouped by the card,
 /// scanned as a row instead of a two-column list with a wide empty right half.
 class _FactCard extends StatelessWidget {
-  const _FactCard({required this.title, required this.facts});
+  const _FactCard({
+    required this.title,
+    required this.facts,
+    this.icons = const {},
+  });
   final String title;
   final List<(String, String)> facts;
+
+  /// Picture shown before a fact's value, by the fact's label (from the image cache).
+  final Map<String, String?> icons;
   @override
   Widget build(BuildContext context) {
     final c = context.c;
@@ -265,7 +279,26 @@ class _FactCard extends StatelessWidget {
                         style: Ty.meta.copyWith(color: c.textSecondary),
                       ),
                       const SizedBox(height: 2),
-                      SelectableText(f.$2, style: Ty.num(Ty.title)),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (icons[f.$1] case final url?) ...[
+                            NetPic(
+                              url,
+                              width: 22,
+                              height: 22,
+                              error: const SizedBox.shrink(),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          Flexible(
+                            child: SelectableText(
+                              f.$2,
+                              style: Ty.num(Ty.title),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

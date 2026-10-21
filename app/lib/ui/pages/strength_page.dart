@@ -330,9 +330,10 @@ class _StrengthPageState extends State<StrengthPage> {
       tooltip: tr.analysis.sideMeanTip(label),
       width: 104,
       numeric: true,
-      cell: (_, g) {
+      cell: (context, g) {
         final v = pick(g).slot(g.subjectRole);
-        return tipped(v, Text(_fmt(v)));
+        // In tier mode the badge carries its own tooltip (tier and rating).
+        return _tiers ? _rankCell(context, v) : tipped(v, Text(_fmt(v)));
       },
     );
     return AppTable<StrengthGroup>(
@@ -398,7 +399,7 @@ class _StrengthPageState extends State<StrengthPage> {
           width: 92,
           numeric: true,
           tooltip: tr.analysis.lobbyTip,
-          cell: (_, g) => Text(_fmt(g.lobby.slot(g.subjectRole))),
+          cell: (context, g) => _rankCell(context, g.lobby.slot(g.subjectRole)),
         ),
         Col(
           id: 'all',
@@ -505,7 +506,8 @@ class _StrengthPageState extends State<StrengthPage> {
             _slotName(s),
             overall: s == null,
           ),
-          cell: (_, m) => _bold(m, s, valueOf(m.ally.mean, s)),
+          cell: (context, m) =>
+              _rankCell(context, m.ally.mean.slot(s), strong: _played(m, s)),
         ),
         Col(
           id: 'e${s?.id}',
@@ -517,7 +519,8 @@ class _StrengthPageState extends State<StrengthPage> {
             _slotName(s),
             overall: s == null,
           ),
-          cell: (_, m) => _bold(m, s, valueOf(m.enemy.mean, s)),
+          cell: (context, m) =>
+              _rankCell(context, m.enemy.mean.slot(s), strong: _played(m, s)),
         ),
       ],
       Col(
@@ -558,12 +561,28 @@ class _StrengthPageState extends State<StrengthPage> {
     );
   }
 
-  Widget _bold(MatchStrength m, Role? slot, String text) => Text(
-    text,
-    style: slot != null && slot == m.subjectRole
-        ? const TextStyle(fontWeight: FontWeight.w600)
-        : null,
-  );
+  /// The column is the role the player played in this match (drawn bold).
+  bool _played(MatchStrength m, Role? slot) =>
+      slot != null && slot == m.subjectRole;
+
+  /// One rating cell: the tier emblem and division (as the team tables show ranks) in
+  /// tier mode, the rating number otherwise. Emblems come from the shared image cache.
+  Widget _rankCell(BuildContext context, double? v, {bool strong = false}) {
+    if (_tiers && v != null && ratingTier(v) != null) {
+      final app = AppScope.of(context);
+      return RankBadge(
+        Rank(null, null, null, v.round()),
+        catalog: app.catalog,
+        // Stadium lobbies are rated on the Stadium ladder, which has its own emblems.
+        stadium: app.mode == Mode.stadium,
+        size: 18,
+      );
+    }
+    return Text(
+      _fmt(v),
+      style: strong ? const TextStyle(fontWeight: FontWeight.w600) : null,
+    );
+  }
 }
 
 class _Controls extends StatelessWidget {
