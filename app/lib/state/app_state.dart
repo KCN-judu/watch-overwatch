@@ -726,6 +726,8 @@ class AppState extends ChangeNotifier {
     try {
       players = await api.players();
       catalog = Catalog(await api.catalog());
+      // Ranks name their tiers from the catalog (the provider's own names).
+      rankNames = catalog.rankName;
       // Fill the picture cache in the background; screens show skeletons until then.
       unawaited(ImageStore.instance.preload(catalog.preloadUrls()));
       await refreshServer();

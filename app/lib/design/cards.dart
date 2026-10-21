@@ -242,6 +242,7 @@ class InfoCard extends StatelessWidget {
     this.asset,
     this.iconUrl,
     this.glyph,
+    this.tintIcon = true,
   });
   final String name;
   final String description;
@@ -251,6 +252,10 @@ class InfoCard extends StatelessWidget {
 
   /// A built-in glyph, for things that have no picture of their own.
   final IconData? glyph;
+
+  /// Draw [iconUrl] in the text colour (white silhouettes such as perks); off for
+  /// pictures in their own colours (Stadium powers and items).
+  final bool tintIcon;
 
   final Color accent;
 
@@ -277,8 +282,8 @@ class InfoCard extends StatelessWidget {
                 iconUrl!,
                 width: 48,
                 height: 48,
-                color: c.textPrimary,
-                blend: BlendMode.srcIn,
+                color: tintIcon ? c.textPrimary : null,
+                blend: tintIcon ? BlendMode.srcIn : null,
                 error: const SizedBox(width: 48, height: 48),
               ),
             )

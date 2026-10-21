@@ -36,7 +36,7 @@ Invoke-RestMethod http://127.0.0.1:18180/api/player/growth -Method Post -Headers
 | `GET /api/progress?id=…` | 一次采集的实时进度 |
 | `GET /api/cache`、`POST /api/cache/clear` | 查看、清除本机保存的对局和段位（`matches.db`、`ratings.db`） |
 | `POST /api/player/export` | 导出数据集 |
-| `GET /api/catalog` | 目录（英雄、地图、统计项、威能、段位图标） |
+| `GET /api/catalog` | 目录（英雄、地图、统计项、威能、段位图标与名称；`stadium_upgrades`：角斗领域的异能与装备，按 `0x…` 编号给出名称、图标、说明、分类和稀有度） |
 | `POST /api/request` | 白名单内的原始接口转发（调试用） |
 
 ### 视图（`/api/player/view`）

@@ -244,8 +244,12 @@ class _TrendPageState extends State<TrendPage> {
         role: p.role.label,
         matches: fmtInt(p.matches),
         winRate: fmtPct(p.winRatePct),
-        current: p.current?.label ?? tr.common.unranked,
-        peak: p.peak?.label ?? tr.common.unranked,
+        current:
+            p.current?.labelOn(stadium: p.mode == Mode.stadium) ??
+            tr.common.unranked,
+        peak:
+            p.peak?.labelOn(stadium: p.mode == Mode.stadium) ??
+            tr.common.unranked,
       ),
     );
   }
@@ -342,7 +346,11 @@ class _RoleChart extends StatelessWidget {
                       ? tr.analysis.noData
                       : tr.analysis.seasonPointNote(
                           fmtInt(mine[s]!.matches),
-                          mine[s]!.current?.label ?? tr.common.unranked,
+                          mine[s]!.current?.labelOn(
+                                stadium:
+                                    AppScope.of(context).mode == Mode.stadium,
+                              ) ??
+                              tr.common.unranked,
                         ),
               ],
               valueFormat: (x) =>

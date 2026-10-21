@@ -6,13 +6,35 @@ import 'package:intl/intl.dart';
 import '../l10n/strings.dart';
 import 'models.dart';
 
-// ---- Catalog: images only. Names always come from the IR. ------------------
+// ---- Catalog: images, rank tier names and Stadium upgrade details. Hero, map and stat
+// names always come from the IR. ---------------------------------------------
+
+/// A Stadium power or item as the catalog describes it.
+class StadiumUpgrade {
+  const StadiumUpgrade({
+    this.name,
+    this.icon,
+    this.description,
+    this.category,
+    this.rarity,
+  });
+  final String? name, icon, category, rarity;
+
+  /// The game's own text, with its `[ability]` and `{value}` marks; see [plainText].
+  final String? description;
+
+  /// [description] with the marks taken off: `[幽灵形态]` → `幽灵形态`, `{20%}` → `20%`.
+  String? get plainText => description?.replaceAll(RegExp(r'[\[\]{}]'), '');
+}
 
 class Catalog {
   Catalog(Json? raw)
     : _heroes = (raw?['heroes'] as Map?)?.cast<String, dynamic>() ?? const {},
       _maps = (raw?['maps'] as Map?)?.cast<String, dynamic>() ?? const {},
-      _icons = (raw?['icons'] as Map?)?.cast<String, dynamic>() ?? const {} {
+      _icons = (raw?['icons'] as Map?)?.cast<String, dynamic>() ?? const {},
+      _upgrades =
+          (raw?['stadium_upgrades'] as Map?)?.cast<String, dynamic>() ??
+          const {} {
     for (final s in (raw?['statistics'] as List? ?? const [])) {
       if (s is! Map) continue;
       final hero = '${s['heroGuid']}', guid = '${s['valueGuid']}';
@@ -26,6 +48,7 @@ class Catalog {
   final Map<String, dynamic> _heroes;
   final Map<String, dynamic> _maps;
   final Map<String, dynamic> _icons;
+  final Map<String, dynamic> _upgrades;
   bool get isEmpty => _heroes.isEmpty && _maps.isEmpty;
 
   String? _https(Object? v) =>
@@ -92,6 +115,29 @@ class Catalog {
     if (tier == null) return null;
     final table = _icons[stadium ? 'ranks_stadium' : 'ranks'];
     return table is Map ? _https(table[tier]) : null;
+  }
+
+  /// The provider's name for a tier (`Champion` → 英杰). Stadium has its own names
+  /// (菜鸟 … 传奇). Null when the catalog has none (an older service).
+  String? rankName(String tier, {bool stadium = false}) {
+    final table = _icons[stadium ? 'rank_names_stadium' : 'rank_names'];
+    final name = table is Map ? table[tier] : null;
+    return name is String && name.isNotEmpty ? name : null;
+  }
+
+  /// A Stadium power or item, looked up by its `0x…` id.
+  StadiumUpgrade? stadiumUpgrade(EntityRef? upgrade) {
+    final u = _upgrades[upgrade?.officialId];
+    if (u is! Map) return null;
+    String? s(String k) =>
+        u[k] is String && (u[k] as String).isNotEmpty ? u[k] as String : null;
+    return StadiumUpgrade(
+      name: s('name'),
+      icon: _https(u['icon']),
+      description: s('desc'),
+      category: s('category'),
+      rarity: s('level'),
+    );
   }
 
   /// Pictures the first screens need: hero icons and portraits, rank and honour badges.

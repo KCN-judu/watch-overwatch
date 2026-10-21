@@ -314,18 +314,11 @@ class PlayerDetailPage extends StatelessWidget {
                   value: fmtInt(stadium.worth),
                   accent: heroColor,
                 ),
-                for (final e in stadium.powers)
-                  InfoCard(
-                    name: e.label,
-                    tag: tr.matches.power,
-                    accent: heroColor,
-                  ),
-                for (final e in stadium.items)
-                  InfoCard(
-                    name: e.label,
-                    tag: tr.matches.item,
-                    accent: heroColor,
-                  ),
+                for (final (e, kind) in [
+                  for (final e in stadium.powers) (e, tr.matches.power),
+                  for (final e in stadium.items) (e, tr.matches.item),
+                ])
+                  _upgradeCard(catalog, e, kind, heroColor),
               ]),
             ],
             const SizedBox(height: Sp.betweenSections),
@@ -334,4 +327,23 @@ class PlayerDetailPage extends StatelessWidget {
       },
     );
   }
+}
+
+/// One Stadium power or item: its picture (in its own colours), kind and rarity, and
+/// the game's description, from the catalog. Only the name when the catalog lacks it.
+Widget _upgradeCard(
+  Catalog catalog,
+  EntityRef upgrade,
+  String kind,
+  Color accent,
+) {
+  final u = catalog.stadiumUpgrade(upgrade);
+  return InfoCard(
+    name: u?.name ?? upgrade.label,
+    description: u?.plainText ?? '',
+    tag: tr.matches.upgradeTag(u?.category ?? kind, u?.rarity),
+    iconUrl: u?.icon,
+    tintIcon: false,
+    accent: accent,
+  );
 }

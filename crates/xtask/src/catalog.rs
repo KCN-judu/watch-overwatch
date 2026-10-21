@@ -64,11 +64,11 @@ pub fn slim(full: &Value) -> anyhow::Result<Value> {
         ),
         "modTrait": pick_each_in_map(
             required(full, "modTrait")?,
-            &["heroId", "id", "name", "category", "level"],
+            &["heroId", "id", "name", "category", "level", "icon", "desc"],
         ),
         "seasonList": or(full, "seasonList", json!({})),
-        "rankList": pick_each(&or(full, "rankList", json!([])), &["key", "icon", "level"]),
-        "rankListFight": pick_each(&or(full, "rankListFight", json!([])), &["key", "icon"]),
+        "rankList": pick_each(&or(full, "rankList", json!([])), &["key", "name", "icon", "level"]),
+        "rankListFight": pick_each(&or(full, "rankListFight", json!([])), &["key", "name", "icon"]),
         "appreciationLevelIcon": or(full, "appreciationLevelIcon", json!({})),
         "AIEvaluateConfig": or(full, "AIEvaluateConfig", json!([])),
     }))
@@ -80,6 +80,63 @@ fn size(v: &Value) -> usize {
         Value::Object(o) => o.len(),
         _ => 0,
     }
+}
+
+/// The files NetEase publishes under `https://s.166.net/config/ds_ow/`, by the section
+/// each one fills; the base file (`ow_record_query_tool.json`) holds everything else.
+pub const LIVE_SECTIONS: [(&str, &str); 5] = [
+    ("heroList", "ow_hero_config.json"),
+    ("mapList", "ow_map_config.json"),
+    ("modTrait", "ow_record_query_tool_mod_trait.json"),
+    ("heroAttrList", "ow_hero_attr.json"),
+    ("heroPerkList", "ow_perk_list.json"),
+];
+pub const LIVE_BASE: &str = "ow_record_query_tool.json";
+
+/// Sections no live file provides, kept from the current snapshot.
+const KEPT_SECTIONS: [&str; 1] = ["seasonList"];
+
+/// The full catalog from the live files, merged as the provider's own query tool does
+/// (and Overstats after it): the base file without its sections, plus each section
+/// file; `kept` supplies the sections no file provides.
+pub fn merge_live(base: &Value, sections: &[(&str, Value)], kept: &Value) -> anyhow::Result<Value> {
+    let mut merged = Map::new();
+    for (k, v) in base.as_object().context("the base file is not an object")? {
+        if !LIVE_SECTIONS.iter().any(|(s, _)| s == k) && !KEPT_SECTIONS.contains(&k.as_str()) {
+            merged.insert(k.clone(), v.clone());
+        }
+    }
+    for (key, value) in sections {
+        merged.insert((*key).to_owned(), value.clone());
+    }
+    for key in KEPT_SECTIONS {
+        if let Some(v) = kept.get(key) {
+            merged.insert(key.to_owned(), v.clone());
+        }
+    }
+    Ok(Value::Object(merged))
+}
+
+/// Rebuilds `target` (the bundled snapshot) from the live files downloaded into `dir`.
+pub fn update_file(dir: &Path, target: &Path) -> anyhow::Result<()> {
+    let read = |name: &str| -> anyhow::Result<Value> {
+        let path = dir.join(name);
+        serde_json::from_slice(
+            &std::fs::read(&path).with_context(|| format!("cannot read {}", path.display()))?,
+        )
+        .with_context(|| format!("{} is not JSON", path.display()))
+    };
+    let base = read(LIVE_BASE)?;
+    let sections = LIVE_SECTIONS
+        .iter()
+        .map(|(key, file)| Ok((*key, read(file)?)))
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    let kept: Value =
+        serde_json::from_slice(&std::fs::read(target).unwrap_or_default()).unwrap_or(Value::Null);
+    let merged = merge_live(&base, &sections, &kept)?;
+    let source = dir.join("merged.json");
+    std::fs::write(&source, serde_json::to_vec(&merged)?)?;
+    slim_file(&source, target)
 }
 
 /// Reads `source`, slims it and writes the compact result to `target`.
@@ -128,6 +185,21 @@ mod tests {
         assert!(out["mapList"][0].get("internalFlag").is_none());
         assert!(out.get("somethingElse").is_none());
         assert_eq!(out, slim(&bundled()).unwrap());
+    }
+
+    #[test]
+    fn live_files_merge_into_one_catalog() {
+        let base = json!({
+            "rankList": [{"key": "Champion", "name": "英杰"}],
+            "heroList": ["stale, replaced by the section file"],
+            "seasonList": {"1": {}},
+        });
+        let sections = [("heroList", json!([{"name": "雾子"}]))];
+        let kept = json!({"seasonList": {"25": {}}});
+        let merged = merge_live(&base, &sections, &kept).unwrap();
+        assert_eq!(merged["rankList"][0]["name"], "英杰");
+        assert_eq!(merged["heroList"], json!([{"name": "雾子"}]));
+        assert_eq!(merged["seasonList"], json!({"25": {}}));
     }
 
     #[test]

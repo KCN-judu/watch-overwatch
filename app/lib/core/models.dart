@@ -127,8 +127,18 @@ class EntityRef {
       );
 }
 
-/// Provider tier key (`Platinum`) to its display name, from the string table.
-Map<String, String> get _tierZh => tr.core.tiers;
+/// The catalog's tier names (`Catalog.rankName`), installed when the catalog loads; a
+/// rank names itself without a catalog at hand.
+String? Function(String tier, {bool stadium})? rankNames;
+
+/// Display name of a tier: the catalog's (the provider's own), else the string table's
+/// copy of the same names. Stadium has its own ladder with its own names.
+String? tierName(String tier, {bool stadium = false}) =>
+    rankNames?.call(tier, stadium: stadium) ??
+    (stadium ? tr.core.tiersStadium : tr.core.tiers)[tier];
+
+/// The normal ladder's tier floors. Stadium ratings are on a scale of their own that
+/// has not been checked against real data, so no tier is worked out from them.
 const _tierBases = [
   ('Bronze', 500),
   ('Silver', 1000),
@@ -152,10 +162,12 @@ const _tierBases = [
   return (tier.$1, 5 - step);
 }
 
-/// `2350` → `白金 2`. Null when the rating is outside the ladder.
-String? ratingLabel(num? skillRating) {
-  final t = ratingTier(skillRating);
-  return t == null ? null : tr.core.rank(_tierZh[t.$1]!, t.$2);
+/// `2350` → `白金 2`. Null when the rating is outside the ladder, and for Stadium
+/// ratings (see [_tierBases]).
+String? ratingLabel(num? skillRating, {bool stadium = false}) {
+  final t = stadium ? null : ratingTier(skillRating);
+  final name = t == null ? null : tierName(t.$1);
+  return name == null ? null : tr.core.rank(name, t!.$2);
 }
 
 class Rank {
@@ -174,18 +186,27 @@ class Rank {
 
   /// The provider's tier key, or the one the rating falls in when only a rating is
   /// known (a rank borrowed from another role), so the emblem can still be shown.
-  String? get tierKey => tier ?? ratingTier(skillRating)?.$1;
+  /// Stadium ranks only use the provider's key.
+  String? tierKey({bool stadium = false}) =>
+      tier ?? (stadium ? null : ratingTier(skillRating)?.$1);
 
   /// The division, worked out from the rating the same way when the provider gave none.
-  int? get divisionOrRating =>
-      division ?? (tier == null ? ratingTier(skillRating)?.$2 : null);
+  int? divisionOrRating({bool stadium = false}) =>
+      division ??
+      (tier == null && !stadium ? ratingTier(skillRating)?.$2 : null);
 
-  /// Tier and division from the provider; falls back to the rating's own position on the ladder.
-  String get label {
-    if (tier != null && _tierZh[tier] != null) {
-      return tr.core.rank(_tierZh[tier]!, division);
+  /// On the normal ladder: 白金 2, 英杰 1. On the Stadium ladder: 精英 3, 传奇 1.
+  String get label => labelOn();
+
+  /// [label] on the given ladder. Tier and division from the provider; else the
+  /// rating's place on the normal ladder; a Stadium rank with only a rating shows it.
+  String labelOn({bool stadium = false}) {
+    final name = tier == null ? null : tierName(tier!, stadium: stadium);
+    if (name != null) return tr.core.rank(name, division);
+    if (stadium && skillRating != null) {
+      return tr.core.ratingOnly(skillRating.toString());
     }
-    return ratingLabel(skillRating) ?? tr.common.unranked;
+    return ratingLabel(skillRating, stadium: stadium) ?? tr.common.unranked;
   }
 }
 

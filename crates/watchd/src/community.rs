@@ -81,7 +81,7 @@ async fn fetch(url: &str, html: bool) -> Result<Value, Failure> {
 }
 pub(crate) async fn catalog(State(s): State<AppState>) -> Json<Value> {
     Json(
-        json!({"heroes":s.catalog.heroes,"maps":s.catalog.maps,"statistics":s.catalog.statistics,"perks":s.catalog.perks,"hero_config":s.catalog.hero_config,"current_season":s.catalog.current_season,"icons":s.catalog.icons}),
+        json!({"heroes":s.catalog.heroes,"maps":s.catalog.maps,"statistics":s.catalog.statistics,"perks":s.catalog.perks,"hero_config":s.catalog.hero_config,"current_season":s.catalog.current_season,"icons":s.catalog.icons,"stadium_upgrades":s.catalog.stadium_upgrades()}),
     )
 }
 #[derive(Deserialize)]

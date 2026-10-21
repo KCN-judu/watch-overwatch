@@ -325,9 +325,15 @@ class _RankLine extends StatelessWidget {
                   ? tr.shell.noRoleRankThisSeason(r.label)
                   : tr.shell.roleRank(
                       r.label,
-                      rc.current?.label ?? tr.common.unranked,
+                      rc.current?.labelOn(
+                            stadium: AppScope.of(context).mode == Mode.stadium,
+                          ) ??
+                          tr.common.unranked,
                       fmtInt(rc.current?.skillRating),
-                      rc.peak?.label ?? tr.common.missing,
+                      rc.peak?.labelOn(
+                            stadium: AppScope.of(context).mode == Mode.stadium,
+                          ) ??
+                          tr.common.missing,
                       fmtInt(rc.matches),
                     );
               return Tooltip(

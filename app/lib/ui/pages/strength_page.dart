@@ -42,7 +42,13 @@ class _StrengthPageState extends State<StrengthPage> {
 
   String _fmt(double? v) {
     if (v == null) return missing;
-    return _tiers ? (ratingLabel(v) ?? missing) : fmtInt(v);
+    return _tiers
+        ? (ratingLabel(
+                v,
+                stadium: AppScope.read(context).mode == Mode.stadium,
+              ) ??
+              missing)
+        : fmtInt(v);
   }
 
   @override
@@ -315,7 +321,14 @@ class _StrengthPageState extends State<StrengthPage> {
     Widget tipped(double? v, Widget child) => v == null
         ? child
         : Tooltip(
-            message: tr.analysis.ratingTip(fmtInt(v), ratingLabel(v) ?? ''),
+            message: tr.analysis.ratingTip(
+              fmtInt(v),
+              ratingLabel(
+                    v,
+                    stadium: AppScope.of(context).mode == Mode.stadium,
+                  ) ??
+                  '',
+            ),
             child: child,
           );
     Col<StrengthGroup> side(
@@ -980,8 +993,10 @@ class _ChartSection extends StatelessWidget {
       for (final m in shown) fmtDateTime(m.startedAtMs).substring(0, 5),
     };
     final sameDay = days.length == 1;
-    String axisFmt(double v) =>
-        tiers ? (ratingLabel(v) ?? fmtInt(v)) : fmtInt(v);
+    String axisFmt(double v) => tiers
+        ? (ratingLabel(v, stadium: AppScope.of(context).mode == Mode.stadium) ??
+              fmtInt(v))
+        : fmtInt(v);
     final summary = known == 0
         ? tr.analysis.chartNoData(name)
         : tr.analysis.chartSummary(
