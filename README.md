@@ -72,12 +72,13 @@ cargo xtask package
 
 把 `target\release\watchd.exe` 和 `app\build\windows\x64\runner\Release\` 里的 `watch-overwatch.exe`、`flutter_windows.dll`、`data\` 放在同一个目录即可运行。
 
-验证：
+验证（与 CI `.github/workflows/ci.yml` 相同，PR 和推送到 `main` 时自动运行；推送 `v*` 标签时还会打包并附到 GitHub Release）：
 
 ```powershell
-cargo test --all-targets
+cargo fmt --all --check
 cargo clippy --all-targets -- -D warnings
-cd app; flutter analyze; flutter test
+cargo test --all-targets
+cd app; dart format --output=none --set-exit-if-changed lib test; flutter analyze; flutter test
 ```
 
 ## 命令行

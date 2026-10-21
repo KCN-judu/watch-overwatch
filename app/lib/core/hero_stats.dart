@@ -69,8 +69,9 @@ class HeroStats {
     }
     for (final v in [...h.perMatch, ...h.per10min]) {
       final n = v.stat.name;
-      if (n != null)
+      if (n != null) {
         byGuid.putIfAbsent(v.stat.guid, () => HeroStatRow(v.stat.guid, n));
+      }
     }
 
     final pm = {for (final v in h.perMatch) v.stat.guid: v.value};

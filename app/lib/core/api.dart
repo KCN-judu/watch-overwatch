@@ -176,7 +176,7 @@ class Api {
       'view': 'profile',
       'mode': mode.provider,
       'fresh': fresh,
-      if (season != null) 'season': season,
+      'season': ?season,
     });
     return CareerSnapshot((j['ir'] as Map).cast<String, dynamic>());
   }
@@ -211,7 +211,7 @@ class Api {
       'view': 'history',
       'mode': mode.provider,
       'fresh': fresh,
-      if (endSeason != null) 'season': endSeason,
+      'season': ?endSeason,
       if (endSeason != null)
         'start_season': (endSeason - count + 1).clamp(1, 100),
     });

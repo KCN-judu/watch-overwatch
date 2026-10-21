@@ -411,8 +411,9 @@ class _HeaderCell<T> extends StatelessWidget {
         ],
       ),
     );
-    if (col.tooltip != null)
+    if (col.tooltip != null) {
       child = Tooltip(message: col.tooltip!, child: child);
+    }
     return Semantics(
       header: true,
       button: onTap != null,

@@ -31,10 +31,11 @@ class ProfilePage extends StatelessWidget {
       );
     }
     final data = load.value;
-    if (data == null)
+    if (data == null) {
       return const AfterDelay(
         child: Center(child: RefreshingChip(label: '正在读取档案…')),
       );
+    }
     final p = data.profile;
     final career = data.career(mode);
     final scale = math.max(
