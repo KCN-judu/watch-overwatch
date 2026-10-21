@@ -126,8 +126,9 @@ class _CardListState<T> extends State<CardList<T>> {
     final extent = widget.itemExtent * scale;
     return LayoutBuilder(
       builder: (context, box) {
-        if (widget.loading && widget.rows.isEmpty)
+        if (widget.loading && widget.rows.isEmpty) {
           return _Skeleton(extent: extent);
+        }
         if (widget.rows.isEmpty) return widget.empty ?? const SizedBox.shrink();
         final viewport = box.maxHeight;
         return Semantics(

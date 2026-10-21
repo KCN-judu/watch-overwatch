@@ -650,3 +650,450 @@ pub fn fleta(final_blows: Option<f64>, team_total: f64) -> Option<f64> {
         .filter(|_| team_total > 0.0)
         .map(|f| f / (team_total * 0.5) * 100.0)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const HOUR: i64 = 3_600_000;
+
+    fn row(id: &str, at: Option<i64>, outcome: Outcome, stats: StatLine) -> MatchSummary {
+        MatchSummary {
+            id: id.into(),
+            started_at_ms: at,
+            kind: MatchKind {
+                mode: Mode::Quick,
+                queue: Queue::RoleQueue,
+                ranked: None,
+                provider_mode: None,
+                instance_type: None,
+            },
+            outcome,
+            map: None,
+            hero: None,
+            role: Role::Support,
+            score: Score::default(),
+            stats,
+            highlights: None,
+            rank: None,
+            hero_icon_url: None,
+        }
+    }
+
+    fn timed(id: &str, at: i64, outcome: Outcome) -> MatchSummary {
+        row(id, Some(at), outcome, StatLine::default())
+    }
+
+    fn kda(k: f64, a: f64, d: f64) -> StatLine {
+        StatLine {
+            kills: Some(k),
+            assists: Some(a),
+            deaths: Some(d),
+            ..StatLine::default()
+        }
+    }
+
+    fn player(name: &str, subject: bool, stats: StatLine) -> Participant {
+        Participant {
+            name: Some(name.into()),
+            bnet_id: Some(format!("{name}#1")),
+            is_subject: subject,
+            hero: None,
+            hero_icon_url: None,
+            role: Role::Damage,
+            stats,
+            rank: None,
+            career_rank: None,
+            career_other_roles: false,
+            fleta: None,
+            perks: Vec::new(),
+            party_bnet_ids: Vec::new(),
+            endorsed_by_bnet_ids: Vec::new(),
+            suspended: false,
+            stadium: None,
+        }
+    }
+
+    fn detail(
+        id: &str,
+        outcome: Outcome,
+        allies: Vec<Participant>,
+        enemies: Vec<Participant>,
+    ) -> MatchDetail {
+        MatchDetail {
+            id: id.into(),
+            mode: Mode::Quick,
+            map: None,
+            outcome,
+            outcome_source: OutcomeSource::Provider,
+            started_at_ms: Some(0),
+            duration_s: None,
+            score: Score::default(),
+            bans: Bans::default(),
+            subject_heroes: Vec::new(),
+            allies,
+            enemies,
+            rounds: Vec::new(),
+        }
+    }
+
+    fn damage(v: f64) -> StatLine {
+        StatLine {
+            damage: Some(v),
+            ..StatLine::default()
+        }
+    }
+
+    #[test]
+    fn win_rate_leaves_out_draws_and_unknown_results() {
+        let mut r = Record::default();
+        for o in [
+            Outcome::Win,
+            Outcome::Loss,
+            Outcome::Draw,
+            Outcome::Unknown,
+            Outcome::Win,
+        ] {
+            r.add(o);
+        }
+        assert_eq!(
+            (r.matches, r.wins, r.losses, r.draws, r.unknown),
+            (5, 2, 1, 1, 1)
+        );
+        assert!((r.win_rate_pct.unwrap() - 200.0 / 3.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn no_decided_match_means_no_win_rate() {
+        let mut r = Record::default();
+        r.add(Outcome::Draw);
+        assert_eq!(r.win_rate_pct, None);
+    }
+
+    #[test]
+    fn means_divide_by_the_matches_that_supplied_the_stat() {
+        // A missing damage value is not a zero: the mean is over the two that have one.
+        let rows = [
+            row("a", Some(1), Outcome::Win, damage(1000.0)),
+            row("b", Some(2), Outcome::Win, StatLine::default()),
+            row("c", Some(3), Outcome::Loss, damage(3000.0)),
+        ];
+        let agg = aggregate(&rows);
+        assert_eq!(agg.totals.damage, Some(4000.0));
+        assert_eq!(agg.per_match.damage, Some(2000.0));
+        assert_eq!(agg.samples.get("damage"), Some(&2));
+        assert_eq!(agg.per_match.healing, None);
+        assert!(!agg.samples.contains_key("healing"));
+    }
+
+    #[test]
+    fn kda_uses_only_matches_with_all_three_counts() {
+        let partial = StatLine {
+            kills: Some(50.0),
+            ..StatLine::default()
+        };
+        let rows = [
+            row("a", Some(1), Outcome::Win, kda(6.0, 4.0, 2.0)),
+            row("b", Some(2), Outcome::Win, partial),
+            row("c", Some(3), Outcome::Win, kda(2.0, 0.0, 2.0)),
+        ];
+        assert_eq!(aggregate(&rows).kda, Some(3.0));
+    }
+
+    #[test]
+    fn kda_is_unknown_without_any_death() {
+        let rows = [row("a", Some(1), Outcome::Win, kda(6.0, 4.0, 0.0))];
+        assert_eq!(aggregate(&rows).kda, None);
+    }
+
+    #[test]
+    fn streaks_follow_start_time_not_input_order() {
+        // Chronologically W W W L L: best win 3, best loss 2, ending on a two-loss streak.
+        let rows = [
+            timed("l2", 5, Outcome::Loss),
+            timed("w1", 1, Outcome::Win),
+            timed("l1", 4, Outcome::Loss),
+            timed("w3", 3, Outcome::Win),
+            timed("w2", 2, Outcome::Win),
+        ];
+        let agg = aggregate(&rows);
+        assert_eq!(agg.streaks.best_win, 3);
+        assert_eq!(agg.streaks.best_loss, 2);
+        assert_eq!(agg.streaks.current, -2);
+        assert_eq!((agg.first_ms, agg.last_ms), (Some(1), Some(5)));
+    }
+
+    #[test]
+    fn a_draw_breaks_both_streaks() {
+        let rows = [
+            timed("a", 1, Outcome::Win),
+            timed("b", 2, Outcome::Draw),
+            timed("c", 3, Outcome::Win),
+        ];
+        let agg = aggregate(&rows);
+        assert_eq!(agg.streaks.best_win, 1);
+        assert_eq!(agg.streaks.current, 1);
+    }
+
+    #[test]
+    fn breakdown_puts_the_largest_group_first_and_keeps_unknown_heroes_apart() {
+        let hero = |guid: &str| Some(EntityRef::new(EntityKind::Hero, guid, Some(guid.into())));
+        let mut rows = vec![
+            timed("a", 1, Outcome::Win),
+            timed("b", 2, Outcome::Win),
+            timed("c", 3, Outcome::Loss),
+            timed("d", 4, Outcome::Loss),
+        ];
+        rows[0].hero = hero("1");
+        rows[1].hero = hero("2");
+        rows[2].hero = hero("2");
+        let groups = breakdown(&rows, Dimension::Hero);
+        assert_eq!(groups.len(), 3);
+        assert_eq!(groups[0].label.as_deref(), Some("2"));
+        assert_eq!(groups[0].aggregate.record.matches, 2);
+        let unknown = groups.iter().find(|g| g.key == "unknown").unwrap();
+        assert_eq!(unknown.label, None);
+        assert_eq!(unknown.aggregate.record.matches, 1);
+    }
+
+    #[test]
+    fn breakdown_by_role_carries_the_chinese_label() {
+        let groups = breakdown(&[timed("a", 1, Outcome::Win)], Dimension::Role);
+        assert_eq!(groups[0].key, "support");
+        assert_eq!(groups[0].label.as_deref(), Some("支援"));
+    }
+
+    #[test]
+    fn calendar_days_follow_the_clock_offset() {
+        // 2026-01-02 00:00 at UTC+08 is 2026-01-01 16:00 UTC.
+        let midnight_local = 1_767_283_200_000;
+        let clock = Clock {
+            now_ms: midnight_local + HOUR / 2,
+            utc_offset_minutes: 8 * 60,
+        };
+        let just_after = Some(midnight_local + 60_000);
+        let just_before = Some(midnight_local - 60_000);
+        assert!(Window::Today.contains(clock, just_after));
+        assert!(!Window::Today.contains(clock, just_before));
+        assert!(Window::Yesterday.contains(clock, just_before));
+        assert!(!Window::Yesterday.contains(clock, Some(midnight_local - 24 * HOUR - 1)));
+        assert!(Window::Week.contains(clock, just_before));
+        assert!(!Window::Week.contains(clock, None));
+        assert!(Window::All.contains(clock, None));
+    }
+
+    #[test]
+    fn window_names_parse() {
+        assert_eq!(Window::parse("recent"), Some(Window::All));
+        assert_eq!(Window::parse("week"), Some(Window::Week));
+        assert_eq!(Window::parse("month"), None);
+    }
+
+    #[test]
+    fn sessions_split_on_long_gaps_newest_first() {
+        let rows = [
+            timed("a", 0, Outcome::Win),
+            timed("b", HOUR, Outcome::Loss),
+            timed("c", 10 * HOUR, Outcome::Win),
+            row("untimed", None, Outcome::Win, StatLine::default()),
+        ];
+        let s = sessions(&rows, 5 * HOUR);
+        assert_eq!(s.len(), 2);
+        assert_eq!(s[0].match_ids, ["c"]);
+        assert_eq!(s[1].match_ids, ["a", "b"]);
+        assert_eq!(s[1].start_ms, 0);
+        assert_eq!(s[1].last_start_ms, HOUR);
+        assert_eq!(s[1].aggregate.record.losses, 1);
+    }
+
+    #[test]
+    fn hours_are_local_and_all_present() {
+        let clock = Clock {
+            now_ms: 0,
+            utc_offset_minutes: 8 * 60,
+        };
+        // 16:00 UTC is midnight at UTC+08.
+        let buckets = by_hour(&[timed("a", 16 * HOUR, Outcome::Win)], clock);
+        assert_eq!(buckets.len(), 24);
+        assert_eq!(buckets[0].record.wins, 1);
+        assert_eq!(buckets.iter().map(|b| b.record.matches).sum::<usize>(), 1);
+    }
+
+    #[test]
+    fn rank_timeline_is_chronological_and_skips_untimed_or_unranked_rows() {
+        let rank = |sr| Rank {
+            tier: Some("Gold".into()),
+            division: Some(3),
+            score: None,
+            skill_rating: Some(sr),
+            at_ms: None,
+        };
+        let mut late = timed("late", 2, Outcome::Win);
+        late.rank = Some(rank(1800));
+        let mut early = timed("early", 1, Outcome::Win);
+        early.rank = Some(rank(1700));
+        let mut untimed = row("x", None, Outcome::Win, StatLine::default());
+        untimed.rank = Some(rank(1));
+        let unranked = timed("y", 3, Outcome::Win);
+        let points = rank_timeline(&[late, untimed, early, unranked]);
+        let ids: Vec<&str> = points.iter().map(|p| p.match_id.as_str()).collect();
+        assert_eq!(ids, ["early", "late"]);
+        assert_eq!(points[1].skill_rating, Some(1800));
+    }
+
+    #[test]
+    fn common_matches_are_shared_ids_once_each() {
+        let a = [
+            timed("1", 1, Outcome::Win),
+            timed("2", 2, Outcome::Win),
+            timed("2", 2, Outcome::Win),
+            timed("", 3, Outcome::Win),
+        ];
+        let b = [timed("2", 2, Outcome::Loss), timed("", 3, Outcome::Loss)];
+        let common = common_matches(&a, &b);
+        assert_eq!(common.len(), 1);
+        assert_eq!(common[0].id, "2");
+        // The subject's side of the shared match is kept.
+        assert_eq!(common[0].outcome, Outcome::Win);
+    }
+
+    #[test]
+    fn team_share_is_the_subjects_part_of_their_own_team() {
+        let d = detail(
+            "m",
+            Outcome::Win,
+            vec![
+                player("me", true, damage(6000.0)),
+                player("mate", false, damage(4000.0)),
+            ],
+            vec![player("foe", false, damage(99_999.0))],
+        );
+        let s = team_share(&d).unwrap();
+        assert_eq!(s.share.damage, Some(0.6));
+        assert!(s.team_best.damage);
+        assert!(!s.team_best.healing);
+    }
+
+    #[test]
+    fn ties_and_zeros_for_team_best() {
+        let tied = detail(
+            "m",
+            Outcome::Win,
+            vec![
+                player("me", true, damage(5000.0)),
+                player("mate", false, damage(5000.0)),
+            ],
+            Vec::new(),
+        );
+        assert!(team_share(&tied).unwrap().team_best.damage);
+        let zeros = detail(
+            "m",
+            Outcome::Win,
+            vec![
+                player("me", true, damage(0.0)),
+                player("mate", false, damage(0.0)),
+            ],
+            Vec::new(),
+        );
+        let s = team_share(&zeros).unwrap();
+        assert!(!s.team_best.damage);
+        assert_eq!(s.share.damage, None);
+    }
+
+    #[test]
+    fn team_share_needs_the_subject() {
+        let d = detail(
+            "m",
+            Outcome::Win,
+            vec![player("mate", false, damage(1.0))],
+            Vec::new(),
+        );
+        assert_eq!(team_share(&d), None);
+        assert_eq!(team_share_summary([&d]).matches, 0);
+    }
+
+    #[test]
+    fn team_share_summary_counts_team_best_matches() {
+        let won = detail(
+            "a",
+            Outcome::Win,
+            vec![
+                player("me", true, damage(6000.0)),
+                player("mate", false, damage(4000.0)),
+            ],
+            Vec::new(),
+        );
+        let lost = detail(
+            "b",
+            Outcome::Loss,
+            vec![
+                player("me", true, damage(2000.0)),
+                player("mate", false, damage(8000.0)),
+            ],
+            Vec::new(),
+        );
+        let s = team_share_summary([&won, &lost]);
+        assert_eq!(s.matches, 2);
+        assert!((s.mean_share.damage.unwrap() - 0.4).abs() < 1e-9);
+        assert_eq!(s.team_best_counts.get("damage"), Some(&1));
+        assert_eq!(s.team_best_counts.get("kills"), Some(&0));
+    }
+
+    #[test]
+    fn companions_count_sides_and_parties() {
+        let mut me = player("me", true, StatLine::default());
+        me.party_bnet_ids = vec!["duo#1".into()];
+        let mut details = BTreeMap::new();
+        details.insert(
+            "a".into(),
+            detail(
+                "a",
+                Outcome::Win,
+                vec![me.clone(), player("duo", false, StatLine::default())],
+                vec![player("rival", false, StatLine::default())],
+            ),
+        );
+        details.insert(
+            "b".into(),
+            detail(
+                "b",
+                Outcome::Loss,
+                vec![me, player("duo", false, StatLine::default())],
+                vec![player("once", false, StatLine::default())],
+            ),
+        );
+        let found = companions(&details, 2);
+        assert_eq!(found.len(), 1);
+        let duo = &found[0];
+        assert_eq!(duo.name.as_deref(), Some("duo"));
+        assert_eq!((duo.as_ally.wins, duo.as_ally.losses), (1, 1));
+        assert_eq!(duo.as_enemy.matches, 0);
+        assert_eq!(duo.in_party, 2);
+        assert_eq!(companions(&details, 1).len(), 3);
+    }
+
+    #[test]
+    fn fleta_is_final_blows_over_half_the_team() {
+        assert_eq!(fleta(Some(5.0), 10.0), Some(100.0));
+        assert_eq!(fleta(Some(2.0), 10.0), Some(40.0));
+        assert_eq!(fleta(None, 10.0), None);
+        assert_eq!(fleta(Some(0.0), 0.0), None);
+    }
+
+    #[test]
+    fn attach_fleta_works_per_team() {
+        let fb = |v| StatLine {
+            final_blows: Some(v),
+            ..StatLine::default()
+        };
+        let mut d = detail(
+            "m",
+            Outcome::Win,
+            vec![player("me", true, fb(3.0)), player("mate", false, fb(3.0))],
+            vec![player("foe", false, fb(10.0))],
+        );
+        attach_fleta(&mut d);
+        assert_eq!(d.allies[0].fleta, Some(100.0));
+        assert_eq!(d.enemies[0].fleta, Some(200.0));
+    }
+}

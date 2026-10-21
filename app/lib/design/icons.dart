@@ -142,8 +142,9 @@ class RankBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final r = rank;
-    if (r == null)
+    if (r == null) {
       return Text(missing, style: Ty.cell.copyWith(color: c.textSecondary));
+    }
     final url = catalog.rankIcon(r.tier, stadium: stadium);
     final text = r.label;
     final base = r.skillRating == null
@@ -154,11 +155,12 @@ class RankBadge extends StatelessWidget {
         : current
         ? '当前竞技段位（不是这场比赛时的）：$base'
         : base;
-    if (url == null)
+    if (url == null) {
       return Tooltip(
         message: detail,
         child: Text(text, style: Ty.cell),
       );
+    }
     return Tooltip(
       message: detail,
       child: Semantics(
@@ -235,8 +237,9 @@ class HeroPortrait extends StatelessWidget {
   final String name;
   @override
   Widget build(BuildContext context) {
-    if (url == null)
+    if (url == null) {
       return NetImage(null, size: width, fallback: name, radius: 8);
+    }
     return Semantics(
       label: '$name 立绘',
       image: true,

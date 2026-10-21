@@ -779,8 +779,9 @@ class AnalysisProgress {
 
   /// Seconds left in the current phase, once a few items are done.
   int? get remainingSeconds {
-    if (total <= 0 || done < 2 || done >= total || phaseSince == null)
+    if (total <= 0 || done < 2 || done >= total || phaseSince == null) {
       return null;
+    }
     final spent = DateTime.now().difference(phaseSince!).inMilliseconds;
     return (spent / done * (total - done) / 1000).round();
   }

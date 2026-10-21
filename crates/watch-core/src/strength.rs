@@ -306,3 +306,244 @@ pub fn rating_tier(skill_rating: f64) -> Option<(&'static str, u8)> {
         .clamp(0.0, 4.0) as u8;
     Some((tier, 5 - steps))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rank(sr: i64) -> Rank {
+        Rank {
+            tier: None,
+            division: None,
+            score: None,
+            skill_rating: Some(sr),
+            at_ms: None,
+        }
+    }
+
+    fn player(id: &str, role: Role, in_match: Option<i64>) -> Participant {
+        Participant {
+            name: None,
+            bnet_id: Some(id.into()),
+            is_subject: false,
+            hero: None,
+            hero_icon_url: None,
+            role,
+            stats: StatLine::default(),
+            rank: in_match.map(rank),
+            career_rank: None,
+            career_other_roles: false,
+            fleta: None,
+            perks: Vec::new(),
+            party_bnet_ids: Vec::new(),
+            endorsed_by_bnet_ids: Vec::new(),
+            suspended: false,
+            stadium: None,
+        }
+    }
+
+    fn subject(role: Role) -> Participant {
+        Participant {
+            is_subject: true,
+            ..player("me", role, None)
+        }
+    }
+
+    fn detail(
+        id: &str,
+        at: i64,
+        mode: Mode,
+        outcome: Outcome,
+        allies: Vec<Participant>,
+        enemies: Vec<Participant>,
+    ) -> MatchDetail {
+        MatchDetail {
+            id: id.into(),
+            mode,
+            map: None,
+            outcome,
+            outcome_source: OutcomeSource::Provider,
+            started_at_ms: Some(at),
+            duration_s: None,
+            score: Score::default(),
+            bans: Bans::default(),
+            subject_heroes: Vec::new(),
+            allies,
+            enemies,
+            rounds: Vec::new(),
+        }
+    }
+
+    fn rating(id: &str, roles: &[(Role, Option<u32>, i64)]) -> PlayerRating {
+        PlayerRating {
+            bnet_id: id.into(),
+            name: None,
+            roles: roles
+                .iter()
+                .map(|&(role, season, sr)| RoleRating {
+                    role,
+                    season,
+                    rank: rank(sr),
+                })
+                .collect(),
+        }
+    }
+
+    fn strength(d: &MatchDetail, ratings: &[PlayerRating]) -> MatchStrength {
+        let by_id: HashMap<&str, &PlayerRating> =
+            ratings.iter().map(|r| (r.bnet_id.as_str(), r)).collect();
+        match_strength(d, &by_id)
+    }
+
+    #[test]
+    fn the_rank_in_the_match_wins_over_the_career_rank() {
+        let d = detail(
+            "m",
+            1,
+            Mode::Competitive,
+            Outcome::Win,
+            vec![subject(Role::Support), player("a", Role::Tank, Some(2400))],
+            Vec::new(),
+        );
+        let s = strength(&d, &[rating("a", &[(Role::Tank, None, 4000)])]);
+        assert_eq!(s.source, RatingSource::InMatch);
+        assert_eq!(s.ally.mean.tank, Some(2400.0));
+        assert_eq!(s.ally.rated.overall, 1);
+        assert_eq!(s.ally.players, 2);
+        assert_eq!(s.subject_role, Role::Support);
+    }
+
+    #[test]
+    fn career_ranks_fill_in_and_other_roles_are_counted() {
+        let d = detail(
+            "m",
+            1,
+            Mode::Quick,
+            Outcome::Win,
+            vec![
+                player("a", Role::Damage, None),
+                player("b", Role::Damage, None),
+            ],
+            vec![player("c", Role::Support, None)],
+        );
+        let ratings = [
+            rating("a", &[(Role::Damage, None, 3000)]),
+            // No damage rank: the higher of this season's other ranks.
+            rating(
+                "b",
+                &[(Role::Tank, None, 2000), (Role::Support, None, 2600)],
+            ),
+        ];
+        let s = strength(&d, &ratings);
+        assert_eq!(s.source, RatingSource::Career);
+        assert_eq!(s.ally.mean.damage, Some(2800.0));
+        assert_eq!(s.ally.min.damage, Some(2600.0));
+        assert_eq!(s.ally.max.damage, Some(3000.0));
+        assert_eq!(s.ally.other_role, 1);
+        assert_eq!(s.enemy.rated.overall, 0);
+        assert_eq!(s.enemy.mean.overall, None);
+        assert_eq!(s.diff.overall, None);
+    }
+
+    #[test]
+    fn mixed_sources_and_the_ally_minus_enemy_difference() {
+        let d = detail(
+            "m",
+            1,
+            Mode::Quick,
+            Outcome::Loss,
+            vec![player("a", Role::Tank, Some(2000))],
+            vec![player("b", Role::Tank, None)],
+        );
+        let s = strength(&d, &[rating("b", &[(Role::Tank, None, 2500)])]);
+        assert_eq!(s.source, RatingSource::Mixed);
+        assert_eq!(s.diff.tank, Some(-500.0));
+        assert_eq!(s.lobby.overall, Some(2250.0));
+        assert_eq!(s.lobby.support, None);
+    }
+
+    #[test]
+    fn current_season_rank_is_preferred_over_an_older_one() {
+        let r = rating(
+            "a",
+            &[(Role::Tank, Some(20), 4000), (Role::Tank, None, 2100)],
+        );
+        assert_eq!(
+            r.rating_for(Role::Tank),
+            Some((2100.0, RatingFit::SameRole))
+        );
+        let old_only = rating("a", &[(Role::Support, Some(20), 1800)]);
+        assert_eq!(
+            old_only.rating_for(Role::Damage),
+            Some((1800.0, RatingFit::OtherRoles))
+        );
+        assert_eq!(r.rating_for(Role::Unknown), None);
+    }
+
+    #[test]
+    fn unrated_matches_stay_as_gaps_but_do_not_count_in_groups() {
+        let mut details = BTreeMap::new();
+        details.insert(
+            "rated".into(),
+            detail(
+                "rated",
+                2,
+                Mode::Quick,
+                Outcome::Win,
+                vec![subject(Role::Tank), player("a", Role::Tank, Some(3000))],
+                vec![player("b", Role::Tank, Some(2000))],
+            ),
+        );
+        details.insert(
+            "blank".into(),
+            detail(
+                "blank",
+                3,
+                Mode::Quick,
+                Outcome::Loss,
+                vec![subject(Role::Tank)],
+                vec![player("c", Role::Tank, None)],
+            ),
+        );
+        let out = lobby_strength(&details, &[]);
+        let ids: Vec<&str> = out.matches.iter().map(|m| m.match_id.as_str()).collect();
+        assert_eq!(ids, ["blank", "rated"]);
+        assert_eq!(out.matches[0].source, RatingSource::None);
+        assert_eq!(out.by_mode.len(), 1);
+        assert_eq!(out.by_mode[0].record.matches, 1);
+        assert_eq!(out.by_mode[0].diff.overall, Some(1000.0));
+        assert_eq!(out.by_subject_role.len(), 1);
+        assert_eq!(out.by_subject_role[0].subject_role, Some(Role::Tank));
+    }
+
+    #[test]
+    fn modes_are_never_mixed() {
+        let mut details = BTreeMap::new();
+        for (id, mode) in [("q", Mode::Quick), ("s", Mode::Stadium)] {
+            details.insert(
+                id.into(),
+                detail(
+                    id,
+                    1,
+                    mode,
+                    Outcome::Win,
+                    vec![subject(Role::Damage), player("a", Role::Damage, Some(2000))],
+                    Vec::new(),
+                ),
+            );
+        }
+        let out = lobby_strength(&details, &[]);
+        let modes: Vec<Mode> = out.by_mode.iter().map(|g| g.mode).collect();
+        assert_eq!(modes, [Mode::Quick, Mode::Stadium]);
+        assert!(out.by_mode.iter().all(|g| g.record.matches == 1));
+    }
+
+    #[test]
+    fn ratings_map_to_tiers_and_divisions() {
+        assert_eq!(rating_tier(2350.0), Some(("Platinum", 2)));
+        assert_eq!(rating_tier(2000.0), Some(("Platinum", 5)));
+        assert_eq!(rating_tier(2499.0), Some(("Platinum", 1)));
+        assert_eq!(rating_tier(5000.0), Some(("Champion", 1)));
+        assert_eq!(rating_tier(499.0), None);
+    }
+}

@@ -913,8 +913,9 @@ class AppState extends ChangeNotifier {
     final jobs = <Future<void>>[];
     final m = ws.matchesFor(mode);
     if (!m.has && !m.loading) jobs.add(ws.loadMatches(mode));
-    if (!ws.competitive.has && !ws.competitive.loading)
+    if (!ws.competitive.has && !ws.competitive.loading) {
       jobs.add(ws.loadCompetitive());
+    }
     if (tab == 'trend') {
       final t = ws.trendFor(mode);
       if (!t.has && !t.loading) jobs.add(ws.loadTrend(mode));

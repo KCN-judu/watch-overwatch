@@ -145,7 +145,7 @@ class _StrengthPageState extends State<StrengthPage> {
 
     final byMode = lobby.byMode.where((g) => g.mode == mode).firstOrNull;
     final groups = [
-      if (byMode != null) byMode,
+      ?byMode,
       ...lobby.bySubjectRole.where((g) => g.mode == mode),
     ];
     final chronological = lobby.matches.reversed
@@ -700,8 +700,9 @@ class _Running extends StatelessWidget {
           ? (done ? 1.0 : null)
           : (here.done / here.total).clamp(0.0, 1.0);
       String count = '';
-      if (here != null && here.total > 0)
+      if (here != null && here.total > 0) {
         count = '${here.done} / ${here.total}';
+      }
       // Step 0 is the client's own: it picks matches from those already read.
       if (index == 0 && done) {
         count = '已选 ${workspace.strengthSelected[mode] ?? 0} 场';

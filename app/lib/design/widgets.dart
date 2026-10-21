@@ -28,8 +28,9 @@ ButtonStyle buttonStyle(
     ),
     elevation: const WidgetStatePropertyAll(0),
     backgroundColor: WidgetStateProperty.resolveWith((s) {
-      if (s.contains(WidgetState.disabled))
+      if (s.contains(WidgetState.disabled)) {
         return primary ? c.border : Colors.transparent;
+      }
       if (primary) return c.accent;
       return quiet ? Colors.transparent : c.raised;
     }),
@@ -44,8 +45,9 @@ ButtonStyle buttonStyle(
     ),
     side: WidgetStateProperty.resolveWith((s) {
       // Focus ring: 2px, drawn over every other state.
-      if (s.contains(WidgetState.focused))
+      if (s.contains(WidgetState.focused)) {
         return BorderSide(color: primary ? c.textPrimary : c.accent, width: 2);
+      }
       if (primary || quiet) return BorderSide.none;
       return BorderSide(color: c.border);
     }),

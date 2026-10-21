@@ -75,8 +75,9 @@ class TeamTable extends StatelessWidget {
 
     Widget total(double? Function(Participant) f) {
       final n = have(f);
-      if (n == 0)
+      if (n == 0) {
         return Text(missing, style: Ty.cell.copyWith(color: c.textSecondary));
+      }
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -169,8 +170,9 @@ class TeamTable extends StatelessWidget {
             p.stats.kills == null &&
             p.stats.assists == null &&
             p.stats.deaths == null,
-      ))
+      )) {
         return missing;
+      }
       return '${fmtInt(sum((p) => p.stats.kills))}/${fmtInt(sum((p) => p.stats.assists))}/${fmtInt(sum((p) => p.stats.deaths))}';
     }
 
@@ -181,11 +183,12 @@ class TeamTable extends StatelessWidget {
         width: 220,
         flex: true,
         cell: (_, l) {
-          if (l.isTotal)
+          if (l.isTotal) {
             return Text(
               '$title合计',
               style: const TextStyle(fontWeight: FontWeight.w600),
             );
+          }
           final p = l.player!;
           final (name, tag) = splitTag(p.name ?? '未知玩家');
           final role = p.role.playableOr(catalog.heroRole(p.hero));
