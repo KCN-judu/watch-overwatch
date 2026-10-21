@@ -3,7 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'data_table.dart' show keyboardModality;
+import '../l10n/strings.dart';
+import 'interaction.dart';
 import 'tokens.dart';
 
 class ChartSeries {
@@ -170,7 +171,7 @@ class _LineChartState extends State<LineChart> {
         height: widget.height,
         child: Center(
           child: Text(
-            '没有可绘制的数据',
+            tr.shell.chartNoData,
             style: Ty.body.copyWith(color: c.textSecondary),
           ),
         ),
@@ -256,12 +257,7 @@ class _LineChartState extends State<LineChart> {
                     child: Container(
                       height: widget.height,
                       decoration: _focus.hasFocus && keyboardModality
-                          ? BoxDecoration(
-                              border: Border.all(color: c.accent, width: 2),
-                              borderRadius: BorderRadius.circular(
-                                Radii.control,
-                              ),
-                            )
+                          ? BoxDecoration(border: c.itemOutline(focused: true))
                           : null,
                       child: CustomPaint(
                         size: Size(box.maxWidth, widget.height),
@@ -294,8 +290,11 @@ class _LineChartState extends State<LineChart> {
             children: [
               Text(
                 truncated
-                    ? '纵轴范围 ${axisFmt(axis.min)}–${axisFmt(axis.max)}，不从 0 开始。'
-                    : '纵轴从 0 开始。',
+                    ? tr.shell.axisTruncated(
+                        axisFmt(axis.min),
+                        axisFmt(axis.max),
+                      )
+                    : tr.shell.axisFromZero,
                 style: Ty.meta.copyWith(color: c.textSecondary),
               ),
               if (widget.hollowMeaning != null)
@@ -314,9 +313,7 @@ class _LineChartState extends State<LineChart> {
                   style: Ty.meta.copyWith(color: c.textSecondary),
                 ),
               Text(
-                _perSeries
-                    ? '移到己方或对方的点上看这一队的详情；键盘用 ←/→ 换场、↑/↓ 换队。'
-                    : '点击图表或用 ←/→ 查看每个点的精确值。',
+                _perSeries ? tr.shell.chartHintPerTeam : tr.shell.chartHint,
                 style: Ty.meta.copyWith(color: c.textSecondary),
               ),
             ],
@@ -670,7 +667,10 @@ class _LinePainter extends CustomPainter {
             final s = series[only];
             final v = s.values[i];
             return (
-              '${s.label}  ${v == null ? '无数据' : valueFormat(v)}',
+              tr.shell.chartValue(
+                s.label,
+                v == null ? tr.shell.chartValueMissing : valueFormat(v),
+              ),
               s.color,
               FontWeight.w600,
             );
@@ -679,7 +679,7 @@ class _LinePainter extends CustomPainter {
               i < series[only].counts!.length &&
               series[only].counts![i] != null)
             (
-              (countFormat ?? (n) => '$n 人')(series[only].counts![i]!),
+              (countFormat ?? tr.shell.playerCount)(series[only].counts![i]!),
               null,
               null,
             ),
@@ -689,29 +689,49 @@ class _LinePainter extends CustomPainter {
             (series[only].countNotes![i]!, null, null),
           if (series[only].values[i] != null && series[only].hasRange(i)) ...[
             (
-              '段位  ${valueFormat(series[only].lows![i]!)} – ${valueFormat(series[only].highs![i]!)}',
+              tr.shell.chartRankRange(
+                valueFormat(series[only].lows![i]!),
+                valueFormat(series[only].highs![i]!),
+              ),
               null,
               null,
             ),
             (
-              '分数  ${detail(series[only].lows![i]!)} – ${detail(series[only].highs![i]!)}',
+              tr.shell.chartSkillRatingRange(
+                detail(series[only].lows![i]!),
+                detail(series[only].highs![i]!),
+              ),
               null,
               null,
             ),
           ],
           if (series[only].values[i] != null)
-            ('平均  ${detail(series[only].values[i]!)}', null, null),
+            (tr.shell.chartMean(detail(series[only].values[i]!)), null, null),
         ] else
           for (final s in series) ...[
             (
-              '${s.label}  ${s.values[i] == null ? '无数据' : valueFormat(s.values[i]!)}',
+              tr.shell.chartValue(
+                s.label,
+                s.values[i] == null
+                    ? tr.shell.chartValueMissing
+                    : valueFormat(s.values[i]!),
+              ),
               s.color,
               FontWeight.w600,
             ),
             if (s.values[i] != null)
               (
                 s.hasRange(i)
-                    ? '    ${detailFormat != null ? '平均 ${detailFormat!(s.values[i]!)} · ' : ''}区间 ${(detailFormat ?? valueFormat)(s.lows![i]!)}–${(detailFormat ?? valueFormat)(s.highs![i]!)}'
+                    ? (detailFormat != null
+                          ? tr.shell.chartMeanAndRange(
+                              detailFormat!(s.values[i]!),
+                              detailFormat!(s.lows![i]!),
+                              detailFormat!(s.highs![i]!),
+                            )
+                          : tr.shell.chartRange(
+                              valueFormat(s.lows![i]!),
+                              valueFormat(s.highs![i]!),
+                            ))
                     : (detailFormat == null
                           ? ''
                           : '    ${detailFormat!(s.values[i]!)}'),

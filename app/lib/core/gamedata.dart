@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart' show Color;
 import 'package:flutter/services.dart' show rootBundle;
 
+import '../l10n/strings.dart';
+
 /// Hero reference data read from the installed game (see `docs/game-data.md`):
 /// abilities, perks and the subrole passive, in the CN client's wording.
 class GameAbility {
@@ -16,10 +18,10 @@ class GameAbility {
 
   /// How the game groups it; drives the order and the label.
   String get categoryLabel => switch (category) {
-    'UltimateAbility' => '终极技能',
-    'Weapon' => '武器',
-    'Ability' => '技能',
-    'PassiveAbility' => '被动',
+    'UltimateAbility' => tr.core.abilityUltimate,
+    'Weapon' => tr.core.abilityWeapon,
+    'Ability' => tr.core.abilityBasic,
+    'PassiveAbility' => tr.core.abilityPassive,
     _ => '',
   };
   int get order => switch (category) {
@@ -88,10 +90,16 @@ class GameData {
 
   static Future<GameData>? _loading;
 
+  /// The data once [load] has finished, for `initialData`: a page opened after that
+  /// draws in the hero's colours from its first frame instead of flashing the accent.
+  static GameData? loaded;
+
   /// Loaded once; the file is a few hundred KB.
   static Future<GameData> load() => _loading ??= () async {
     final raw = await rootBundle.loadString('assets/game/heroes.json');
     final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
-    return GameData._({for (final j in list) '${j['name']}': GameHero(j)});
+    return loaded = GameData._({
+      for (final j in list) '${j['name']}': GameHero(j),
+    });
   }();
 }

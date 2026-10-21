@@ -1,27 +1,92 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import 'icons.dart';
 import 'net_pic.dart';
 import 'tokens.dart';
+import 'widgets.dart' show ProgressLine;
 
-/// Section heading with an accent colour as a bar, optionally followed by an info tip.
-class AccentTitle extends StatelessWidget {
-  const AccentTitle(this.text, {super.key, required this.accent, this.info});
+/// The one section heading: a short bar, the title, an optional info tip and an
+/// optional control at the right end. The bar is the accent colour unless the section
+/// belongs to something with its own colour (a hero, a stat). Put
+/// [SectionHeader.below] between it and the section body.
+class SectionHeader extends StatelessWidget {
+  const SectionHeader(
+    this.text, {
+    super.key,
+    this.accent,
+    this.info,
+    this.trailing,
+  });
   final String text;
-  final Color accent;
+  final Color? accent;
   final String? info;
+  final Widget? trailing;
+
+  /// Space between a heading and its section; sections are [Sp.betweenSections] apart.
+  static const below = Sp.withinGroup;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(width: 4, height: 20, color: accent),
+        Container(width: 4, height: 20, color: accent ?? context.c.accent),
         const SizedBox(width: 10),
-        Semantics(header: true, child: Text(text, style: Ty.section)),
+        Flexible(
+          child: Semantics(header: true, child: Text(text, style: Ty.section)),
+        ),
         if (info != null) InfoTip(info!),
+        if (trailing != null) ...[const Spacer(), trailing!],
       ],
     );
   }
+}
+
+/// The one bordered container for a block of content: the raised surface, a 1px
+/// border, square corners (as cards have). Padding comes in three sizes.
+class Panel extends StatelessWidget {
+  const Panel({
+    super.key,
+    required this.child,
+    this.padding = PanelPadding.normal,
+    this.width,
+  });
+  final Widget child;
+  final PanelPadding padding;
+  final double? width;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Container(
+      width: width,
+      padding: padding.insets,
+      decoration: BoxDecoration(
+        color: c.raised,
+        border: Border.all(color: c.border),
+      ),
+      child: child,
+    );
+  }
+}
+
+enum PanelPadding {
+  /// Charts: tight at the sides so the plot gets the width, room above for labels.
+  chart(
+    EdgeInsets.fromLTRB(
+      Sp.withinGroup,
+      Sp.betweenGroups,
+      Sp.withinGroup,
+      Sp.withinGroup,
+    ),
+  ),
+  normal(EdgeInsets.all(Sp.betweenGroups)),
+
+  /// A panel that is the whole content of the page (an intro, a progress report).
+  spacious(EdgeInsets.all(Sp.betweenSections));
+
+  const PanelPadding(this.insets);
+  final EdgeInsets insets;
 }
 
 /// A titled block that folds away: the title row is a button with a chevron, and the
@@ -300,8 +365,8 @@ class PerkCard extends StatelessWidget {
   Widget build(BuildContext context) => InfoCard(
     name: name,
     tag: switch (level) {
-      1 => '一级威能',
-      2 => '二级威能',
+      1 => tr.shell.perkMinor,
+      2 => tr.shell.perkMajor,
       _ => null,
     },
     description: description,
@@ -346,15 +411,7 @@ class StatCard extends StatelessWidget {
           Text(value, style: Ty.num(Ty.figure)),
           if (share != null) ...[
             const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(2),
-              child: LinearProgressIndicator(
-                value: share!.clamp(0.0, 1.0),
-                minHeight: 4,
-                color: accent,
-                backgroundColor: c.border,
-              ),
-            ),
+            ProgressLine(value: share!.clamp(0.0, 1.0), color: accent),
           ],
           if (caption != null) ...[
             const SizedBox(height: 4),

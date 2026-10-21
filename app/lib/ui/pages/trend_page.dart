@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../../core/models.dart';
 import '../../core/support.dart';
+import '../../design/cards.dart';
 import '../../design/charts.dart';
 import '../../design/data_table.dart';
 import '../../design/icons.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
 import '../player_view.dart';
 
@@ -32,24 +34,27 @@ class _TrendPageState extends State<TrendPage> {
 
     if (load.failedWithoutData) {
       return ErrorPanel(
-        what: '无法读取往期赛季',
+        what: tr.analysis.trendFailed,
         error: load.error!,
         onRetry: () => ws.loadTrend(mode, fresh: true),
       );
     }
     final points = load.value ?? const <SeasonPoint>[];
     if (load.firstLoad || (!load.has && !load.loading)) {
-      return const AfterDelay(
-        child: Center(child: RefreshingChip(label: '正在读取往期赛季…')),
+      return AfterDelay(
+        child: Center(child: RefreshingChip(label: tr.analysis.trendLoading)),
       );
     }
     if (points.isEmpty) {
       return EmptyState(
         icon: Icons.timeline,
-        title: '没有往期${mode.label}记录',
-        body: '最近 6 个赛季没有${mode.label}的职责数据，可能没打过或资料为私密。',
+        title: tr.analysis.noPastSeasons(mode.label),
+        body: tr.analysis.noPastSeasonsBody(mode.label),
         actions: [
-          AppButton('重试', onPressed: () => ws.loadTrend(mode, fresh: true)),
+          AppButton(
+            tr.common.refresh,
+            onPressed: () => ws.loadTrend(mode, fresh: true),
+          ),
         ],
       );
     }
@@ -74,20 +79,25 @@ class _TrendPageState extends State<TrendPage> {
           children: [
             Semantics(
               header: true,
-              child: Text('${mode.label} · S$first–S$last', style: Ty.section),
+              child: Text(
+                tr.analysis.trendTitle(mode.label, first, last),
+                style: Ty.section,
+              ),
             ),
             if (range.length > 1)
               SegmentedBar<String>(
-                semanticLabel: '指标',
+                semanticLabel: tr.analysis.metricSemantic,
                 value: metric,
                 onChanged: (v) => setState(() => _metric = v),
                 segments: [
                   Segment(
                     'rank',
-                    '段位分',
-                    hint: hasRank ? '500–5000' : '${mode.label}没有段位',
+                    tr.analysis.ratingSegment,
+                    hint: hasRank
+                        ? tr.analysis.ratingSegmentHint
+                        : tr.analysis.noRanksIn(mode.label),
                   ),
-                  const Segment('win', '胜率'),
+                  Segment('win', tr.analysis.winRate),
                 ],
               ),
             LoadStatusBar(
@@ -100,9 +110,9 @@ class _TrendPageState extends State<TrendPage> {
             InfoTip(
               metric == 'rank'
                   ? (hasRank
-                        ? '三张图纵轴相同，可直接比较。实线是赛季末段位，虚线是该赛季最高段位。'
-                        : '${mode.label}不提供段位，请切换到胜率。')
-                  : '胜率 = 胜 ÷ （胜 + 负），纵轴 0–100%。没有数据的赛季线会断开。',
+                        ? tr.analysis.rankInfo
+                        : tr.analysis.noRankInfo(mode.label))
+                  : tr.analysis.winRateInfo,
             ),
           ],
         ),
@@ -119,7 +129,7 @@ class _TrendPageState extends State<TrendPage> {
           ),
           const SizedBox(height: Sp.withinGroup),
           Text(
-            '只读到 S$first 一个赛季，不画折线。',
+            tr.analysis.onlyOneSeason(first),
             style: Ty.meta.copyWith(color: context.c.textSecondary),
           ),
         ] else ...[
@@ -141,7 +151,7 @@ class _TrendPageState extends State<TrendPage> {
               ],
             ),
           const SizedBox(height: Sp.betweenSections),
-          Semantics(header: true, child: Text('各赛季数据', style: Ty.section)),
+          SectionHeader(tr.analysis.seasonsTitle),
           const SizedBox(height: Sp.withinGroup),
           SizedBox(
             height: _h(context, math.min(points.length, 14)),
@@ -168,17 +178,17 @@ class _TrendPageState extends State<TrendPage> {
         return s != 0 ? s : a.role.index.compareTo(b.role.index);
       });
     return AppTable<SeasonPoint>(
-      tableLabel: '各赛季各职责数据',
+      tableLabel: tr.analysis.seasonsTable,
       columns: [
         Col(
           id: 'season',
-          label: '赛季',
+          label: tr.analysis.seasonColumn,
           width: 84,
-          cell: (_, p) => Text('S${p.season ?? '?'}'),
+          cell: (_, p) => Text(tr.analysis.seasonShort(p.season)),
         ),
         Col(
           id: 'role',
-          label: '职责',
+          label: tr.analysis.roleColumn,
           width: 72,
           flex: true,
           tooltip: roleLegend,
@@ -186,14 +196,14 @@ class _TrendPageState extends State<TrendPage> {
         ),
         Col(
           id: 'matches',
-          label: '场次',
+          label: tr.analysis.matchesColumn,
           width: 64,
           numeric: true,
           cell: (_, p) => Text(fmtInt(p.matches)),
         ),
         Col(
           id: 'win',
-          label: '胜率',
+          label: tr.analysis.winRate,
           width: 76,
           numeric: true,
           cell: (_, p) => Text(fmtPct(p.winRatePct)),
@@ -207,7 +217,7 @@ class _TrendPageState extends State<TrendPage> {
         ),
         Col(
           id: 'cur',
-          label: '赛季末段位',
+          label: tr.analysis.seasonEndRank,
           width: 120,
           cell: (_, p) => RankBadge(
             p.current,
@@ -217,7 +227,7 @@ class _TrendPageState extends State<TrendPage> {
         ),
         Col(
           id: 'peak',
-          label: '最高段位',
+          label: tr.analysis.peakRank,
           width: 120,
           cell: (_, p) => RankBadge(
             p.peak,
@@ -227,8 +237,16 @@ class _TrendPageState extends State<TrendPage> {
         ),
       ],
       rows: rows,
-      rowLabel: (p) =>
-          '第${p.season}赛季，${p.role.label}，${fmtInt(p.matches)} 场，胜率${fmtPct(p.winRatePct)}，赛季末${p.current?.label ?? '未定级'}，最高${p.peak?.label ?? '未定级'}',
+      rowLabel: (p) => tr.analysis.seasonRow(
+        season: p.season == null
+            ? tr.common.missing
+            : tr.common.season(p.season!),
+        role: p.role.label,
+        matches: fmtInt(p.matches),
+        winRate: fmtPct(p.winRatePct),
+        current: p.current?.label ?? tr.common.unranked,
+        peak: p.peak?.label ?? tr.common.unranked,
+      ),
     );
   }
 }
@@ -273,22 +291,19 @@ class _RoleChart extends StatelessWidget {
     }
     final known = current.whereType<double>();
     final summary = known.isEmpty
-        ? '${role.label}：这些赛季没有可用数据。'
-        : '${role.label}：S${range.first} 到 S${range.last}，最近一个有数据的赛季为 ${fmtInt(known.last)}${metric == 'rank' ? ' 分' : '%'}。';
+        ? tr.analysis.roleNoData(role.label)
+        : tr.analysis.roleSummary(
+            role.label,
+            range.first,
+            range.last,
+            metric == 'rank'
+                ? tr.analysis.points(fmtInt(known.last))
+                : tr.analysis.percent(fmtInt(known.last)),
+          );
     return SizedBox(
       width: 420,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(
-          Sp.withinGroup,
-          Sp.betweenGroups,
-          Sp.withinGroup,
-          Sp.withinGroup,
-        ),
-        decoration: BoxDecoration(
-          color: c.raised,
-          borderRadius: BorderRadius.circular(Radii.container),
-          border: Border.all(color: c.border),
-        ),
+      child: Panel(
+        padding: PanelPadding.chart,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -306,27 +321,32 @@ class _RoleChart extends StatelessWidget {
               yMax: hi,
               series: [
                 ChartSeries(
-                  label: metric == 'rank' ? '赛季末' : '胜率',
-                  color: c.ally,
+                  label: metric == 'rank'
+                      ? tr.analysis.seasonEnd
+                      : tr.analysis.winRate,
+                  color: c.accent,
                   values: current,
                 ),
                 if (metric == 'rank')
                   ChartSeries(
-                    label: '最高',
-                    color: c.enemy,
+                    label: tr.analysis.peak,
+                    color: c.textSecondary,
                     values: peak,
                     dashed: true,
                   ),
               ],
-              xLabels: [for (final s in range) 'S$s'],
+              xLabels: [for (final s in range) tr.analysis.seasonShort(s)],
               pointNotes: [
                 for (final s in range)
                   mine[s] == null
-                      ? '没有数据'
-                      : '${fmtInt(mine[s]!.matches)} 场 · ${mine[s]!.current?.label ?? '未定级'}',
+                      ? tr.analysis.noData
+                      : tr.analysis.seasonPointNote(
+                          fmtInt(mine[s]!.matches),
+                          mine[s]!.current?.label ?? tr.common.unranked,
+                        ),
               ],
               valueFormat: (x) =>
-                  metric == 'rank' ? fmtInt(x) : '${fmtInt(x)}%',
+                  metric == 'rank' ? fmtInt(x) : tr.analysis.percent(fmtInt(x)),
               summary: summary,
             ),
           ],
@@ -352,14 +372,8 @@ class _SeasonCard extends StatelessWidget {
         Text(value, style: Ty.num(Ty.figure)),
       ],
     );
-    return Container(
+    return Panel(
       width: 360,
-      padding: const EdgeInsets.all(Sp.betweenGroups),
-      decoration: BoxDecoration(
-        color: c.raised,
-        borderRadius: BorderRadius.circular(Radii.container),
-        border: Border.all(color: c.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -368,7 +382,7 @@ class _SeasonCard extends StatelessWidget {
               RoleIcon(p.role, size: 22, showLabel: true),
               const Spacer(),
               Text(
-                'S${p.season ?? '?'}',
+                tr.analysis.seasonShort(p.season),
                 style: Ty.num(Ty.body).copyWith(color: c.textSecondary),
               ),
             ],
@@ -377,8 +391,8 @@ class _SeasonCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              stat('场次', fmtInt(p.matches)),
-              stat('胜率', fmtPct(p.winRatePct)),
+              stat(tr.analysis.matchesColumn, fmtInt(p.matches)),
+              stat(tr.analysis.winRate, fmtPct(p.winRatePct)),
               stat('KDA', fmtTwo(p.kda)),
             ],
           ),
@@ -386,11 +400,17 @@ class _SeasonCard extends StatelessWidget {
             const SizedBox(height: Sp.betweenGroups),
             Row(
               children: [
-                Text('赛季末', style: Ty.meta.copyWith(color: c.textSecondary)),
+                Text(
+                  tr.analysis.seasonEnd,
+                  style: Ty.meta.copyWith(color: c.textSecondary),
+                ),
                 const SizedBox(width: 6),
                 RankBadge(p.current, catalog: catalog, showText: true),
                 const Spacer(),
-                Text('最高', style: Ty.meta.copyWith(color: c.textSecondary)),
+                Text(
+                  tr.analysis.peak,
+                  style: Ty.meta.copyWith(color: c.textSecondary),
+                ),
                 const SizedBox(width: 6),
                 RankBadge(p.peak, catalog: catalog, showText: true),
               ],

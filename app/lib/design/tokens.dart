@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
+
 /// Spacing scale. Names say where the space goes, not how big it is.
 class Sp {
   static const double touching = 0;
@@ -21,18 +23,26 @@ class Radii {
 class Dur {
   static const fast = Duration(milliseconds: 100);
   static const normal = Duration(milliseconds: 200);
+
+  /// How long a wait may last before anything says it is loading (not motion: it
+  /// is not shortened by the reduced-motion setting).
+  static const loadingHint = Duration(seconds: 1);
   static Duration of(BuildContext c, Duration d) =>
       MediaQuery.maybeDisableAnimationsOf(c) ?? false ? Duration.zero : d;
 }
 
 enum DensityMode {
-  compact('compact', '紧凑', 34, 4),
-  standard('standard', '标准', 44, 8),
-  comfortable('comfortable', '宽松', 52, 12);
+  compact('compact', 34, 4),
+  standard('standard', 44, 8),
+  comfortable('comfortable', 52, 12);
 
-  const DensityMode(this.id, this.label, this.rowHeight, this.padV);
+  const DensityMode(this.id, this.rowHeight, this.padV);
   final String id;
-  final String label;
+  String get label => switch (this) {
+    DensityMode.compact => tr.shell.densityCompact,
+    DensityMode.standard => tr.shell.densityStandard,
+    DensityMode.comfortable => tr.shell.densityComfortable,
+  };
   final double rowHeight;
   final double padV;
   static DensityMode parse(String v) => DensityMode.values.firstWhere(
@@ -48,7 +58,10 @@ enum DensityMode {
 ///  - win/loss/draw: match outcome marks only.
 ///  - ally/enemy: team identity and the strength chart only.
 ///  - warning/error: status banners and messages only.
-///  - dataBar: the one neutral fill for magnitude bars.
+///  - success: a step or check that worked (never a match result).
+///  - positive/negative: a change for the better / worse (trends, deltas).
+///  - ally/enemy: never reused for other pairs; a chart with two series of one
+///    thing uses accent (main) and textSecondary (reference, dashed).
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors({
@@ -70,7 +83,9 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.enemy,
     required this.warning,
     required this.error,
-    required this.dataBar,
+    required this.success,
+    required this.positive,
+    required this.negative,
     required this.grid,
     required this.statDamage,
     required this.statHealing,
@@ -96,7 +111,9 @@ class AppColors extends ThemeExtension<AppColors> {
       enemy,
       warning,
       error,
-      dataBar,
+      success,
+      positive,
+      negative,
       grid,
       statDamage,
       statHealing,
@@ -124,7 +141,9 @@ class AppColors extends ThemeExtension<AppColors> {
     enemy: Color(0xFFF2994A),
     warning: Color(0xFFE9B84A),
     error: Color(0xFFFF7A70),
-    dataBar: Color(0x4D8E96FF),
+    success: Color(0xFF5FD19A),
+    positive: Color(0xFF5FD19A),
+    negative: Color(0xFFFF7A70),
     grid: Color(0x1FFFFFFF),
     statDamage: Color(0xFFF0605A),
     statHealing: Color(0xFF3FC47E),
@@ -151,13 +170,33 @@ class AppColors extends ThemeExtension<AppColors> {
     enemy: Color(0xFF8A4A07),
     warning: Color(0xFF6F4D00),
     error: Color(0xFFAD2B24),
-    dataBar: Color(0x333B42C4),
+    success: Color(0xFF166A42),
+    positive: Color(0xFF166A42),
+    negative: Color(0xFFAD2B24),
     grid: Color(0x1F000000),
     statDamage: Color(0xFFD0453E),
     statHealing: Color(0xFF1E9A5C),
     statMitigation: Color(0xFF2C7BD4),
     barAlpha: 0.32,
   );
+
+  /// Alpha mask that fades a row's picture out toward the right (only the alpha counts).
+  static const artFade = [
+    Color(0xFF000000),
+    Color(0xB3000000),
+    Color(0x00000000),
+  ];
+
+  /// Opacity of the `raised` scrim over a row's picture, left / middle / right: dense
+  /// behind the text, thin where the picture shows.
+  static List<double> artScrim(bool light) =>
+      light ? const [0.88, 0.50, 0.08] : const [0.94, 0.70, 0.25];
+
+  /// Dims the page behind a dialog or the command palette.
+  static const barrier = Color(0x47000000);
+
+  /// Shadow under floating panels (the command palette).
+  static const shadow = Color(0x55000000);
 
   /// Bar fill: the stat colour, softened so the number on top stays readable.
   Color barFill(Color stat) => stat.withValues(alpha: barAlpha);
@@ -192,6 +231,9 @@ class AppColors extends ThemeExtension<AppColors> {
       ('enemy', enemy),
       ('warning', warning),
       ('error', error),
+      ('success', success),
+      ('positive', positive),
+      ('negative', negative),
     ];
     return [
       // The number sits on top of its bar, so text must read over every bar tint.
@@ -232,7 +274,9 @@ class AppColors extends ThemeExtension<AppColors> {
       enemy: l(enemy, other.enemy),
       warning: l(warning, other.warning),
       error: l(error, other.error),
-      dataBar: l(dataBar, other.dataBar),
+      success: l(success, other.success),
+      positive: l(positive, other.positive),
+      negative: l(negative, other.negative),
       grid: l(grid, other.grid),
       statDamage: l(statDamage, other.statDamage),
       statHealing: l(statHealing, other.statHealing),

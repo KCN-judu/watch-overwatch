@@ -8,6 +8,7 @@ import '../../design/data_table.dart';
 import '../../design/icons.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/strings.dart';
 
 /// Largest value of each stat across all ten players, so bars on both teams share a scale.
 typedef StatMaxes = ({double damage, double healing, double mitigation});
@@ -83,7 +84,7 @@ class TeamTable extends StatelessWidget {
         children: [
           if (n < players.length)
             Tooltip(
-              message: '只有 $n / ${players.length} 人有这项数据，合计不含其余的人',
+              message: tr.matches.partialTotalTip(n, players.length),
               child: Padding(
                 padding: const EdgeInsets.only(right: 4),
                 child: Icon(
@@ -179,18 +180,18 @@ class TeamTable extends StatelessWidget {
     final cols = <Col<_Line>>[
       Col(
         id: 'player',
-        label: '玩家',
+        label: tr.matches.player,
         width: 220,
         flex: true,
         cell: (_, l) {
           if (l.isTotal) {
             return Text(
-              '$title合计',
+              tr.matches.teamTotal(title),
               style: const TextStyle(fontWeight: FontWeight.w600),
             );
           }
           final p = l.player!;
-          final (name, tag) = splitTag(p.name ?? '未知玩家');
+          final (name, tag) = splitTag(p.name ?? tr.common.unknownPlayer);
           final role = p.role.playableOr(catalog.heroRole(p.hero));
           return Row(
             children: [
@@ -235,14 +236,14 @@ class TeamTable extends StatelessWidget {
                         if (p.isSubject) ...[
                           const SizedBox(width: 6),
                           Text(
-                            '查询对象',
+                            tr.matches.subject,
                             style: Ty.meta.copyWith(color: c.accent),
                           ),
                         ],
                         if (p.suspended) ...[
                           const SizedBox(width: 4),
                           Tooltip(
-                            message: '该玩家账号处于暂停状态',
+                            message: tr.matches.suspendedTip,
                             child: Icon(
                               Icons.warning_amber_rounded,
                               size: 14,
@@ -279,7 +280,7 @@ class TeamTable extends StatelessWidget {
         label: 'K/A/D',
         width: 92,
         numeric: true,
-        tooltip: 'Kills / Assists / Deaths：消灭 / 助攻 / 阵亡',
+        tooltip: tr.matches.kdaTip,
         cell: (_, l) => l.isTotal
             ? Text(
                 kdaTotal(),
@@ -289,12 +290,12 @@ class TeamTable extends StatelessWidget {
       ),
       Col(
         id: 'damage',
-        label: '伤害',
-        headerChild: head('伤害', c.statDamage),
+        label: tr.matches.damage,
+        headerChild: head(tr.matches.damage, c.statDamage),
         width: 136,
         numeric: true,
         bleed: true,
-        tooltip: '对英雄伤害。条形长度按全场 10 人的最大值',
+        tooltip: tr.matches.damageTip,
         cell: (_, l) => stat(
           l,
           (p) => p.stats.damage,
@@ -305,12 +306,12 @@ class TeamTable extends StatelessWidget {
       ),
       Col(
         id: 'healing',
-        label: '治疗',
-        headerChild: head('治疗', c.statHealing),
+        label: tr.matches.healing,
+        headerChild: head(tr.matches.healing, c.statHealing),
         width: 136,
         numeric: true,
         bleed: true,
-        tooltip: '治疗量。条形长度按全场 10 人的最大值',
+        tooltip: tr.matches.healingTip,
         cell: (_, l) => stat(
           l,
           (p) => p.stats.healing,
@@ -321,12 +322,12 @@ class TeamTable extends StatelessWidget {
       ),
       Col(
         id: 'mitigation',
-        label: '阻挡',
-        headerChild: head('阻挡', c.statMitigation),
+        label: tr.matches.mitigation,
+        headerChild: head(tr.matches.mitigation, c.statMitigation),
         width: 136,
         numeric: true,
         bleed: true,
-        tooltip: '阻挡或减免的伤害量，不是次数。条形长度按全场 10 人的最大值',
+        tooltip: tr.matches.mitigationTip,
         cell: (_, l) => stat(
           l,
           (p) => p.stats.mitigation,
@@ -337,17 +338,17 @@ class TeamTable extends StatelessWidget {
       ),
       Col(
         id: 'rank',
-        label: '段位',
+        label: tr.matches.rank,
         width: 76,
-        tooltip: '竞技、角斗显示该场的段位；快速比赛显示玩家当前的竞技段位。查不到的显示 —',
+        tooltip: tr.matches.rankTip,
         cell: (_, l) {
           if (l.isTotal) return const SizedBox.shrink();
           final p = l.player!;
           if (ratingsLoading && p.rank == null && p.careerRank == null) {
             return Tooltip(
-              message: '正在查询这名玩家的竞技段位',
+              message: tr.matches.rankLookupTip,
               child: Text(
-                '查询中',
+                tr.matches.rankLookup,
                 style: Ty.cell.copyWith(color: c.textSecondary),
               ),
             );
@@ -363,7 +364,7 @@ class TeamTable extends StatelessWidget {
       ),
       Col(
         id: 'portrait',
-        label: '英雄立绘',
+        label: tr.matches.portrait,
         width: 76,
         bleed: true,
         headerChild: const SizedBox.shrink(),
@@ -388,7 +389,7 @@ class TeamTable extends StatelessWidget {
               Semantics(header: true, child: TeamTag(ally: ally)),
               const SizedBox(width: Sp.withinGroup),
               Text(
-                '${players.length} 人',
+                tr.matches.playerCount(players.length),
                 style: Ty.meta.copyWith(color: c.textSecondary),
               ),
             ],
@@ -397,24 +398,43 @@ class TeamTable extends StatelessWidget {
         SizedBox(
           height: players.isEmpty ? rowH * 3 : height,
           child: AppTable<_Line>(
-            tableLabel: '$title队伍',
+            tableLabel: tr.matches.teamTableLabel(title),
             rowHeight: _rowHeight,
             columns: cols,
             rows: lines,
             rowMarker: (l) => l.player?.isSubject == true ? c.accent : null,
             rowLabel: (l) {
               if (l.isTotal) {
-                return '$title合计，伤害${fmtInt(sum((p) => p.stats.damage))}，治疗${fmtInt(sum((p) => p.stats.healing))}，阻挡${fmtInt(sum((p) => p.stats.mitigation))}';
+                return tr.matches.totalRowLabel(
+                  title,
+                  fmtInt(sum((p) => p.stats.damage)),
+                  fmtInt(sum((p) => p.stats.healing)),
+                  fmtInt(sum((p) => p.stats.mitigation)),
+                );
               }
               final p = l.player!;
-              return '${p.name ?? '未知玩家'}${p.isSubject ? '，查询对象' : ''}，${p.hero?.label ?? '未知英雄'}，${p.role.label}，'
-                  '消灭${fmtInt(p.stats.kills)}助攻${fmtInt(p.stats.assists)}阵亡${fmtInt(p.stats.deaths)}，'
-                  '伤害${fmtInt(p.stats.damage)}，治疗${fmtInt(p.stats.healing)}，阻挡${fmtInt(p.stats.mitigation)}';
+              final label = p.isSubject
+                  ? tr.matches.subjectRowLabel
+                  : tr.matches.playerRowLabel;
+              return label(
+                p.name ?? tr.common.unknownPlayer,
+                p.hero?.label ?? tr.common.unknownHero,
+                p.role.label,
+                fmtInt(p.stats.kills),
+                fmtInt(p.stats.assists),
+                fmtInt(p.stats.deaths),
+                fmtInt(p.stats.damage),
+                fmtInt(p.stats.healing),
+                fmtInt(p.stats.mitigation),
+              );
             },
             onOpen: (l, _) {
               if (l.player != null) onSelect(l.player!);
             },
-            empty: const EmptyState(title: '没有参与者数据', body: '上游没有返回这一方的名单。'),
+            empty: EmptyState(
+              title: tr.matches.noParticipants,
+              body: tr.matches.noParticipantsBody,
+            ),
           ),
         ),
       ],

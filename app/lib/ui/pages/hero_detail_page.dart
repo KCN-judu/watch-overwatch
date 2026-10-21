@@ -11,6 +11,7 @@ import '../../design/widgets.dart';
 import '../../state/app_state.dart';
 import '../../state/match_view.dart';
 import '../../design/net_pic.dart';
+import '../../l10n/strings.dart';
 
 /// Second-level page for one hero, laid out like a poster: banner and art up top with
 /// the headline numbers set large, then season data, recent matches and the kit.
@@ -55,10 +56,10 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
     final bar = Row(
       children: [
         AppButton(
-          '英雄列表',
+          tr.heroes.heroList,
           icon: Icons.arrow_back,
           quiet: true,
-          tooltip: 'Esc 或 Alt+←',
+          tooltip: tr.heroes.backShortcut,
           onPressed: ws.closeHero,
         ),
         Text('›', style: Ty.body.copyWith(color: c.textSecondary)),
@@ -72,18 +73,18 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
         ),
         if (index >= 0)
           Text(
-            '第 ${index + 1} / ${keys.length} 位',
+            tr.heroes.position(index + 1, keys.length),
             style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
           ),
         IconAction(
           icon: Icons.chevron_left,
-          label: '上一位英雄',
+          label: tr.heroes.previousHero,
           shortcut: '[',
           onPressed: index > 0 ? () => ws.stepHero(-1) : null,
         ),
         IconAction(
           icon: Icons.chevron_right,
-          label: '下一位英雄',
+          label: tr.heroes.nextHero,
           shortcut: ']',
           onPressed: index >= 0 && index < keys.length - 1
               ? () => ws.stepHero(1)
@@ -94,6 +95,7 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
 
     return FutureBuilder<GameData>(
       future: GameData.load(),
+      initialData: GameData.loaded,
       builder: (context, snap) {
         final game = snap.data?.hero(hero.hero.name);
         // The hero's own colour from the game.
@@ -323,23 +325,27 @@ class _Poster extends StatelessWidget {
                     runSpacing: 6,
                     crossAxisAlignment: WrapCrossAlignment.end,
                     children: [
-                      stat('场次', fmtInt(hero.matches)),
+                      stat(tr.heroes.matchesLabel, fmtInt(hero.matches)),
                       stat(
-                        '胜率',
+                        tr.heroes.winRateLabel,
                         fmtPct(hero.winRatePct),
                         note: hero.matches == null
                             ? null
-                            : '${hero.wins ?? 0} 胜 $losses 负',
+                            : tr.heroes.winLoss(hero.wins ?? 0, losses),
                         color: winColor,
                       ),
                       stat(
-                        '使用时长',
+                        tr.heroes.playTimeLabel,
                         hero.playTimeS == null
                             ? missing
-                            : '${(hero.playTimeS! / 3600).toStringAsFixed(1)} 小时',
+                            : tr.heroes.hours(
+                                (hero.playTimeS! / 3600).toStringAsFixed(1),
+                              ),
                         note: hero.avgMatchSeconds == null
                             ? null
-                            : '场均 ${fmtClock(hero.avgMatchSeconds)}',
+                            : tr.heroes.avgMatchTime(
+                                fmtClock(hero.avgMatchSeconds),
+                              ),
                       ),
                       if (hero.kda != null)
                         stat('KDA', fmtTwo(hero.kda))
@@ -347,12 +353,16 @@ class _Poster extends StatelessWidget {
                         stat(
                           'KDA',
                           fmtTwo(recentKda),
-                          note: recentKda == null ? '上游没有提供' : '近期对局',
+                          note: recentKda == null
+                              ? tr.heroes.notProvided
+                              : tr.heroes.recentMatchesNote,
                         ),
                       stat(
-                        '熟练度',
+                        tr.heroes.proficiency,
                         hero.heroLevel == null ? missing : '${hero.heroLevel}',
-                        note: hero.heroLevel == null ? '上游没有提供' : null,
+                        note: hero.heroLevel == null
+                            ? tr.heroes.notProvided
+                            : null,
                       ),
                     ],
                   ),
@@ -377,12 +387,12 @@ class _Poster extends StatelessWidget {
 
 enum _Group { combat, damage, healing, defense, hero }
 
-const _groupTitles = {
-  _Group.combat: '战斗',
-  _Group.damage: '伤害与命中',
-  _Group.healing: '治疗与支援',
-  _Group.defense: '防护',
-  _Group.hero: '英雄特色',
+String _groupTitle(_Group g) => switch (g) {
+  _Group.combat => tr.heroes.groupCombat,
+  _Group.damage => tr.heroes.groupDamage,
+  _Group.healing => tr.heroes.groupHealing,
+  _Group.defense => tr.heroes.groupDefense,
+  _Group.hero => tr.heroes.groupHero,
 };
 
 _Group _groupOf(String n) {
@@ -470,9 +480,9 @@ class _SeasonStats extends StatelessWidget {
     }
 
     String? why(StatSource s) => switch (s) {
-      StatSource.derived => '上游没给这一项，由每场平均 × 600 ÷ 场均时长推算',
-      StatSource.recent => '上游没给这一项，取自已读取的近期对局',
-      StatSource.zero => '这个英雄能产出这项数据，但上游没有记录，按 0 计',
+      StatSource.derived => tr.heroes.sourceDerived,
+      StatSource.recent => tr.heroes.sourceRecent,
+      StatSource.zero => tr.heroes.sourceZero,
       StatSource.provider => null,
     };
 
@@ -505,7 +515,13 @@ class _SeasonStats extends StatelessWidget {
         share: split == null ? null : split / v,
         caption: split == null
             ? null
-            : '${r.partName} ${_fmtStat(r.name, split)}（${fmtPct(split / v * 100, digits: 0)}）· ${r.restName} ${_fmtStat(r.name, v - split)}',
+            : tr.heroes.splitCaption(
+                r.partName,
+                _fmtStat(r.name, split),
+                fmtPct(split / v * 100, digits: 0),
+                r.restName,
+                _fmtStat(r.name, v - split),
+              ),
         tooltip: why(src),
       );
     }
@@ -531,7 +547,7 @@ class _SeasonStats extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 10, bottom: 6),
                 child: Text(
-                  _groupTitles[g]!,
+                  _groupTitle(g),
                   style: Ty.meta.copyWith(color: c.textSecondary),
                 ),
               ),
@@ -554,25 +570,27 @@ class _SeasonStats extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AccentTitle(
-          '赛季数据',
+        SectionHeader(
+          tr.heroes.seasonStats,
           accent: accent,
-          info:
-              '整个赛季的累计，来自大神。上游常漏项，缺的按这个英雄能产出的内容补全：≈ 是推算或取自近期对局，灰色 0 是上游没有记录。消灭和治疗量是两部分相加，条里是第一部分占的比例：消灭 = 最后一击 + 共同消灭（造成过伤害、最后一击是队友打的），治疗量 = 自我治疗 + 对他人。',
+          info: tr.heroes.seasonStatsInfo,
         ),
         const SizedBox(height: Sp.withinGroup + 2),
         if (rows.isEmpty)
-          Text('没有这个英雄的统计项。', style: Ty.body.copyWith(color: c.textSecondary))
+          Text(
+            tr.heroes.noStats,
+            style: Ty.body.copyWith(color: c.textSecondary),
+          )
         else ...[
-          partition('每 10 分钟', true),
+          partition(tr.heroes.per10, true),
           const SizedBox(height: Sp.betweenGroups),
-          partition('每场平均', false),
+          partition(tr.heroes.perMatch, false),
         ],
         if (unnamed > 0)
           Padding(
             padding: const EdgeInsets.only(top: 10),
             child: Text(
-              '另有 $unnamed 项统计目录里没有名称，未显示。',
+              tr.heroes.unnamedStats(unnamed),
               style: Ty.meta.copyWith(color: c.textSecondary),
             ),
           ),
@@ -608,15 +626,15 @@ class _Recent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AccentTitle(
-          '近期对局',
+        SectionHeader(
+          tr.heroes.recentMatches,
           accent: accent,
-          info: '已读取的 $total 场里你用${hero.hero.label}打的。平均值来自这些对局，不是赛季累计。',
+          info: tr.heroes.recentInfo(total, hero.hero.label),
         ),
         const SizedBox(height: Sp.withinGroup + 2),
         if (rows.isEmpty)
           Text(
-            '已读取的 $total 场里没有用${hero.hero.label}打的。到“对局”页读取更多。',
+            tr.heroes.recentEmpty(total, hero.hero.label),
             style: Ty.body.copyWith(color: c.textSecondary),
           )
         else ...[
@@ -624,19 +642,27 @@ class _Recent extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              KpiTile('场次', '${a.matches}'),
+              KpiTile(tr.heroes.matchesLabel, '${a.matches}'),
               KpiTile(
-                '胜率',
+                tr.heroes.winRateLabel,
                 fmtPct(a.winRatePct),
-                note: '${a.wins} 胜 ${a.losses} 负',
+                note: tr.heroes.winLoss(a.wins, a.losses),
               ),
               KpiTile('KDA', fmtTwo(a.kda)),
-              KpiTile('场均消灭', mean('kills')),
-              KpiTile('场均阵亡', mean('deaths')),
-              KpiTile('场均助攻', mean('assists')),
-              KpiTile('场均伤害', mean('damage'), color: c.statDamage),
-              KpiTile('场均治疗', mean('healing'), color: c.statHealing),
-              KpiTile('场均阻挡', mean('mitigation'), color: c.statMitigation),
+              KpiTile(tr.heroes.avgKills, mean('kills')),
+              KpiTile(tr.heroes.avgDeaths, mean('deaths')),
+              KpiTile(tr.heroes.avgAssists, mean('assists')),
+              KpiTile(tr.heroes.avgDamage, mean('damage'), color: c.statDamage),
+              KpiTile(
+                tr.heroes.avgHealing,
+                mean('healing'),
+                color: c.statHealing,
+              ),
+              KpiTile(
+                tr.heroes.avgMitigation,
+                mean('mitigation'),
+                color: c.statMitigation,
+              ),
             ],
           ),
           const SizedBox(height: Sp.betweenGroups),
@@ -673,7 +699,7 @@ class _Recent extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        m.map?.label ?? '未知地图',
+                        m.map?.label ?? tr.common.unknownMap,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -697,7 +723,7 @@ class _Recent extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                '还有 ${rows.length - 12} 场，在“对局”页筛选这个英雄查看。',
+                tr.heroes.moreMatches(rows.length - 12),
                 style: Ty.meta.copyWith(color: c.textSecondary),
               ),
             ),
@@ -754,10 +780,10 @@ class _Kit extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AccentTitle(
-          '技能',
+        SectionHeader(
+          tr.heroes.abilities,
           accent: accent,
-          info: '来自本机安装的游戏资料（国服 2.25），名称和说明与游戏内一致。',
+          info: tr.heroes.abilitiesInfo,
         ),
         const SizedBox(height: Sp.withinGroup + 2),
         CardGrid([
@@ -771,11 +797,11 @@ class _Kit extends StatelessWidget {
         ]),
         if (game.perks.length >= 4) ...[
           const SizedBox(height: Sp.betweenSections + 8),
-          AccentTitle('威能', accent: accent),
+          SectionHeader(tr.heroes.perks, accent: accent),
           const SizedBox(height: Sp.withinGroup + 2),
-          perkRow('一级威能（二选一）', minor),
+          perkRow(tr.heroes.minorPerks, minor),
           const SizedBox(height: Sp.betweenGroups),
-          perkRow('二级威能（二选一）', major),
+          perkRow(tr.heroes.majorPerks, major),
         ],
       ],
     );

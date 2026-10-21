@@ -7,6 +7,7 @@ import '../../design/charts.dart';
 import '../../design/icons.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
 import '../player_view.dart';
 
@@ -66,65 +67,65 @@ class _Measure {
 final _measures = [
   _Measure(
     metric: GrowthMetric.life,
-    title: '存活时长（保活能力）',
-    info:
-        '每次阵亡之间平均隔多久 = 对局时长 ÷ 阵亡次数。上游只给阵亡次数、不给每次阵亡的时间点，所以只能这样平均着算。'
-        '没有死亡的对局取整局时长（实际只会更长），用盾牌标出，背后的底色填满这一局；含重生等待。',
+    title: tr.analysis.lifeTitle,
+    info: tr.analysis.lifeInfo,
     value: (p) => p.lifeS,
     format: _clock,
     axisFormat: _clock,
     noteOf: (p) => p.deathless
-        ? '对局时长 ${fmtClock(p.durationS)} · 没有死亡'
-        : '对局时长 ${fmtClock(p.durationS)} · 阵亡 ${fmtInt(p.deaths)} 次',
-    card: '保活能力',
-    changeText: (d) => '${d < 0 ? '−' : '+'}${fmtInt(d.abs())} 秒',
-    shieldMeaning: '盾牌：这一局没有死亡，数值是整局时长，实际更长。',
+        ? tr.analysis.lifeNoteDeathless(fmtClock(p.durationS))
+        : tr.analysis.lifeNote(fmtClock(p.durationS), fmtInt(p.deaths)),
+    card: tr.analysis.lifeCard,
+    changeText: (d) =>
+        tr.analysis.seconds('${d < 0 ? '−' : '+'}${fmtInt(d.abs())}'),
+    shieldMeaning: tr.analysis.lifeShield,
   ),
   _Measure(
     metric: GrowthMetric.fleta,
-    title: 'Fleta 指数',
-    info:
-        '最后一击 ÷（本队最后一击合计 × 0.5）× 100%。100% 表示拿下了本队一半的最后一击。'
-        '只和本队比、不分职责，辅助和重装通常偏低，输出偏高，所以按职责看更有意义。',
+    title: tr.analysis.fletaTitle,
+    info: tr.analysis.fletaInfo,
     value: (p) => p.fleta,
     format: (v) => fmtPct(v, digits: 0),
     axisFormat: (v) => fmtPct(v, digits: 0),
     noteOf: (_) => '',
-    card: 'Fleta 指数',
-    changeText: (d) => '${d < 0 ? '−' : '+'}${fmtInt(d.abs())} 个百分点',
+    card: tr.analysis.fletaCard,
+    changeText: (d) =>
+        tr.analysis.percentagePoints('${d < 0 ? '−' : '+'}${fmtInt(d.abs())}'),
   ),
   _Measure(
     metric: GrowthMetric.kda,
     title: 'KDA',
-    info: '（消灭 + 助攻）÷ 阵亡。没有死亡的对局按 1 次阵亡算，用盾牌标出。',
+    info: tr.analysis.kdaInfo,
     value: (p) => p.kda,
     format: fmtOne,
     axisFormat: fmtOne,
-    noteOf: (p) => p.deathless ? '没有死亡' : '阵亡 ${fmtInt(p.deaths)} 次',
+    noteOf: (p) => p.deathless
+        ? tr.analysis.deathless
+        : tr.analysis.deaths(fmtInt(p.deaths)),
     card: 'KDA',
     changeText: (d) => '${d < 0 ? '−' : '+'}${fmtOne(d.abs())}',
-    shieldMeaning: '盾牌：这一局没有死亡，按 1 次阵亡算。',
+    shieldMeaning: tr.analysis.kdaShield,
   ),
   _Measure(
     metric: GrowthMetric.healing,
-    title: '治疗量',
-    info: '每 10 分钟的治疗量（含自我治疗）。只算你打辅助的对局：别的职责的治疗是副产品，混进来会把数字拉低。',
+    title: tr.analysis.healingTitle,
+    info: tr.analysis.healingInfo,
     value: (p) => p.healing10,
-    format: (v) => '${fmtInt(v)} / 10 分钟',
+    format: (v) => tr.analysis.per10Min(fmtInt(v)),
     axisFormat: fmtInt,
     noteOf: (_) => '',
-    card: '治疗量',
+    card: tr.analysis.healingTitle,
     changeText: (d) => '${d < 0 ? '−' : '+'}${fmtInt(d.abs())}',
   ),
   _Measure(
     metric: GrowthMetric.mitigation,
-    title: '阻挡量',
-    info: '每 10 分钟阻挡或减免的伤害。只算你打重装的对局：别的职责的阻挡量很少，混进来没有意义。',
+    title: tr.analysis.mitigationTitle,
+    info: tr.analysis.mitigationInfo,
     value: (p) => p.mitigation10,
-    format: (v) => '${fmtInt(v)} / 10 分钟',
+    format: (v) => tr.analysis.per10Min(fmtInt(v)),
     axisFormat: fmtInt,
     noteOf: (_) => '',
-    card: '阻挡量',
+    card: tr.analysis.mitigationTitle,
     changeText: (d) => '${d < 0 ? '−' : '+'}${fmtInt(d.abs())}',
   ),
 ];
@@ -143,26 +144,27 @@ class _GrowthPageState extends State<GrowthPage> {
 
     if (load.failedWithoutData) {
       return ErrorPanel(
-        what: '无法读取成长数据',
+        what: tr.analysis.growthFailed,
         error: load.error!,
         onRetry: () => ws.loadGrowth(mode),
       );
     }
     final data = load.value;
     if (data == null) {
-      return const AfterDelay(
-        child: Center(child: RefreshingChip(label: '正在读取成长数据…')),
+      return AfterDelay(
+        child: Center(child: RefreshingChip(label: tr.analysis.growthLoading)),
       );
     }
     if (!data.enabled || data.points.isEmpty) {
       return EmptyState(
         icon: Icons.trending_up,
-        title: '还没有可分析的${mode.label}对局',
+        title: tr.analysis.noGrowthMatches(mode.label),
         body: data.listed == 0
-            ? '先在“对局”页读取对局列表。'
-            : '已读取 ${data.listed} 场，但它们的详情还没存到本机（需要对局时长和阵亡数）。'
-                  '打开几场对局，或等后台准备完成后再来。',
-        actions: [AppButton('重新读取', onPressed: () => ws.loadGrowth(mode))],
+            ? tr.analysis.readMatchListFirst
+            : tr.analysis.detailsNotStored(data.listed),
+        actions: [
+          AppButton(tr.common.refresh, onPressed: () => ws.loadGrowth(mode)),
+        ],
       );
     }
 
@@ -189,15 +191,18 @@ class _GrowthPageState extends State<GrowthPage> {
           children: [
             Semantics(
               header: true,
-              child: Text('${mode.label} · 成长', style: Ty.section),
+              child: Text(
+                tr.analysis.growthTitle(mode.label),
+                style: Ty.section,
+              ),
             ),
             if (roles.length > 1)
               SegmentedBar<Role?>(
-                semanticLabel: '职责',
+                semanticLabel: tr.analysis.roleSemantic,
                 value: role,
                 onChanged: (v) => setState(() => _role = v),
                 segments: [
-                  const Segment<Role?>(null, '全部'),
+                  Segment<Role?>(null, tr.analysis.all),
                   for (final r in roles) Segment<Role?>(r, r.label),
                 ],
               ),
@@ -208,22 +213,20 @@ class _GrowthPageState extends State<GrowthPage> {
               error: load.error?.message,
               onRetry: () => ws.loadGrowth(mode),
             ),
-            const InfoTip(
-              '每个指标一张图：一个点是一局，粗线是最近 10 局的平均；空心点是败局。'
-              '图上面一行是走势：把对局分成较早一半和较新一半比平均值，并做趋势检验。'
-              '不同职责的数值本来就不一样，换职责会让“全部”变化，所以以分职责的结果为准。',
-            ),
+            InfoTip(tr.analysis.growthInfo),
           ],
         ),
         if (data.stored < data.listed || data.skipped > 0) ...[
           const SizedBox(height: Sp.withinGroup),
           Text(
-            [
-              '已分析 ${data.points.length} 场（对局列表共 ${data.listed} 场）',
-              if (data.stored < data.listed)
-                '其余 ${data.listed - data.stored} 场的详情还没存到本机，后台准备好后会算进来',
-              if (data.skipped > 0) '${data.skipped} 场太短或没有阵亡数，没有计入',
-            ].join('；'),
+            tr.analysis.growthCoverage(
+              analysed: data.points.length,
+              listed: data.listed,
+              notStored: data.stored < data.listed
+                  ? data.listed - data.stored
+                  : 0,
+              skipped: data.skipped,
+            ),
             style: Ty.meta.copyWith(color: c.textSecondary),
           ),
         ],
@@ -234,12 +237,12 @@ class _GrowthPageState extends State<GrowthPage> {
         ]),
         const SizedBox(height: Sp.withinGroup),
         Text(
-          'p 值：Mann-Kendall 趋势检验的双侧 p 值，即原假设（序列没有单调趋势）成立时，出现当前或更极端的检验统计量的概率；p < 0.1 时拒绝原假设，判定存在趋势；样本不足 8 场不检验。',
+          tr.analysis.pValueNote,
           style: Ty.meta.copyWith(color: c.textSecondary),
         ),
         for (final m in shown) ...[
           const SizedBox(height: Sp.betweenSections),
-          AccentTitle(m.title, accent: c.accent, info: m.info),
+          SectionHeader(m.title, accent: c.accent, info: m.info),
           const SizedBox(height: Sp.withinGroup + 2),
           _MeasureChart(m, points),
         ],
@@ -260,13 +263,21 @@ class _TrendCard extends StatelessWidget {
     final c = context.c;
     final g = this.g;
     final (text, icon, color) = switch (g?.trend) {
-      null => ('${m.card}：场次不足', Icons.remove, c.textSecondary),
-      Trend.up => ('${m.card}呈现上升趋势', Icons.trending_up, c.win),
-      Trend.down => ('${m.card}呈现下降趋势', Icons.trending_down, c.loss),
-      Trend.flat => ('${m.card}没有明显趋势', Icons.trending_flat, c.textSecondary),
+      null => (tr.analysis.trendTooFew(m.card), Icons.remove, c.textSecondary),
+      Trend.up => (tr.analysis.trendUp(m.card), Icons.trending_up, c.positive),
+      Trend.down => (
+        tr.analysis.trendDown(m.card),
+        Icons.trending_down,
+        c.negative,
+      ),
+      Trend.flat => (
+        tr.analysis.trendFlat(m.card),
+        Icons.trending_flat,
+        c.textSecondary,
+      ),
     };
     final p = g == null
-        ? '不到 8 场，看不出走势'
+        ? tr.analysis.trendNeedsEight
         : g.p < 0.001
         ? 'p < 0.001'
         : 'p = ${g.p.toStringAsFixed(3)}';
@@ -297,9 +308,14 @@ class _TrendCard extends StatelessWidget {
     return g == null
         ? card
         : Tooltip(
-            message:
-                '较早一半 ${m.format(g.olderMean)} → 较新一半 ${m.format(g.newerMean)}'
-                '（${m.changeText(g.change)}，${g.changePct < 0 ? '−' : '+'}${fmtInt(g.changePct.abs())}%），共 ${g.matches} 场',
+            message: tr.analysis.trendTip(
+              older: m.format(g.olderMean),
+              newer: m.format(g.newerMean),
+              change: m.changeText(g.change),
+              changePct:
+                  '${g.changePct < 0 ? '−' : '+'}${fmtInt(g.changePct.abs())}',
+              matches: g.matches,
+            ),
             child: card,
           );
   }
@@ -340,23 +356,18 @@ class _MeasureChart extends StatelessWidget {
     ].where((s) => s.isNotEmpty).join(' · ');
 
     final known = values.whereType<double>();
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        Sp.withinGroup,
-        Sp.betweenGroups,
-        Sp.withinGroup,
-        Sp.withinGroup,
-      ),
-      decoration: BoxDecoration(
-        color: c.raised,
-        border: Border.all(color: c.border),
-      ),
+    return Panel(
+      padding: PanelPadding.chart,
       child: LineChart(
         height: 260,
         yMin: 0,
         series: [
           ChartSeries(label: m.card, color: c.textSecondary, values: values),
-          ChartSeries(label: '$_window 局平均', color: c.accent, values: average),
+          ChartSeries(
+            label: tr.analysis.movingAverage(_window),
+            color: c.accent,
+            values: average,
+          ),
         ],
         xLabels: [
           for (final p in points)
@@ -367,7 +378,7 @@ class _MeasureChart extends StatelessWidget {
         ],
         pointNotes: [for (final p in points) note(p)],
         hollow: [for (final p in points) p.outcome == Outcome.loss],
-        hollowMeaning: '实心点：胜或平；空心点：负。',
+        hollowMeaning: tr.analysis.hollowMeaning,
         shielded: m.shieldMeaning == null
             ? null
             : [for (final p in points) p.deathless],
@@ -375,9 +386,14 @@ class _MeasureChart extends StatelessWidget {
         valueFormat: m.format,
         axisFormat: m.axisFormat,
         summary: known.isEmpty
-            ? '${m.title}：没有数据。'
-            : '${m.title}：${known.length} 场，最近一局 ${m.format(known.last)}，'
-                  '最近 $_window 局平均 ${m.format(average.whereType<double>().last)}。',
+            ? tr.analysis.chartEmpty(m.title)
+            : tr.analysis.growthChartSummary(
+                title: m.title,
+                n: known.length,
+                last: m.format(known.last),
+                window: _window,
+                average: m.format(average.whereType<double>().last),
+              ),
       ),
     );
   }

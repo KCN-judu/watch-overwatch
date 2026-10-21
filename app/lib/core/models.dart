@@ -1,5 +1,7 @@
 // Dart mirror of `watch-core::ir`. Field names follow the Rust serde output
 // (snake_case). Missing or malformed values become null, never zero.
+import '../l10n/strings.dart';
+
 typedef Json = Map<String, dynamic>;
 
 double? _d(Object? v) => v is num
@@ -19,31 +21,45 @@ List<T> _list<T>(Object? v, T Function(Json) f) => v is List
     : <T>[];
 
 enum Mode {
-  competitive('competitive', 'sport', '竞技比赛', '竞技'),
-  quick('quick', 'leisure', '快速比赛', '快速'),
-  stadium('stadium', 'SportFight', '角斗领域', '角斗');
+  competitive('competitive', 'sport'),
+  quick('quick', 'leisure'),
+  stadium('stadium', 'SportFight');
 
-  const Mode(this.id, this.provider, this.label, this.shortLabel);
+  const Mode(this.id, this.provider);
   final String id;
   final String provider;
-  final String label;
+  String get label => switch (this) {
+    Mode.competitive => tr.core.modeCompetitive,
+    Mode.quick => tr.core.modeQuick,
+    Mode.stadium => tr.core.modeStadium,
+  };
 
   /// Two-character name for dense controls; [label] stays the full name.
-  final String shortLabel;
+  String get shortLabel => switch (this) {
+    Mode.competitive => tr.core.modeCompetitiveShort,
+    Mode.quick => tr.core.modeQuickShort,
+    Mode.stadium => tr.core.modeStadiumShort,
+  };
   static Mode parse(String? v) =>
       Mode.values.firstWhere((m) => m.id == v, orElse: () => Mode.competitive);
 }
 
 enum Role {
-  tank('tank', '重装'),
-  damage('damage', '输出'),
-  support('support', '支援'),
-  open('open', '综合'),
-  unknown('unknown', '');
+  tank('tank'),
+  damage('damage'),
+  support('support'),
+  open('open'),
+  unknown('unknown');
 
-  const Role(this.id, this.label);
+  const Role(this.id);
   final String id;
-  final String label;
+  String get label => switch (this) {
+    Role.tank => tr.core.roleTank,
+    Role.damage => tr.core.roleDamage,
+    Role.support => tr.core.roleSupport,
+    Role.open => tr.core.roleOpen,
+    Role.unknown => '',
+  };
   static Role parse(String? v) =>
       Role.values.firstWhere((r) => r.id == v, orElse: () => Role.unknown);
   static const playable = [Role.tank, Role.damage, Role.support];
@@ -53,14 +69,19 @@ enum Role {
 }
 
 enum Outcome {
-  win('win', '胜'),
-  loss('loss', '负'),
-  draw('draw', '平'),
-  unknown('unknown', '—');
+  win('win'),
+  loss('loss'),
+  draw('draw'),
+  unknown('unknown');
 
-  const Outcome(this.id, this.label);
+  const Outcome(this.id);
   final String id;
-  final String label;
+  String get label => switch (this) {
+    Outcome.win => tr.core.outcomeWin,
+    Outcome.loss => tr.core.outcomeLoss,
+    Outcome.draw => tr.core.outcomeDraw,
+    Outcome.unknown => tr.common.missing,
+  };
   static Outcome parse(String? v) => Outcome.values.firstWhere(
     (o) => o.id == v,
     orElse: () => Outcome.unknown,
@@ -68,14 +89,19 @@ enum Outcome {
 }
 
 enum Queue {
-  roleQueue('role_queue', '职责队列'),
-  openQueue('open_queue', '开放队列'),
-  sixVsSix('six_vs_six', '6v6'),
-  unknown('unknown', '');
+  roleQueue('role_queue'),
+  openQueue('open_queue'),
+  sixVsSix('six_vs_six'),
+  unknown('unknown');
 
-  const Queue(this.id, this.label);
+  const Queue(this.id);
   final String id;
-  final String label;
+  String get label => switch (this) {
+    Queue.roleQueue => tr.core.queueRole,
+    Queue.openQueue => tr.core.queueOpen,
+    Queue.sixVsSix => '6v6',
+    Queue.unknown => '',
+  };
   static Queue parse(String? v) =>
       Queue.values.firstWhere((q) => q.id == v, orElse: () => Queue.unknown);
 }
@@ -96,20 +122,13 @@ class EntityRef {
       _o(v) == null ? null : EntityRef.fromJson(_o(v)!);
   String get label =>
       name ??
-      '未知（${guid.length > 6 ? '…${guid.substring(guid.length - 6)}' : guid}）';
+      tr.core.unknownEntity(
+        guid.length > 6 ? '…${guid.substring(guid.length - 6)}' : guid,
+      );
 }
 
-const _tierZh = {
-  'Bronze': '青铜',
-  'Silver': '白银',
-  'Gold': '黄金',
-  'Platinum': '白金',
-  'Emerald': '翡翠',
-  'Diamond': '钻石',
-  'Master': '大师',
-  'Grandmaster': '宗师',
-  'Champion': '冠军',
-};
+/// Provider tier key (`Platinum`) to its display name, from the string table.
+Map<String, String> get _tierZh => tr.core.tiers;
 const _tierBases = [
   ('Bronze', 500),
   ('Silver', 1000),
@@ -130,7 +149,7 @@ String? ratingLabel(num? skillRating) {
     if (skillRating >= t.$2) tier = t;
   }
   final step = ((skillRating - tier.$2) / 100).floor().clamp(0, 4);
-  return '${_tierZh[tier.$1]}${5 - step}';
+  return tr.core.rank(_tierZh[tier.$1]!, 5 - step);
 }
 
 class Rank {
@@ -150,9 +169,9 @@ class Rank {
   /// Tier and division from the provider; falls back to the rating's own position on the ladder.
   String get label {
     if (tier != null && _tierZh[tier] != null) {
-      return '${_tierZh[tier]}${division ?? ''}';
+      return tr.core.rank(_tierZh[tier]!, division);
     }
-    return ratingLabel(skillRating) ?? '未定级';
+    return ratingLabel(skillRating) ?? tr.common.unranked;
   }
 }
 

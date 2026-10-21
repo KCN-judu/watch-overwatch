@@ -5,9 +5,12 @@ import 'package:flutter/services.dart';
 
 import '../core/api.dart';
 import '../core/models.dart';
-import 'data_table.dart';
+import '../l10n/strings.dart';
+import 'interaction.dart';
 import 'tokens.dart';
 import 'net_pic.dart';
+
+export 'interaction.dart';
 
 // ---- Buttons ---------------------------------------------------------------
 
@@ -160,11 +163,17 @@ class SegmentedBar<V> extends StatefulWidget {
     required this.value,
     required this.onChanged,
     required this.semanticLabel,
+    this.disabledReason,
   });
   final List<Segment<V>> segments;
   final V value;
-  final ValueChanged<V> onChanged;
+
+  /// `null` disables the whole bar: it shows its value but cannot be changed.
+  final ValueChanged<V>? onChanged;
   final String semanticLabel;
+
+  /// Shown as the tooltip while disabled, so the user can see why.
+  final String? disabledReason;
 
   @override
   State<SegmentedBar<V>> createState() => _SegmentedBarState<V>();
@@ -179,17 +188,18 @@ class _SegmentedBarState<V> extends State<SegmentedBar<V>> {
   }
 
   KeyEventResult _key(KeyEvent e) {
-    if (e is KeyUpEvent) return KeyEventResult.ignored;
+    final onChanged = widget.onChanged;
+    if (e is KeyUpEvent || onChanged == null) return KeyEventResult.ignored;
     final i = widget.segments.indexWhere((s) => s.value == widget.value);
     final k = e.logicalKey;
     if (k == LogicalKeyboardKey.arrowRight ||
         k == LogicalKeyboardKey.arrowDown) {
-      widget.onChanged(
+      onChanged(
         widget.segments[math.min(widget.segments.length - 1, i + 1)].value,
       );
     } else if (k == LogicalKeyboardKey.arrowLeft ||
         k == LogicalKeyboardKey.arrowUp) {
-      widget.onChanged(widget.segments[math.max(0, i - 1)].value);
+      onChanged(widget.segments[math.max(0, i - 1)].value);
     } else {
       return KeyEventResult.ignored;
     }
@@ -199,11 +209,14 @@ class _SegmentedBarState<V> extends State<SegmentedBar<V>> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return Semantics(
+    final onChanged = widget.onChanged;
+    final bar = Semantics(
       container: true,
       label: widget.semanticLabel,
+      enabled: onChanged != null,
       child: Focus(
         focusNode: _focus,
+        canRequestFocus: onChanged != null,
         onKeyEvent: (_, e) => _key(e),
         child: ListenableBuilder(
           listenable: _focus,
@@ -228,10 +241,12 @@ class _SegmentedBarState<V> extends State<SegmentedBar<V>> {
                       hint: s.hint,
                       leading: s.leading,
                       selected: s.value == widget.value,
-                      onTap: () {
-                        _focus.requestFocus();
-                        widget.onChanged(s.value);
-                      },
+                      onTap: onChanged == null
+                          ? null
+                          : () {
+                              _focus.requestFocus();
+                              onChanged(s.value);
+                            },
                     ),
                 ],
               ),
@@ -240,10 +255,14 @@ class _SegmentedBarState<V> extends State<SegmentedBar<V>> {
         ),
       ),
     );
+    final reason = widget.disabledReason;
+    return onChanged == null && reason != null
+        ? Tooltip(message: reason, child: bar)
+        : bar;
   }
 }
 
-class _SegmentButton extends StatelessWidget {
+class _SegmentButton extends StatefulWidget {
   const _SegmentButton({
     required this.label,
     required this.hint,
@@ -255,54 +274,81 @@ class _SegmentButton extends StatelessWidget {
   final String? hint;
   final Widget? leading;
   final bool selected;
-  final VoidCallback onTap;
+
+  /// `null` while the bar is disabled.
+  final VoidCallback? onTap;
+
+  @override
+  State<_SegmentButton> createState() => _SegmentButtonState();
+}
+
+class _SegmentButtonState extends State<_SegmentButton> {
+  bool _hovered = false;
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final selected = widget.selected;
+    final enabled = widget.onTap != null;
     final body = Semantics(
       inMutuallyExclusiveGroup: true,
       selected: selected,
       checked: selected,
       button: true,
-      label: label,
+      enabled: enabled,
+      label: widget.label,
       excludeSemantics: true,
-      onTap: onTap,
+      onTap: widget.onTap,
       child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+        cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: onTap,
+          onTap: widget.onTap,
           child: Container(
             constraints: const BoxConstraints(minHeight: 28, minWidth: 40),
             padding: const EdgeInsets.symmetric(horizontal: 12),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: selected ? c.selected : null,
+              color: c.itemFill(
+                selected: selected,
+                hovered: _hovered && enabled,
+              ),
               borderRadius: BorderRadius.circular(Radii.control),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Selected state is carried by weight and a check, not by colour alone.
-                if (selected) ...[
-                  Icon(Icons.check, size: 13, color: c.accent),
-                  const SizedBox(width: 4),
-                ],
-                if (leading != null) ...[leading!, const SizedBox(width: 5)],
-                Text(
-                  label,
-                  style: Ty.body.copyWith(
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected ? c.textPrimary : c.textSecondary,
+            child: Opacity(
+              opacity: enabled ? 1 : 0.55,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Selected state is carried by weight and a check, not by colour alone.
+                  if (selected) ...[
+                    Icon(Icons.check, size: 13, color: c.accent),
+                    const SizedBox(width: Sp.withinControl),
+                  ],
+                  if (widget.leading != null) ...[
+                    widget.leading!,
+                    const SizedBox(width: 5),
+                  ],
+                  Text(
+                    widget.label,
+                    style: Ty.body.copyWith(
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                      color: selected ? c.textPrimary : c.textSecondary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
-    return hint == null ? body : Tooltip(message: hint!, child: body);
+    final hint = widget.hint;
+    return hint == null || !enabled
+        ? body
+        : Tooltip(message: hint, child: body);
   }
 }
 
@@ -376,7 +422,7 @@ class TeamTag extends StatelessWidget {
         border: Border.all(color: color),
       ),
       child: Text(
-        ally ? '己方' : '对方',
+        ally ? tr.common.ally : tr.common.enemy,
         style: Ty.meta.copyWith(color: color, fontWeight: FontWeight.w600),
       ),
     );
@@ -515,8 +561,15 @@ class StatusBanner extends StatelessWidget {
     return Semantics(
       container: true,
       liveRegion: severity != Severity.info,
-      label:
-          '${{Severity.info: '提示', Severity.warning: '警告', Severity.error: '错误'}[severity]}：$title${detail == null ? '' : '。$detail'}',
+      label: tr.shell.banner(
+        switch (severity) {
+          Severity.info => tr.shell.severityInfo,
+          Severity.warning => tr.shell.severityWarning,
+          Severity.error => tr.shell.severityError,
+        },
+        title,
+        detail,
+      ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -620,13 +673,15 @@ class ErrorPanel extends StatelessWidget {
     required this.what,
     this.onRetry,
     this.extra = const [],
-    this.dataSafe = '没有保存或修改任何数据。',
+    this.dataSafe,
   });
   final ApiError error;
   final String what;
   final VoidCallback? onRetry;
   final List<Widget> extra;
-  final String dataSafe;
+
+  /// Whether saved data is affected; defaults to [ShellStrings.nothingChanged].
+  final String? dataSafe;
   @override
   Widget build(BuildContext context) {
     final c = context.c;
@@ -650,9 +705,13 @@ class ErrorPanel extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: Sp.withinGroup),
-                Text(error.message, style: Ty.body),
+                // A fixed sentence by kind; the raw message is only in 复制详情.
+                Text(tr.shell.errorSentence(error.kind), style: Ty.body),
                 const SizedBox(height: Sp.withinControl),
-                Text(dataSafe, style: Ty.body.copyWith(color: c.textSecondary)),
+                Text(
+                  dataSafe ?? tr.shell.nothingChanged,
+                  style: Ty.body.copyWith(color: c.textSecondary),
+                ),
                 const SizedBox(height: Sp.betweenGroups),
                 Wrap(
                   spacing: Sp.withinGroup,
@@ -660,14 +719,14 @@ class ErrorPanel extends StatelessWidget {
                   children: [
                     if (onRetry != null)
                       AppButton(
-                        '重试',
+                        tr.common.retry,
                         onPressed: onRetry,
                         primary: true,
                         icon: Icons.refresh,
                       ),
                     ...extra,
                     AppButton(
-                      '复制详情',
+                      tr.common.copyDetails,
                       quiet: true,
                       icon: Icons.copy,
                       onPressed: () async {
@@ -676,9 +735,9 @@ class ErrorPanel extends StatelessWidget {
                         );
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('详情已复制'),
-                              duration: Duration(seconds: 4),
+                            SnackBar(
+                              content: Text(tr.common.detailsCopied),
+                              duration: const Duration(seconds: 4),
                             ),
                           );
                         }
@@ -695,27 +754,97 @@ class ErrorPanel extends StatelessWidget {
   }
 }
 
-/// Small non-blocking marker that a refresh is running while old data stays on screen.
-class RefreshingChip extends StatelessWidget {
-  const RefreshingChip({super.key, this.label = '正在刷新…'});
-  final String label;
+// ---- Loading ------------------------------------------------------------------
+//
+// One set of loading marks (docs/ui-design.md §5), by how long the wait is:
+//  - under [Dur.loadingHint]: nothing (wrap the mark in [AfterDelay]);
+//  - a page or list whose layout is known: a skeleton of that layout ([Skeleton]);
+//  - a refresh while old data stays on screen, or one small part: [Spinner] or
+//    [RefreshingChip];
+//  - a long job with steps (over ~10 s): steps with a [ProgressLine] and time left.
+
+/// Renders nothing until [Dur.loadingHint] has passed, so fast loads never flash a
+/// loading mark.
+class AfterDelay extends StatefulWidget {
+  const AfterDelay({
+    super.key,
+    required this.child,
+    this.delay = Dur.loadingHint,
+  });
+  final Widget child;
+  final Duration delay;
+  @override
+  State<AfterDelay> createState() => _AfterDelayState();
+}
+
+class _AfterDelayState extends State<AfterDelay> {
+  bool _show = false;
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(widget.delay, () {
+      if (mounted) setState(() => _show = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      _show ? widget.child : const SizedBox.shrink();
+}
+
+/// The one spinner: 14px, 2px stroke, secondary text colour unless told otherwise.
+class Spinner extends StatelessWidget {
+  const Spinner({super.key, this.color});
+  final Color? color;
+  static const size = 14.0;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: size,
+    height: size,
+    child: CircularProgressIndicator(
+      strokeWidth: 2,
+      color: color ?? context.c.textSecondary,
+    ),
+  );
+}
+
+/// The one progress bar: 3px, accent on the border colour. `value` null is indeterminate.
+class ProgressLine extends StatelessWidget {
+  const ProgressLine({super.key, required this.value, this.color});
+  final double? value;
+  final Color? color;
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(2),
+      child: LinearProgressIndicator(
+        value: value,
+        minHeight: 3,
+        color: color ?? c.accent,
+        backgroundColor: c.border,
+      ),
+    );
+  }
+}
+
+/// Small non-blocking marker that a refresh is running while old data stays on screen.
+class RefreshingChip extends StatelessWidget {
+  const RefreshingChip({super.key, this.label});
+
+  /// Defaults to [CommonStrings.refreshing].
+  final String? label;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final label = this.label ?? tr.common.refreshing;
     return Semantics(
       liveRegion: true,
       label: label,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: c.textSecondary,
-            ),
-          ),
+          const Spinner(),
           const SizedBox(width: 6),
           Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
         ],
@@ -732,32 +861,21 @@ class FilterTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return Semantics(
-      button: true,
-      label: '移除筛选：$label',
-      excludeSemantics: true,
+    // An applied filter is on, so it is drawn selected; hover and focus show over it.
+    return Pressable(
       onTap: onRemove,
-      child: Tooltip(
-        message: '移除此筛选',
-        child: InkWell(
-          onTap: onRemove,
-          borderRadius: BorderRadius.circular(Radii.control),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(8, 3, 4, 3),
-            decoration: BoxDecoration(
-              color: c.selected,
-              borderRadius: BorderRadius.circular(Radii.control),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(label, style: Ty.meta.copyWith(color: c.textPrimary)),
-                const SizedBox(width: 2),
-                Icon(Icons.close, size: 14, color: c.textSecondary),
-              ],
-            ),
-          ),
-        ),
+      selected: true,
+      semanticLabel: tr.shell.removeFilterLabel(label),
+      tooltip: tr.shell.removeFilter,
+      height: 28,
+      padding: const EdgeInsets.fromLTRB(8, 0, 4, 0),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: Ty.meta.copyWith(color: c.textPrimary)),
+          const SizedBox(width: 2),
+          Icon(Icons.close, size: 14, color: c.textSecondary),
+        ],
       ),
     );
   }
@@ -809,6 +927,7 @@ Widget gap(double h) => SizedBox(height: h);
 Widget hgap(double w) => SizedBox(width: w);
 
 /// One headline number: label above, big figure, optional note, optional stat colour.
+/// The only tile of its kind: every page with a row of headline numbers uses it.
 class KpiTile extends StatelessWidget {
   const KpiTile(this.label, this.value, {super.key, this.note, this.color});
   final String label, value;
@@ -822,10 +941,10 @@ class KpiTile extends StatelessWidget {
       label: '$label $value${note == null ? '' : '，$note'}',
       excludeSemantics: true,
       child: Container(
-        width: 150,
+        width: 160,
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
         decoration: BoxDecoration(
-          color: color == null ? c.window : c.barFill(color!),
+          color: color == null ? c.raised : c.barFill(color!),
           border: Border(left: BorderSide(color: color ?? c.border, width: 3)),
           borderRadius: const BorderRadius.horizontal(
             right: Radius.circular(2),

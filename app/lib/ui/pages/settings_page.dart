@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import '../../core/api.dart';
 import '../../core/models.dart';
 import '../../core/support.dart';
+import '../../design/cards.dart';
 import '../../design/data_table.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
 import '../shell.dart' show ShellScope;
 
@@ -39,9 +41,9 @@ class _SettingsPageState extends State<SettingsPage> {
     final role = int.tryParse(_role.text.trim());
     final token = _token.text.trim();
     setState(() {
-      _nameError = name.isEmpty ? '填写一个账号名称，用来在列表里区分。' : null;
-      _roleError = role == null || role <= 0 ? 'role_id 是一串数字。' : null;
-      _tokenError = token.isEmpty ? '粘贴 token。' : null;
+      _nameError = name.isEmpty ? tr.shell.accountNameRequired : null;
+      _roleError = role == null || role <= 0 ? tr.shell.roleIdInvalid : null;
+      _tokenError = token.isEmpty ? tr.shell.tokenRequired : null;
       _saveError = null;
     });
     if (_nameError != null || _roleError != null || _tokenError != null) return;
@@ -52,7 +54,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _role.clear();
       _token.clear();
       await app.refreshServer();
-      app.toast?.call('已保存账号 $name');
+      app.toast?.call(tr.shell.accountSaved(name));
     } on ApiError catch (e) {
       setState(() => _saveError = e);
     } finally {
@@ -65,9 +67,9 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final script = await rootBundle.loadString('assets/tools/get-token.js');
       await Clipboard.setData(ClipboardData(text: script));
-      app.toast?.call('已复制获取脚本。到 ds.163.com 的控制台粘贴运行。');
+      app.toast?.call(tr.shell.tokenScriptCopied);
     } catch (_) {
-      app.toast?.call('无法复制脚本，请看 docs/credentials.md。');
+      app.toast?.call(tr.shell.tokenScriptCopyFailed);
     }
   }
 
@@ -75,19 +77,19 @@ class _SettingsPageState extends State<SettingsPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('移除账号“$name”？', style: Ty.section),
+        title: Text(tr.shell.removeAccountTitle(name), style: Ty.section),
         content: SizedBox(
           width: 420,
-          child: Text(
-            '这会删除本机保存的该账号的 role_id 和 token。token 不会再显示，需要重新添加时必须再次粘贴。',
-            style: Ty.body,
-          ),
+          child: Text(tr.shell.removeAccountBody, style: Ty.body),
         ),
         actions: [
           // Safe action first and focused; the destructive verb names the destruction.
-          AppButton('保留账号', onPressed: () => Navigator.of(context).pop(false)),
           AppButton(
-            '移除账号',
+            tr.shell.keepAccount,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          AppButton(
+            tr.shell.removeAccount,
             primary: true,
             onPressed: () => Navigator.of(context).pop(true),
           ),
@@ -98,9 +100,9 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       await app.api.removeAccount(name);
       await app.refreshServer();
-      app.toast?.call('已移除账号 $name');
+      app.toast?.call(tr.shell.accountRemoved(name));
     } on ApiError catch (e) {
-      app.toast?.call('无法移除账号：${e.message}');
+      app.toast?.call(tr.shell.removeAccountFailed(e.message));
     }
   }
 
@@ -132,11 +134,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   Expanded(
                     child: Semantics(
                       header: true,
-                      child: Text('设置', style: Ty.page),
+                      child: Text(tr.shell.settings, style: Ty.page),
                     ),
                   ),
                   AppButton(
-                    '返回',
+                    tr.common.back,
                     icon: Icons.arrow_back,
                     onPressed: () => app.showSettings(false),
                     tooltip: 'Esc',
@@ -146,56 +148,57 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: Sp.betweenSections),
 
               // ---- Accounts
-              Semantics(header: true, child: Text('大神账号', style: Ty.section)),
+              SectionHeader(tr.shell.dashenAccounts),
               const SizedBox(height: 4),
               Text(
-                '查询需要至少一个大神账号。凭据只存在本机，多个账号轮流使用。',
+                tr.shell.dashenAccountsNote,
                 style: Ty.body.copyWith(color: c.textSecondary),
               ),
               const SizedBox(height: Sp.withinGroup),
               SizedBox(
                 height: rowH * (math.max(accounts.length, 1) + 1) + 4,
                 child: AppTable<Json>(
-                  tableLabel: '大神账号',
+                  tableLabel: tr.shell.dashenAccounts,
                   columns: [
                     Col(
                       id: 'name',
-                      label: '名称',
+                      label: tr.shell.columnName,
                       width: 160,
                       flex: true,
                       cell: (_, a) => Text('${a['name']}'),
                     ),
                     Col(
                       id: 'status',
-                      label: '状态',
+                      label: tr.shell.columnStatus,
                       width: 220,
                       cell: (_, a) => _AccountStatus(a),
                     ),
                     Col(
                       id: 'remove',
-                      label: '操作',
+                      label: tr.shell.columnActions,
                       width: 120,
                       cell: (_, a) => AppButton(
-                        '移除账号',
+                        tr.shell.removeAccount,
                         quiet: true,
                         onPressed: () => _remove(app, '${a['name']}'),
                       ),
                     ),
                   ],
                   rows: accounts,
-                  rowLabel: (a) => '账号 ${a['name']}，${_statusText(a)}',
+                  rowLabel: (a) =>
+                      tr.shell.accountRow('${a['name']}', _statusText(a)),
                   empty: Center(
                     child: Text(
-                      '还没有账号。在下面添加第一个。',
+                      tr.shell.noAccounts,
                       style: Ty.body.copyWith(color: c.textSecondary),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: Sp.betweenGroups),
-              Text('添加或更新账号', style: Ty.bodyStrong),
+              Text(tr.shell.addOrUpdateAccount, style: Ty.bodyStrong),
               Text(
-                '名称相同会更新已有账号。token 留空不会保留旧值，请重新粘贴。',
+                tr.shell.addOrUpdateNote,
                 style: Ty.meta.copyWith(color: c.textSecondary),
               ),
               const SizedBox(height: Sp.withinGroup),
@@ -205,12 +208,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   AppButton(
-                    '复制获取脚本',
+                    tr.shell.copyTokenScript,
                     icon: Icons.content_copy,
                     onPressed: () => _copyTokenScript(app),
                   ),
                   Text(
-                    '登录 ds.163.com，按 F12 打开控制台，粘贴运行；token 会自动复制到剪贴板。',
+                    tr.shell.copyTokenScriptNote,
                     style: Ty.meta.copyWith(color: c.textSecondary),
                   ),
                 ],
@@ -221,7 +224,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 runSpacing: Sp.withinGroup,
                 crossAxisAlignment: WrapCrossAlignment.start,
                 children: [
-                  SizedBox(width: 180, child: _field(_name, '名称', _nameError)),
+                  SizedBox(
+                    width: 180,
+                    child: _field(_name, tr.shell.columnName, _nameError),
+                  ),
                   SizedBox(
                     width: 180,
                     child: _field(_role, 'role_id', _roleError, number: true),
@@ -233,7 +239,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   Padding(
                     padding: const EdgeInsets.only(top: 0),
                     child: AppButton(
-                      _saving ? '正在保存…' : '保存账号',
+                      _saving ? tr.shell.saving : tr.shell.saveAccount,
                       primary: true,
                       onPressed: _saving ? null : () => _save(app),
                     ),
@@ -244,32 +250,32 @@ class _SettingsPageState extends State<SettingsPage> {
                 Padding(
                   padding: const EdgeInsets.only(top: Sp.withinGroup),
                   child: Text(
-                    '无法保存：${_saveError!.message}',
+                    tr.shell.saveFailed(_saveError!.message),
                     style: Ty.body.copyWith(color: c.error),
                   ),
                 ),
 
               // ---- Appearance
               const SizedBox(height: Sp.betweenSections),
-              Semantics(header: true, child: Text('外观', style: Ty.section)),
+              SectionHeader(tr.shell.appearance),
               const SizedBox(height: Sp.withinGroup),
               _row(
-                '主题',
+                tr.shell.theme,
                 SegmentedBar<ThemeMode>(
-                  semanticLabel: '主题',
+                  semanticLabel: tr.shell.theme,
                   value: app.themeMode,
                   onChanged: app.setTheme,
-                  segments: const [
-                    Segment(ThemeMode.system, '跟随系统'),
-                    Segment(ThemeMode.light, '浅色'),
-                    Segment(ThemeMode.dark, '深色'),
+                  segments: [
+                    Segment(ThemeMode.system, tr.shell.themeSystem),
+                    Segment(ThemeMode.light, tr.shell.themeLight),
+                    Segment(ThemeMode.dark, tr.shell.themeDark),
                   ],
                 ),
               ),
               _row(
-                '表格行高',
+                tr.shell.rowHeight,
                 SegmentedBar<DensityMode>(
-                  semanticLabel: '表格行高',
+                  semanticLabel: tr.shell.rowHeight,
                   value: app.density,
                   onChanged: app.setDensity,
                   segments: [
@@ -279,9 +285,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               _row(
-                '界面布局',
+                tr.shell.layout,
                 AppButton(
-                  '重置界面布局',
+                  tr.shell.resetLayout,
                   onPressed: () {
                     app.setNav(width: 248, collapsed: false);
                     app.setDensity(DensityMode.standard);
@@ -291,23 +297,23 @@ class _SettingsPageState extends State<SettingsPage> {
 
               // ---- Data
               const SizedBox(height: Sp.betweenSections),
-              Semantics(
-                header: true,
-                child: Text('数据与本地服务', style: Ty.section),
+              SectionHeader(tr.shell.dataAndBackend),
+              const SizedBox(height: SectionHeader.below),
+              _info(tr.shell.credentialsPath, secretsPath ?? missing),
+              _info(
+                tr.shell.lastExportLabel,
+                app.lastExportPath ?? tr.shell.noExportYet,
               ),
-              const SizedBox(height: Sp.withinGroup),
-              _info('账号凭据位置', secretsPath ?? missing),
-              _info('最近导出', app.lastExportPath ?? '还没有导出'),
               _cacheRow(app),
               _info(
-                '本地服务',
+                tr.shell.backend,
                 '${app.backend.api.base}${app.backend.binaryPath == null ? '' : '  ·  ${app.backend.binaryPath}'}',
               ),
               const SizedBox(height: Sp.withinGroup),
               Align(
                 alignment: Alignment.centerLeft,
                 child: AppButton(
-                  '快捷键参考',
+                  tr.shell.shortcuts,
                   icon: Icons.keyboard_outlined,
                   tooltip: 'F1',
                   onPressed: ShellScope.of(context).actions.openShortcuts,
@@ -316,10 +322,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
               // ---- Request log
               const SizedBox(height: Sp.betweenSections),
-              Semantics(header: true, child: Text('请求记录', style: Ty.section)),
+              SectionHeader(tr.shell.requestLog),
               const SizedBox(height: 4),
               Text(
-                '最近 ${metrics.length} 次对大神的请求。不含 token 或参数。',
+                tr.shell.requestLogNote(metrics.length),
                 style: Ty.meta.copyWith(color: c.textSecondary),
               ),
               const SizedBox(height: Sp.withinGroup),
@@ -327,63 +333,66 @@ class _SettingsPageState extends State<SettingsPage> {
                 height:
                     rowH * (math.min(math.max(metrics.length, 2), 12) + 1) + 4,
                 child: AppTable<Json>(
-                  tableLabel: '请求记录',
+                  tableLabel: tr.shell.requestLog,
                   columns: [
                     Col(
                       id: 'at',
-                      label: '时间',
+                      label: tr.shell.columnTime,
                       width: 96,
                       cell: (_, m) =>
                           Text(fmtDateTime((m['at_ms'] as num?)?.toInt())),
                     ),
                     Col(
                       id: 'ep',
-                      label: '接口',
+                      label: tr.shell.columnEndpoint,
                       width: 220,
                       flex: true,
                       cell: (_, m) => Text('${m['endpoint']}'),
                     ),
                     Col(
                       id: 'st',
-                      label: '结果',
+                      label: tr.shell.columnResult,
                       width: 110,
                       cell: (_, m) => _MetricStatus('${m['status']}'),
                     ),
                     Col(
                       id: 'code',
-                      label: '状态码',
+                      label: tr.shell.columnStatusCode,
                       width: 72,
                       numeric: true,
                       cell: (_, m) => Text('${m['status_code'] ?? missing}'),
                     ),
                     Col(
                       id: 'q',
-                      label: '排队 ms',
+                      label: tr.shell.columnQueueMs,
                       width: 80,
                       numeric: true,
                       cell: (_, m) => Text(fmtInt(m['queue_ms'] as num?)),
                     ),
                     Col(
                       id: 'd',
-                      label: '耗时 ms',
+                      label: tr.shell.columnDurationMs,
                       width: 80,
                       numeric: true,
                       cell: (_, m) => Text(fmtInt(m['duration_ms'] as num?)),
                     ),
                     Col(
                       id: 'a',
-                      label: '尝试',
+                      label: tr.shell.columnAttempts,
                       width: 56,
                       numeric: true,
                       cell: (_, m) => Text(fmtInt(m['attempts'] as num?)),
                     ),
                   ],
                   rows: metrics,
-                  rowLabel: (m) =>
-                      '${m['endpoint']}，${m['status']}，耗时 ${fmtInt(m['duration_ms'] as num?)} 毫秒',
+                  rowLabel: (m) => tr.shell.requestRow(
+                    '${m['endpoint']}',
+                    '${m['status']}',
+                    fmtInt(m['duration_ms'] as num?),
+                  ),
                   empty: Center(
                     child: Text(
-                      '还没有请求。',
+                      tr.shell.noRequests,
                       style: Ty.body.copyWith(color: c.textSecondary),
                     ),
                   ),
@@ -455,8 +464,14 @@ class _SettingsPageState extends State<SettingsPage> {
         ? '${(bytes / 1048576).toStringAsFixed(1)} MB'
         : '${(bytes / 1024).round()} KB';
     final text = s == null
-        ? '不可用'
-        : '${s['listed']} 场对局记录、${s['matches']} 场详情、${s['participants']} 名队友与对手、${s['players']} 名玩家段位，$size';
+        ? tr.shell.unavailable
+        : tr.shell.cacheStats(
+            s['listed'],
+            s['matches'],
+            s['participants'],
+            s['players'],
+            size,
+          );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -465,14 +480,14 @@ class _SettingsPageState extends State<SettingsPage> {
           SizedBox(
             width: 140,
             child: Text(
-              '本地缓存',
+              tr.shell.localCache,
               style: Ty.body.copyWith(color: context.c.textSecondary),
             ),
           ),
           Flexible(child: Text(text, style: Ty.body)),
           const SizedBox(width: Sp.withinGroup),
           AppButton(
-            '清除缓存',
+            tr.shell.clearCache,
             quiet: true,
             onPressed: s == null ? null : app.clearStrengthCache,
           ),
@@ -500,10 +515,12 @@ class _SettingsPageState extends State<SettingsPage> {
 }
 
 String _statusText(Json a) => switch (a['status']) {
-  'ready' => '可用',
-  'cooldown' => '冷却中，约 ${((a['cooldown_ms'] as num? ?? 0) / 1000).ceil()} 秒后恢复',
-  'expired' => 'token 已失效，需要更新',
-  _ => '未知',
+  'ready' => tr.shell.accountReady,
+  'cooldown' => tr.shell.accountCooldown(
+    ((a['cooldown_ms'] as num? ?? 0) / 1000).ceil(),
+  ),
+  'expired' => tr.shell.accountExpired,
+  _ => tr.shell.accountUnknown,
 };
 
 class _AccountStatus extends StatelessWidget {
@@ -513,7 +530,7 @@ class _AccountStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final (icon, color) = switch (a['status']) {
-      'ready' => (Icons.check_rounded, c.win),
+      'ready' => (Icons.check_rounded, c.success),
       'cooldown' => (Icons.schedule, c.warning),
       _ => (Icons.error_outline, c.error),
     };
@@ -541,10 +558,10 @@ class _MetricStatus extends StatelessWidget {
         Icon(
           ok ? Icons.check_rounded : Icons.close_rounded,
           size: 14,
-          color: ok ? c.win : c.error,
+          color: ok ? c.success : c.error,
         ),
         const SizedBox(width: 4),
-        Text(ok ? '成功' : status),
+        Text(ok ? tr.shell.requestOk : status),
       ],
     );
   }

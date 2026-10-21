@@ -10,8 +10,8 @@ import '../../state/app_state.dart';
 import '../../state/match_view.dart';
 import '../player_view.dart';
 import '../shell.dart' show ShellScope;
+import '../../l10n/strings.dart';
 import 'match_detail_page.dart';
-import '../../design/net_pic.dart';
 
 /// Height of one match row. Tall on purpose: the row is a picture the player
 /// recognises, with room to breathe, not a line of numbers.
@@ -76,12 +76,15 @@ class _MatchListState extends State<_MatchList> {
 
     if (load.failedWithoutData) {
       return ErrorPanel(
-        what: '无法读取${mode.label}的对局',
+        what: tr.matches.cannotReadMatches(mode.label),
         error: load.error!,
         onRetry: () => ws.loadMatches(mode, fresh: true),
         extra: [
           if (load.error!.isAuth)
-            AppButton('打开设置', onPressed: () => app.showSettings(true)),
+            AppButton(
+              tr.common.openSettings,
+              onPressed: () => app.showSettings(true),
+            ),
         ],
       );
     }
@@ -120,7 +123,7 @@ class _MatchListState extends State<_MatchList> {
         const SizedBox(height: Sp.withinGroup),
         Expanded(
           child: CardList<MatchSummary>(
-            listLabel: '${mode.label}对局列表',
+            listLabel: tr.matches.listLabel(mode.label),
             itemExtent: _rowExtent,
             rows: visible,
             loading: load.firstLoad,
@@ -153,35 +156,52 @@ class _MatchListState extends State<_MatchList> {
     if (noData) {
       return EmptyState(
         icon: Icons.sports_esports_outlined,
-        title: '${ws.name} 在${mode.label}没有对局记录',
-        body: '该模式没有打过，或资料为私密。可换个模式。',
+        title: tr.matches.noRecord(ws.name, mode.label),
+        body: tr.matches.noRecordBody,
         actions: [
           for (final m in Mode.values.where((m) => m != mode))
-            AppButton('切换到${m.label}', onPressed: () => app.setMode(m)),
+            AppButton(
+              tr.matches.switchToMode(m.label),
+              onPressed: () => app.setMode(m),
+            ),
         ],
       );
     }
     final parts = <String>[
       if (filters.outcomes.isNotEmpty)
-        '结果：${filters.outcomes.map((o) => o.label).join('、')}',
-      if (filters.role != null) '职责：${filters.role!.label}',
-      if (filters.heroGuid != null) '英雄',
-      if (filters.mapGuid != null) '地图',
-      if (filters.query.trim().isNotEmpty) '搜索“${filters.query.trim()}”',
+        tr.matches.filterOutcome(
+          tr.common.list(filters.outcomes.map((o) => o.label)),
+        ),
+      if (filters.role != null) tr.matches.filterRole(filters.role!.label),
+      if (filters.heroGuid != null) tr.matches.filterHero,
+      if (filters.mapGuid != null) tr.matches.filterMap,
+      if (filters.query.trim().isNotEmpty)
+        tr.matches.filterSearchQuoted(filters.query.trim()),
     ];
     return EmptyState(
       icon: Icons.filter_alt_off_outlined,
-      title: '没有符合筛选的对局',
-      body:
-          '已读取的 ${ws.matchesFor(mode).value?.matches.length ?? 0} 场对局中，没有满足：${parts.join('，')}。',
+      title: tr.matches.noMatchingMatches,
+      body: tr.matches.noMatchingBody(
+        ws.matchesFor(mode).value?.matches.length ?? 0,
+        tr.matches.conditions(parts),
+      ),
       actions: [
-        AppButton('清除筛选', primary: true, onPressed: () => _clear(ws, filters)),
+        AppButton(
+          tr.common.clearFilters,
+          primary: true,
+          onPressed: () => _clear(ws, filters),
+        ),
       ],
     );
   }
 
-  static String _rowLabel(MatchSummary m) =>
-      '${m.outcome.label}，比分${fmtScore(m.scoreTeam, m.scoreOpponent)}，${m.map?.label ?? '未知地图'}，${m.hero?.label ?? '未知英雄'}，${fmtDateTime(m.startedAtMs)}';
+  static String _rowLabel(MatchSummary m) => tr.matches.rowLabel(
+    m.outcome.label,
+    fmtScore(m.scoreTeam, m.scoreOpponent),
+    m.map?.label ?? tr.common.unknownMap,
+    m.hero?.label ?? tr.common.unknownHero,
+    fmtDateTime(m.startedAtMs),
+  );
 }
 
 /// One match, recognisable at a glance: the map is the background and fades out toward
@@ -205,167 +225,85 @@ class _MatchCard extends StatelessWidget {
     final outcome = c.outcome(m.outcome.id);
     final role = m.role != Role.unknown ? m.role : catalog.heroRole(m.hero);
     final mapMode = catalog.mapMode(m.map);
-    final light = Theme.of(context).brightness == Brightness.light;
-    final mapUrl = catalog.mapImage(m.map);
-    final overlay = state.active
-        ? c.selected
-        : (state.hovered ? c.hover : null);
 
-    return LayoutBuilder(
-      builder: (context, box) {
-        // The head is a square the height of the row.
-        final side = box.maxHeight;
-        return Container(
-          // Sharp rectangle: no rounding. Only selection and keyboard focus draw an outline.
-          decoration: BoxDecoration(
-            border: state.ring
-                ? Border.all(color: c.accent, width: 2)
-                : state.active
-                ? Border.all(color: c.accent.withValues(alpha: 0.7), width: 1)
-                : null,
+    return ArtRow(
+      state: state,
+      art: catalog.mapImage(m.map),
+      artAlignment: const Alignment(0, -0.15),
+      // The hero's head: a plain square flush with the right edge.
+      layers: (side) => [
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: side,
+          child: PortraitCell(catalog.heroPortrait(m.hero)),
+        ),
+      ],
+      content: (side) => Row(
+        children: [
+          // The result: a hard vertical bar (colour) plus icon and word (shape and text).
+          Container(width: 4, color: outcome),
+          const SizedBox(width: Sp.betweenGroups),
+          SizedBox(
+            width: 44,
+            child: Center(child: OutcomeMark(m.outcome, stacked: true)),
           ),
-          child: ClipRect(
-            child: Stack(
+          const SizedBox(width: Sp.betweenGroups),
+          SizedBox(
+            width: 92,
+            child: Text(
+              fmtScore(m.scoreTeam, m.scoreOpponent).replaceAll(':', ' : '),
+              style: Ty.num(Ty.figure),
+              maxLines: 1,
+            ),
+          ),
+          const SizedBox(width: Sp.betweenGroups),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Map art with a scrim for the text, faded to fully transparent at the right edge.
-                Positioned.fill(
-                  child: ShaderMask(
-                    blendMode: BlendMode.dstIn,
-                    shaderCallback: (rect) => const LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        Color(0xFF000000),
-                        Color(0xB3000000),
-                        Color(0x00000000),
-                      ],
-                      stops: [0, 0.55, 1],
-                    ).createShader(rect),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        ColoredBox(color: c.raised),
-                        if (mapUrl != null)
-                          ExcludeSemantics(
-                            child: NetPic(
-                              mapUrl,
-                              fit: BoxFit.cover,
-                              alignment: const Alignment(0, -0.15),
-                              placeholder: const SizedBox.expand(
-                                child: Skeleton(radius: 0),
-                              ),
-                            ),
-                          ),
-                        // Scrim: dense on the left for text, thinning to the right.
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                c.raised.withValues(alpha: light ? 0.88 : 0.94),
-                                c.raised.withValues(alpha: light ? 0.50 : 0.70),
-                                c.raised.withValues(alpha: light ? 0.08 : 0.25),
-                              ],
-                              stops: const [0, 0.5, 1],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                Text(
+                  m.map?.label ?? tr.common.unknownMap,
+                  style: Ty.section,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                // 2. Hero head: a plain square flush with the right edge.
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: side,
-                  child: PortraitCell(catalog.heroPortrait(m.hero)),
-                ),
-                // 3. Selection / hover tint.
-                if (overlay != null)
-                  Positioned.fill(child: ColoredBox(color: overlay)),
-                // 4. Content.
-                Positioned.fill(
-                  child: Row(
-                    children: [
-                      // The result: a hard vertical bar (colour) plus icon and word (shape and text).
-                      Container(width: 4, color: outcome),
-                      const SizedBox(width: Sp.betweenGroups),
-                      SizedBox(
-                        width: 44,
-                        child: Center(
-                          child: OutcomeMark(m.outcome, stacked: true),
-                        ),
-                      ),
-                      const SizedBox(width: Sp.betweenGroups),
-                      SizedBox(
-                        width: 92,
-                        child: Text(
-                          fmtScore(
-                            m.scoreTeam,
-                            m.scoreOpponent,
-                          ).replaceAll(':', ' : '),
-                          style: Ty.num(Ty.figure),
-                          maxLines: 1,
-                        ),
-                      ),
-                      const SizedBox(width: Sp.betweenGroups),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              m.map?.label ?? '未知地图',
-                              style: Ty.section,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Row(
-                              children: [
-                                if (ModeGlyph.has(mapMode)) ...[
-                                  ModeGlyph(mapMode, size: 16),
-                                  const SizedBox(width: 6),
-                                ],
-                                Flexible(
-                                  child: Text(
-                                    [
-                                      fmtDateTime(m.startedAtMs),
-                                      if (mapMode != null && mapMode.isNotEmpty)
-                                        mapMode,
-                                    ].join('  ·  '),
-                                    style: Ty.num(
-                                      Ty.meta,
-                                    ).copyWith(color: c.textSecondary),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          RoleIcon(role, size: 22),
-                          const SizedBox(width: 8),
-                          Text(m.hero?.label ?? '未知英雄', style: Ty.title),
-                        ],
-                      ),
-                      // Keeps the text clear of the head.
-                      SizedBox(width: side + Sp.betweenGroups),
+                Row(
+                  children: [
+                    if (ModeGlyph.has(mapMode)) ...[
+                      ModeGlyph(mapMode, size: 16),
+                      const SizedBox(width: 6),
                     ],
-                  ),
+                    Flexible(
+                      child: Text(
+                        [
+                          fmtDateTime(m.startedAtMs),
+                          if (mapMode != null && mapMode.isNotEmpty) mapMode,
+                        ].join('  ·  '),
+                        style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-        );
-      },
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RoleIcon(role, size: 22),
+              const SizedBox(width: 8),
+              Text(m.hero?.label ?? tr.common.unknownHero, style: Ty.title),
+            ],
+          ),
+          // Keeps the text clear of the head.
+          SizedBox(width: side + Sp.betweenGroups),
+        ],
+      ),
     );
   }
 }
@@ -427,19 +365,19 @@ class _FilterBar extends StatelessWidget {
           width: 220,
           child: Semantics(
             textField: true,
-            label: '筛选对局，匹配英雄、地图、职责与结果',
+            label: tr.matches.searchLabel,
             child: TextField(
               controller: queryController,
               focusNode: scope.filterFocus,
               onChanged: (v) => change(() => f.query = v),
               decoration: InputDecoration(
-                hintText: '搜索英雄、地图  Ctrl+F',
+                hintText: tr.matches.searchHint,
                 prefixIcon: const Icon(Icons.search, size: 18),
                 suffixIcon: f.query.isEmpty
                     ? null
                     : IconAction(
                         icon: Icons.close,
-                        label: '清除搜索',
+                        label: tr.matches.clearSearch,
                         onPressed: () {
                           queryController.clear();
                           change(() => f.query = '');
@@ -472,14 +410,14 @@ class _FilterBar extends StatelessWidget {
             tip: '${r.label}（$roleLegend）',
           ),
         _FacetMenu(
-          title: '英雄',
+          title: tr.matches.filterHero,
           icon: Icons.person_outline,
           value: f.heroGuid == null ? null : heroes[f.heroGuid],
           options: options(heroes, heroCounts),
           onSelect: (id) => change(() => f.heroGuid = id),
         ),
         _FacetMenu(
-          title: '地图',
+          title: tr.matches.filterMap,
           icon: Icons.map_outlined,
           value: f.mapGuid == null ? null : maps[f.mapGuid],
           options: options(maps, mapCounts),
@@ -514,41 +452,30 @@ class _ToggleChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final chip = Semantics(
-      button: true,
-      toggled: selected,
-      label: '$name，$count 场',
-      excludeSemantics: true,
+    return Pressable(
       onTap: onTap,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(Radii.control),
-        child: Container(
-          height: 34,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: selected ? c.selected : null,
-            borderRadius: BorderRadius.circular(Radii.control),
-            border: Border.all(color: selected ? c.accent : c.border),
+      selected: selected,
+      toggle: true,
+      outlineAtRest: true,
+      semanticLabel: tr.matches.chipLabel(name, count),
+      tooltip: tip ?? name,
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          leading,
+          const SizedBox(width: 6),
+          Text(
+            '$count',
+            style: Ty.num(Ty.body).copyWith(
+              color: selected ? c.textPrimary : c.textSecondary,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              leading,
-              const SizedBox(width: 6),
-              Text(
-                '$count',
-                style: Ty.num(Ty.body).copyWith(
-                  color: selected ? c.textPrimary : c.textSecondary,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
-    return Tooltip(message: tip ?? name, child: chip);
   }
 }
 
@@ -572,11 +499,11 @@ class _FacetMenu extends StatelessWidget {
       menuChildren: [
         MenuItemButton(
           onPressed: () => onSelect(null),
-          child: Text('全部$title'),
+          child: Text(tr.matches.facetAll(title)),
         ),
         for (final o in options)
           Tooltip(
-            message: o.count == 0 ? '在其他筛选条件下没有对局' : '',
+            message: o.count == 0 ? tr.matches.facetOptionEmpty : '',
             child: MenuItemButton(
               onPressed: o.count == 0 ? null : () => onSelect(o.id),
               trailingIcon: Text(
@@ -655,9 +582,9 @@ class _ScopeLine extends StatelessWidget {
     final decided = a.wins + a.losses;
     final secondary = Ty.num(Ty.body).copyWith(color: c.textSecondary);
     Widget record(IconData icon, Color color, int n, String name) => Tooltip(
-      message: '$name $n 场',
+      message: tr.matches.recordCount(name, n),
       child: Semantics(
-        label: '$name $n 场',
+        label: tr.matches.recordCount(name, n),
         excludeSemantics: true,
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -677,61 +604,62 @@ class _ScopeLine extends StatelessWidget {
       children: [
         Text(
           filters.active
-              ? '${rows.length} / ${all.length} 场'
-              : '${all.length} 场',
+              ? tr.matches.shownOfTotal(rows.length, all.length)
+              : tr.common.matchCount(all.length),
           style: Ty.num(Ty.bodyStrong),
         ),
         if (all.isNotEmpty) ...[
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              record(Icons.check_rounded, c.win, a.wins, '胜'),
+              record(Icons.check_rounded, c.win, a.wins, Outcome.win.label),
               const SizedBox(width: 10),
-              record(Icons.close_rounded, c.loss, a.losses, '负'),
+              record(Icons.close_rounded, c.loss, a.losses, Outcome.loss.label),
               const SizedBox(width: 10),
-              record(Icons.remove_rounded, c.draw, a.draws, '平'),
+              record(Icons.remove_rounded, c.draw, a.draws, Outcome.draw.label),
             ],
           ),
           Tooltip(
-            message: '胜 ÷ （胜 + 负），共 $decided 场；平局、未知不计。',
+            message: tr.matches.winRateTip(decided),
             child: Text(
-              '胜率 ${a.winRatePct == null ? missing : fmtPct(a.winRatePct)}',
+              tr.matches.winRate(
+                a.winRatePct == null ? missing : fmtPct(a.winRatePct),
+              ),
               style: secondary,
             ),
           ),
         ],
         for (final o in filters.outcomes)
           FilterTag(
-            label: '结果：${o.label}',
+            label: tr.matches.filterOutcome(o.label),
             onRemove: () => change(() => filters.outcomes.remove(o)),
           ),
         if (filters.role != null)
           FilterTag(
-            label: '职责：${filters.role!.label}',
+            label: tr.matches.filterRole(filters.role!.label),
             onRemove: () => change(() => filters.role = null),
           ),
         if (filters.heroGuid != null)
           FilterTag(
-            label: '英雄',
+            label: tr.matches.filterHero,
             onRemove: () => change(() => filters.heroGuid = null),
           ),
         if (filters.mapGuid != null)
           FilterTag(
-            label: '地图',
+            label: tr.matches.filterMap,
             onRemove: () => change(() => filters.mapGuid = null),
           ),
         if (filters.query.trim().isNotEmpty)
           FilterTag(
-            label: '搜索：${filters.query.trim()}',
+            label: tr.matches.filterSearch(filters.query.trim()),
             onRemove: () => change(() => filters.query = ''),
           ),
-        if (filters.active) AppButton('清除筛选', quiet: true, onPressed: onClear),
+        if (filters.active)
+          AppButton(tr.common.clearFilters, quiet: true, onPressed: onClear),
         if (coverage != null)
           if (coverage!.exhausted)
             Tooltip(
-              message:
-                  '本地已保存全部对局（${coverage!.totalMatches} 场）。'
-                  '每次打开只读取比已保存的最新一场更新的对局。',
+              message: tr.matches.allSavedTip(coverage!.totalMatches),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -739,8 +667,8 @@ class _ScopeLine extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     coverage!.newMatches > 0
-                        ? '已读完，新增 ${coverage!.newMatches} 场'
-                        : '已读完',
+                        ? tr.matches.allReadWithNew(coverage!.newMatches)
+                        : tr.matches.allRead,
                     style: secondary,
                   ),
                 ],
@@ -750,15 +678,9 @@ class _ScopeLine extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox.square(
-                  dimension: 12,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: c.accent,
-                  ),
-                ),
+                Spinner(color: c.accent),
                 const SizedBox(width: 6),
-                Text('正在读取更早的对局…', style: secondary),
+                Text(tr.matches.readingOlder, style: secondary),
               ],
             )
           else
@@ -766,7 +688,7 @@ class _ScopeLine extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Tooltip(
-                  message: '还有更早的对局没有读取',
+                  message: tr.matches.olderUnreadTip,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -777,7 +699,7 @@ class _ScopeLine extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '未读完',
+                        tr.matches.notAllRead,
                         style: Ty.num(Ty.body).copyWith(color: c.warning),
                       ),
                     ],
@@ -785,19 +707,19 @@ class _ScopeLine extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 AppButton(
-                  '继续读取',
+                  tr.matches.continueReading,
                   quiet: true,
                   icon: Icons.add,
                   onPressed: () => ws.loadMatches(mode),
-                  tooltip: '读取全部更早的对局',
+                  tooltip: tr.matches.continueReadingTip,
                 ),
               ],
             ),
         if (ws.prepareRemaining[mode] != null)
           Tooltip(
-            message: '正在后台查询新对局里玩家的段位，之后分析对局强度时就不用再等了。',
+            message: tr.matches.preparingTip,
             child: Text(
-              '正在准备对局数据，还剩 ${ws.prepareRemaining[mode]} 场…',
+              tr.matches.preparing(ws.prepareRemaining[mode]!),
               style: secondary,
             ),
           ),
@@ -810,10 +732,12 @@ class _ScopeLine extends StatelessWidget {
         ),
         IconAction(
           icon: ws.sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-          label: ws.sortAscending ? '时间顺序：最早在前，点击改为最新在前' : '时间顺序：最新在前，点击改为最早在前',
+          label: ws.sortAscending
+              ? tr.matches.sortOldestFirst
+              : tr.matches.sortNewestFirst,
           onPressed: () => change(() => ws.sortAscending = !ws.sortAscending),
         ),
-        const InfoTip('筛选与排序只作用于已读取的对局。点击一行（或按 Enter）打开这一局的详细数据。'),
+        InfoTip(tr.matches.listInfo),
       ],
     );
   }

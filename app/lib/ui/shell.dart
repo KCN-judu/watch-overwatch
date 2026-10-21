@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
+import '../l10n/strings.dart';
 import '../state/app_state.dart';
 import '../state/commands.dart';
 import 'navigator_pane.dart';
@@ -76,7 +77,10 @@ class _ShellState extends State<Shell> implements ShellActions {
         showCloseIcon: true,
         action: action == null
             ? null
-            : SnackBarAction(label: actionLabel ?? '撤销', onPressed: action),
+            : SnackBarAction(
+                label: actionLabel ?? tr.shell.undo,
+                onPressed: action,
+              ),
       ),
     );
   }
@@ -163,7 +167,7 @@ class _ShellState extends State<Shell> implements ShellActions {
                               width: navW,
                               child: _PaneFrame(
                                 scope: _navScope,
-                                label: '玩家库',
+                                label: tr.shell.playerLibrary,
                                 color: c.nav,
                                 child: NavigatorPane(collapsed: collapsed),
                               ),
@@ -182,7 +186,7 @@ class _ShellState extends State<Shell> implements ShellActions {
                             Expanded(
                               child: _PaneFrame(
                                 scope: _workScope,
-                                label: '工作区',
+                                label: tr.shell.workArea,
                                 color: c.window,
                                 child: const _WorkArea(),
                               ),
@@ -232,7 +236,7 @@ class _PaneFrame extends StatelessWidget {
               children: [
                 Container(
                   height: 2,
-                  color: scope.hasFocus && keyboardModalityShell
+                  color: scope.hasFocus && keyboardModality
                       ? c.accent
                       : Colors.transparent,
                 ),
@@ -245,9 +249,6 @@ class _PaneFrame extends StatelessWidget {
     );
   }
 }
-
-bool get keyboardModalityShell =>
-    FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
 
 /// Runs a registry command from a shortcut. Printable single-key shortcuts
 /// stand down while the user is typing.
@@ -286,7 +287,15 @@ class _MenuBarRow extends StatelessWidget {
   final AppState app;
   final ShellActions shell;
 
-  static const order = ['文件', '视图', '模式', '对局', '外观', '帮助'];
+  // Matched against Cmd.category, so these are the same entries the commands use.
+  static final order = [
+    tr.core.categoryFile,
+    tr.core.categoryView,
+    tr.core.categoryMode,
+    tr.core.categoryMatches,
+    tr.core.categoryAppearance,
+    tr.core.categoryHelp,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -338,9 +347,9 @@ class _MenuBarRow extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: AppButton(
-              '命令面板',
+              tr.shell.commandPalette,
               quiet: true,
-              icon: Icons.keyboard_command_key,
+              icon: Icons.search,
               onPressed: shell.openPalette,
               tooltip: 'Ctrl+K',
             ),
@@ -380,18 +389,21 @@ class _WorkArea extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     if (app.status == BackendStatus.starting) {
-      return const EmptyState(
-        title: '正在启动本地服务…',
-        body: '首次启动通常不到 3 秒。',
+      return EmptyState(
+        title: tr.shell.backendStartingTitle,
+        body: tr.shell.backendStartingBody,
         icon: Icons.hourglass_empty,
       );
     }
     if (app.status == BackendStatus.offline) {
       return Center(
         child: ErrorPanel(
-          what: '本地服务未运行',
-          error: ApiError('offline', app.backendError ?? '无法连接本地服务。'),
-          dataSafe: '已保存的玩家与账号不受影响。',
+          what: tr.shell.backendNotRunning,
+          error: ApiError(
+            'offline',
+            app.backendError ?? tr.shell.backendUnreachable,
+          ),
+          dataSafe: tr.shell.backendDataSafe,
           onRetry: app.boot,
         ),
       );
@@ -410,11 +422,11 @@ class _WorkArea extends StatelessWidget {
             ),
             child: StatusBanner(
               severity: Severity.warning,
-              title: '还没有大神账号',
-              detail: '查找玩家和读取对局都需要一个大神账号。凭据只保存在本机。',
+              title: tr.shell.noAccountTitle,
+              detail: tr.shell.noAccountDetail,
               actions: [
                 AppButton(
-                  '添加账号',
+                  tr.shell.addAccount,
                   primary: true,
                   onPressed: () => app.showSettings(true),
                 ),
@@ -431,10 +443,13 @@ class _WorkArea extends StatelessWidget {
             ),
             child: StatusBanner(
               severity: Severity.warning,
-              title: '没有可用的大神账号',
-              detail: '账号可能已过期或正在冷却。请在设置中更新 token，或稍后重试。',
+              title: tr.shell.noReadyAccountTitle,
+              detail: tr.shell.noReadyAccountDetail,
               actions: [
-                AppButton('打开设置', onPressed: () => app.showSettings(true)),
+                AppButton(
+                  tr.common.openSettings,
+                  onPressed: () => app.showSettings(true),
+                ),
               ],
             ),
           ),
@@ -457,20 +472,25 @@ class _FirstRun extends StatelessWidget {
     final scope = ShellScope.of(context);
     return EmptyState(
       icon: Icons.person_search_outlined,
-      title: app.players.isEmpty ? '查找第一名玩家' : '选择一名玩家',
+      title: app.players.isEmpty
+          ? tr.shell.findFirstPlayer
+          : tr.shell.choosePlayer,
       body: app.players.isEmpty
-          ? '输入完整的战网昵称（例如 Player#12345）。'
-          : '从左侧玩家库选择，或输入新的战网昵称。',
+          ? tr.shell.findFirstPlayerBody
+          : tr.shell.choosePlayerBody,
       actions: [
         AppButton(
-          '查找玩家',
+          tr.shell.findPlayer,
           primary: true,
           icon: Icons.search,
           onPressed: scope.actions.focusSearch,
           tooltip: 'Ctrl+L',
         ),
         if (!hasAccount)
-          AppButton('添加账号', onPressed: () => app.showSettings(true)),
+          AppButton(
+            tr.shell.addAccount,
+            onPressed: () => app.showSettings(true),
+          ),
       ],
     );
   }
@@ -485,9 +505,18 @@ class _StatusBar extends StatelessWidget {
     final app = AppScope.of(context);
     final c = context.c;
     final (icon, text) = switch (app.status) {
-      BackendStatus.ready => (Icons.check_circle_outline, '本地服务已连接'),
-      BackendStatus.starting => (Icons.hourglass_empty, '正在启动本地服务'),
-      BackendStatus.offline => (Icons.error_outline, '本地服务未连接'),
+      BackendStatus.ready => (
+        Icons.check_circle_outline,
+        tr.shell.backendConnected,
+      ),
+      BackendStatus.starting => (
+        Icons.hourglass_empty,
+        tr.shell.backendStarting,
+      ),
+      BackendStatus.offline => (
+        Icons.error_outline,
+        tr.shell.backendDisconnected,
+      ),
     };
     final ready = app.accounts.where((a) => a['status'] == 'ready').length;
     final style = Ty.meta.copyWith(color: c.textSecondary);
@@ -511,23 +540,30 @@ class _StatusBar extends StatelessWidget {
           Text(text, style: style),
           if (app.server != null) ...[
             const SizedBox(width: 12),
-            Text('账号 $ready/${app.accounts.length} 可用', style: style),
+            Text(
+              tr.shell.accountsReady(ready, app.accounts.length),
+              style: style,
+            ),
           ],
           const SizedBox(width: 12),
-          Text('第 ${app.currentSeason} 赛季', style: style),
+          Text(tr.common.season(app.currentSeason), style: style),
           const Spacer(),
           const ImageProgress(),
           const SizedBox(width: 12),
           if (app.exporting) ...[
-            RefreshingChip(label: app.exportStatus ?? '正在导出数据集…'),
+            RefreshingChip(label: app.exportStatus ?? tr.shell.exporting),
             const SizedBox(width: 8),
-            AppButton('取消导出', quiet: true, onPressed: app.cancelExport),
+            AppButton(
+              tr.shell.cancelExport,
+              quiet: true,
+              onPressed: app.cancelExport,
+            ),
           ] else if (app.lastExportPath != null)
             Flexible(
               child: Tooltip(
                 message: app.lastExportPath!,
                 child: Text(
-                  '最近导出：${app.lastExportPath}',
+                  tr.shell.lastExport(app.lastExportPath!),
                   style: style,
                   overflow: TextOverflow.ellipsis,
                 ),

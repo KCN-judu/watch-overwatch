@@ -9,6 +9,7 @@ import '../core/export_file.dart';
 import '../core/models.dart';
 import '../core/support.dart';
 import '../design/tokens.dart';
+import '../l10n/strings.dart';
 import 'match_view.dart';
 import '../core/image_store.dart';
 
@@ -26,13 +27,13 @@ class Load<T> {
 enum BackendStatus { starting, ready, offline }
 
 const tabIds = ['matches', 'heroes', 'strength', 'growth', 'trend', 'profile'];
-const tabLabels = {
-  'matches': '对局',
-  'heroes': '英雄',
-  'strength': '对局强度',
-  'growth': '成长',
-  'trend': '赛季走势',
-  'profile': '档案',
+Map<String, String> get tabLabels => {
+  'matches': tr.core.tabMatches,
+  'heroes': tr.core.tabHeroes,
+  'strength': tr.core.tabStrength,
+  'growth': tr.core.tabGrowth,
+  'trend': tr.core.tabTrend,
+  'profile': tr.core.tabProfile,
 };
 
 /// Everything about one queried player. Kept alive while the app runs so that
@@ -400,7 +401,7 @@ class PlayerWorkspace extends ChangeNotifier {
     strengthSelected.remove(mode);
     result.loading = true;
     result.error = null;
-    strengthStatus[mode] = '正在读取对局…';
+    strengthStatus[mode] = tr.core.strengthReading;
     notifyListeners();
 
     StrengthResult? latest;
@@ -437,9 +438,7 @@ class PlayerWorkspace extends ChangeNotifier {
           break;
         }
 
-        strengthStatus[mode] = rounds == 1
-            ? ''
-            : '第 $rounds 轮：有对局没有可评定的玩家，再多取几场…';
+        strengthStatus[mode] = rounds == 1 ? '' : tr.core.strengthRound(rounds);
         final id =
             '${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}-${mode.id}';
         String? lastPhase;
@@ -512,7 +511,7 @@ class PlayerWorkspace extends ChangeNotifier {
         if (extended) continue;
         if (!stillShort || listExhausted(mode)) break;
         // Every stored match of the short role is already used: read older ones.
-        strengthStatus[mode] = '对局不够，正在读取更早的对局…';
+        strengthStatus[mode] = tr.core.strengthReadingOlder;
         notifyListeners();
         final had = read.length;
         await loadMatches(mode, quota: wanted, roles: roles);
@@ -718,7 +717,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     if (!await backend.ensureRunning()) {
       status = BackendStatus.offline;
-      backendError = backend.lastLaunchError ?? '无法连接本地服务。';
+      backendError = backend.lastLaunchError ?? tr.core.serviceUnavailable;
       notifyListeners();
       return;
     }
@@ -769,9 +768,9 @@ class AppState extends ChangeNotifier {
   Future<void> clearStrengthCache() async {
     try {
       cacheStats = await api.clearCache();
-      toast?.call('已清除强度缓存');
+      toast?.call(tr.core.cacheCleared);
     } on ApiError catch (e) {
-      toast?.call('无法清除缓存：${e.message}');
+      toast?.call(tr.core.cacheClearFailed(e.message));
     }
     notifyListeners();
   }
@@ -835,7 +834,7 @@ class AppState extends ChangeNotifier {
     try {
       players = await api.savePlayer(name, remove: true);
     } on ApiError catch (e) {
-      toast?.call('无法移除 $name：${e.message}');
+      toast?.call(tr.core.playerRemoveFailed(name, e.message));
       return;
     }
     final wasCurrent = current?.name.toLowerCase() == name.toLowerCase();
@@ -847,15 +846,15 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     // Removing from the library is cheap to reverse, so it is undone rather than confirmed.
     toast?.call(
-      '已从玩家库移除 $name',
-      actionLabel: '撤销',
+      tr.core.playerRemoved(name),
+      actionLabel: tr.core.undo,
       action: () async {
         try {
           players = await api.savePlayer(name);
           notifyListeners();
           if (wasCurrent) await selectPlayer(name);
         } on ApiError catch (e) {
-          toast?.call('无法恢复 $name：${e.message}');
+          toast?.call(tr.core.playerRestoreFailed(name, e.message));
         }
       },
     );
@@ -961,18 +960,18 @@ class AppState extends ChangeNotifier {
     if (ws == null || exporting) return null;
     exporting = true;
     final token = _exportCancel = CancelToken();
-    exportStatus = '请选择保存位置…';
+    exportStatus = tr.core.exportPickLocation;
     notifyListeners();
     try {
       // Asked before the long read so a cancelled dialog costs nothing.
       final safe = ws.name.replaceAll('#', '-');
-      final path = await pickSavePath('$safe-数据集.json');
+      final path = await pickSavePath(tr.core.exportFileName(safe));
       if (path == null) return null;
       for (final mode in modes) {
         await _exportReadList(ws, mode, count, token);
         await _exportPrepare(ws, mode, count, ratings, token);
       }
-      exportStatus = '正在整理导出内容…';
+      exportStatus = tr.core.exportAssembling;
       notifyListeners();
       final session = await ws.ensureSession();
       final content = await api.exportDataset(
@@ -984,16 +983,16 @@ class AppState extends ChangeNotifier {
       );
       await writeJsonFile(path, content);
       lastExportPath = path;
-      toast?.call('数据集已保存：$path');
+      toast?.call(tr.core.exportSaved(path));
       return path;
     } on Cancelled {
-      toast?.call('已取消导出，没有写入文件。');
+      toast?.call(tr.core.exportCancelled);
       return null;
     } on FileSystemException {
-      toast?.call('无法保存到所选位置。请换一个文件夹，并检查权限和剩余空间。');
+      toast?.call(tr.core.exportWriteFailed);
       return null;
     } on ApiError catch (e) {
-      toast?.call('导出失败：${e.message}');
+      toast?.call(tr.core.exportFailed(e.message));
       return null;
     } finally {
       exporting = false;
@@ -1014,8 +1013,7 @@ class AppState extends ChangeNotifier {
     var first = true;
     var seen = 0;
     while (!token.cancelled) {
-      exportStatus =
-          '读取${mode.shortLabel}对局列表${seen > 0 ? '（已读 $seen 场）' : ''}…';
+      exportStatus = tr.core.exportReadingList(mode.shortLabel, seen);
       notifyListeners();
       final ds = await ws._call(
         (s) => api.dataset(s, mode, fresh: first, cancel: token),
@@ -1056,8 +1054,11 @@ class AppState extends ChangeNotifier {
         ),
       );
       if (!r.enabled) return;
-      exportStatus =
-          '准备${mode.shortLabel}对局数据 ${r.total - r.remaining}/${r.total}…';
+      exportStatus = tr.core.exportPreparing(
+        mode.shortLabel,
+        r.total - r.remaining,
+        r.total,
+      );
       notifyListeners();
       if (r.remaining == 0) return;
       // A batch that left as many waiting as before could not be prepared: go on without.

@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../../core/models.dart';
 import '../../core/support.dart';
+import '../../design/cards.dart';
 import '../../design/icons.dart';
+import '../../design/net_pic.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../state/app_state.dart';
-import '../player_view.dart';
+import '../../l10n/strings.dart';
 import 'player_detail_page.dart';
 import 'team_table.dart';
 
@@ -61,10 +63,10 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     final header = Row(
       children: [
         AppButton(
-          '对局列表',
+          tr.matches.matchList,
           icon: Icons.arrow_back,
           quiet: true,
-          tooltip: onPlayerPage ? null : 'Esc 或 Alt+←',
+          tooltip: onPlayerPage ? null : tr.matches.backShortcut,
           onPressed: ws.closeMatch,
         ),
         Text('›', style: Ty.body.copyWith(color: c.textSecondary)),
@@ -77,7 +79,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                       child: AppButton(
                         title,
                         quiet: true,
-                        tooltip: '回到整场对局（Esc 或 Alt+←）',
+                        tooltip: tr.matches.backToMatchTip,
                         onPressed: ws.closePlayer,
                       ),
                     ),
@@ -85,7 +87,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        player.name ?? '未知玩家',
+                        player.name ?? tr.common.unknownPlayer,
                         style: Ty.bodyStrong,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -100,17 +102,19 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         ),
         if (onPlayerPage)
           Text(
-            '第 ${playerIndex + 1} / $playerCount 位',
+            tr.matches.playerPosition(playerIndex + 1, playerCount),
             style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
           )
         else if (index >= 0)
           Text(
-            '第 ${index + 1} / ${ws.navIds.length} 场',
+            tr.matches.matchPosition(index + 1, ws.navIds.length),
             style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
           ),
         IconAction(
           icon: Icons.chevron_left,
-          label: onPlayerPage ? '上一位' : '上一场',
+          label: onPlayerPage
+              ? tr.matches.previousPlayer
+              : tr.matches.previousMatch,
           shortcut: '[',
           onPressed: onPlayerPage
               ? (playerIndex > 0 ? () => ws.stepOpenPlayer(-1) : null)
@@ -118,7 +122,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         ),
         IconAction(
           icon: Icons.chevron_right,
-          label: onPlayerPage ? '下一位' : '下一场',
+          label: onPlayerPage ? tr.matches.nextPlayer : tr.matches.nextMatch,
           shortcut: ']',
           onPressed: onPlayerPage
               ? (playerIndex < playerCount - 1
@@ -134,10 +138,10 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     Widget body;
     if (load.failedWithoutData) {
       body = ErrorPanel(
-        what: '无法读取这场对局的详情',
+        what: tr.matches.cannotReadDetail,
         error: load.error!,
         onRetry: () => ws.loadDetail(mode, id),
-        extra: [AppButton('返回列表', onPressed: ws.closeMatch)],
+        extra: [AppButton(tr.matches.backToList, onPressed: ws.closeMatch)],
       );
     } else if (!load.has) {
       body = const AfterDelay(child: _DetailSkeleton());
@@ -184,17 +188,13 @@ class _DetailSkeleton extends StatelessWidget {
   const _DetailSkeleton();
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
-    Widget block(double h) => Container(
-      height: h,
-      margin: const EdgeInsets.only(bottom: Sp.betweenGroups),
-      decoration: BoxDecoration(
-        color: c.hover.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(Radii.container),
-      ),
+    // The page's own layout (result line, two team tables), in the shared skeleton.
+    Widget block(double h) => Padding(
+      padding: const EdgeInsets.only(bottom: Sp.betweenGroups),
+      child: Skeleton(height: h, radius: 0),
     );
     return Semantics(
-      label: '正在加载对局详情',
+      label: tr.matches.readingDetail,
       liveRegion: true,
       child: ExcludeSemantics(
         child: Column(children: [block(56), block(250), block(250)]),
@@ -252,7 +252,10 @@ class _Body extends StatelessWidget {
               ),
               Semantics(
                 header: true,
-                child: Text(detail.map?.label ?? '未知地图', style: Ty.page),
+                child: Text(
+                  detail.map?.label ?? tr.common.unknownMap,
+                  style: Ty.page,
+                ),
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -268,14 +271,14 @@ class _Body extends StatelessWidget {
               ),
               if (detail.durationS != null)
                 Text(
-                  '用时 ${fmtClock(detail.durationS)}',
+                  tr.matches.duration(fmtClock(detail.durationS)),
                   style: Ty.num(Ty.body).copyWith(color: c.textSecondary),
                 ),
               if (detail.outcomeFromScore)
                 Tooltip(
-                  message: '角斗领域详情没有提供胜负字段，结果按最终比分判断。',
+                  message: tr.matches.outcomeFromScoreTip,
                   child: Text(
-                    '结果按比分判断',
+                    tr.matches.outcomeFromScore,
                     style: Ty.meta.copyWith(color: c.textSecondary),
                   ),
                 ),
@@ -284,7 +287,7 @@ class _Body extends StatelessWidget {
           ),
         ),
         TeamTable(
-          title: '己方',
+          title: tr.common.ally,
           ally: true,
           players: detail.allies,
           maxes: maxes,
@@ -295,7 +298,7 @@ class _Body extends StatelessWidget {
         ),
         const SizedBox(height: Sp.betweenSections),
         TeamTable(
-          title: '对方',
+          title: tr.common.enemy,
           ally: false,
           players: detail.enemies,
           maxes: maxes,
@@ -306,7 +309,7 @@ class _Body extends StatelessWidget {
         ),
         const SizedBox(height: Sp.withinGroup),
         Text(
-          '点一名玩家（或用方向键选中后按 Enter）打开他的详情页：威能、Fleta 指数、组队和点赞。',
+          tr.matches.openPlayerHint,
           style: Ty.meta.copyWith(color: c.textSecondary),
         ),
         if (detail.bansAlly.isNotEmpty || detail.bansEnemy.isNotEmpty) ...[
@@ -339,7 +342,7 @@ class _Bans extends StatelessWidget {
       children: [
         TeamTag(ally: ally),
         const SizedBox(width: 8),
-        Text('禁用', style: Ty.meta.copyWith(color: c.textSecondary)),
+        Text(tr.matches.bans, style: Ty.meta.copyWith(color: c.textSecondary)),
         const SizedBox(width: 8),
         if (heroes.isEmpty)
           Text(missing)
@@ -356,8 +359,8 @@ class _Bans extends StatelessWidget {
       spacing: Sp.betweenSections,
       runSpacing: Sp.withinGroup,
       children: [
-        side('己方', detail.bansAlly, true),
-        side('对方', detail.bansEnemy, false),
+        side(tr.common.ally, detail.bansAlly, true),
+        side(tr.common.enemy, detail.bansEnemy, false),
       ],
     );
   }
@@ -373,17 +376,10 @@ class _SubjectHeroes extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Semantics(header: true, child: Text('查询对象在本场使用的英雄', style: Ty.section)),
-        const SizedBox(height: Sp.withinGroup),
-        for (final s in segments)
-          Container(
-            margin: const EdgeInsets.only(bottom: Sp.withinGroup),
-            padding: const EdgeInsets.all(Sp.withinGroup + 4),
-            decoration: BoxDecoration(
-              color: c.raised,
-              borderRadius: BorderRadius.circular(Radii.container),
-              border: Border.all(color: c.border),
-            ),
+        SectionHeader(tr.matches.subjectHeroes),
+        const SizedBox(height: SectionHeader.below),
+        for (final s in segments) ...[
+          Panel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -398,7 +394,12 @@ class _SubjectHeroes extends StatelessWidget {
                     Text(s.hero.label, style: Ty.bodyStrong),
                     const SizedBox(width: 12),
                     Text(
-                      '使用 ${fmtClock(s.playTimeS)}${s.share == null ? '' : '（占本场 ${fmtPct((s.share ?? 0) * 100, digits: 0)}）'}',
+                      s.share == null
+                          ? tr.matches.heroPlayTime(fmtClock(s.playTimeS))
+                          : tr.matches.heroPlayTimeShare(
+                              fmtClock(s.playTimeS),
+                              fmtPct(s.share! * 100, digits: 0),
+                            ),
                       style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
                     ),
                   ],
@@ -412,7 +413,7 @@ class _SubjectHeroes extends StatelessWidget {
                     final unnamed = s.stats.length - named.length;
                     if (named.isEmpty) {
                       return Text(
-                        '本场 ${s.stats.length} 项统计，目录里还没有它们的名称。',
+                        tr.matches.statsAllUnnamed(s.stats.length),
                         style: Ty.meta.copyWith(color: c.textSecondary),
                       );
                     }
@@ -432,7 +433,7 @@ class _SubjectHeroes extends StatelessWidget {
                         ),
                         if (unnamed > 0)
                           Text(
-                            '另有 $unnamed 项统计目录里没有名称，未显示。',
+                            tr.matches.statsSomeUnnamed(unnamed),
                             style: Ty.meta.copyWith(color: c.textSecondary),
                           ),
                       ],
@@ -442,6 +443,8 @@ class _SubjectHeroes extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: Sp.withinGroup),
+        ],
       ],
     );
   }
@@ -456,7 +459,7 @@ class _Rounds extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Semantics(header: true, child: Text('回合', style: Ty.section)),
+        SectionHeader(tr.matches.rounds),
         const SizedBox(height: Sp.withinGroup),
         Wrap(
           spacing: Sp.betweenGroups,
@@ -464,7 +467,11 @@ class _Rounds extends StatelessWidget {
           children: [
             for (final r in rounds)
               Text(
-                '第 ${r.index + 1} 回合  ${fmtScore(r.scoreTeam, r.scoreOpponent)}  ${fmtClock(r.durationS)}',
+                tr.matches.round(
+                  r.index + 1,
+                  fmtScore(r.scoreTeam, r.scoreOpponent),
+                  fmtClock(r.durationS),
+                ),
                 style: Ty.num(Ty.body).copyWith(color: c.textPrimary),
               ),
           ],

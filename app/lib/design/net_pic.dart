@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../core/image_store.dart';
+import '../l10n/strings.dart';
 import 'tokens.dart';
+import 'widgets.dart' show ProgressLine;
 
 /// One slow clock for every skeleton on screen, so a hundred placeholders animate
 /// from a single timer, and the timer only runs while any is visible.
@@ -183,25 +185,14 @@ class _ImageProgressState extends State<ImageProgress> {
       builder: (context, s, _) {
         return Semantics(
           liveRegion: true,
-          label: '正在加载图片 ${s.done} / ${s.total}',
+          label: tr.shell.loadingImagesLabel(s.done, s.total),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
-                width: 96,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: s.fraction,
-                    minHeight: 3,
-                    color: c.accent,
-                    backgroundColor: c.border,
-                  ),
-                ),
-              ),
+              SizedBox(width: 96, child: ProgressLine(value: s.fraction)),
               const SizedBox(width: 8),
               Text(
-                '加载图片 ${s.done}/${s.total}',
+                tr.shell.loadingImages(s.done, s.total),
                 style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
               ),
             ],

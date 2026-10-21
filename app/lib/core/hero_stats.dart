@@ -1,3 +1,4 @@
+import '../l10n/strings.dart';
 import '../state/match_view.dart';
 import 'models.dart';
 import 'support.dart';
@@ -151,8 +152,8 @@ class HeroStats {
     return out;
   }
 
-  static const _selfHeal = '自我治疗';
-  static const _otherHeal = '对他人';
+  static String get _selfHeal => tr.core.selfHealing;
+  static String get _otherHeal => tr.core.healingOthers;
 
   /// Every final blow is also an elimination (the game counts an elimination for each
   /// enemy you damaged shortly before it died, and the one who lands the last hit also
@@ -168,8 +169,8 @@ class HeroStats {
     kills
       ..partPer10 = part(kills.per10, blows.per10)
       ..partPerMatch = part(kills.perMatch, blows.perMatch)
-      ..partName = '最后一击'
-      ..restName = '共同消灭';
+      ..partName = blows.name
+      ..restName = tr.core.sharedEliminations;
     return [
       for (final r in rows)
         if (!identical(r, blows)) r,
