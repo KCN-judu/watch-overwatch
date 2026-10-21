@@ -54,17 +54,22 @@ pub fn run(root: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(&dist)?;
     let zip_path = dist.join(format!("{name}.zip"));
 
-    let mut files: Vec<(PathBuf, String)> = Vec::new();
-    collect(&app, &name, &mut files)?;
-    files.push((service, format!("{name}/watchd.exe")));
-    files.push((
-        root.join("docs/user-guide.md"),
-        format!("{name}/使用指引.md"),
-    ));
-    files.push((
-        root.join("docs/credentials.md"),
-        format!("{name}/获取账号凭据.md"),
-    ));
+    let mut found: Vec<(PathBuf, String)> = Vec::new();
+    collect(&app, &name, &mut found)?;
+    let files = with_extras(
+        found,
+        [
+            (service, format!("{name}/watchd.exe")),
+            (
+                root.join("docs/user-guide.md"),
+                format!("{name}/使用指引.md"),
+            ),
+            (
+                root.join("docs/credentials.md"),
+                format!("{name}/获取账号凭据.md"),
+            ),
+        ],
+    );
 
     let mut zip = ZipWriter::new(File::create(&zip_path)?);
     let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
@@ -88,6 +93,21 @@ pub fn run(root: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// The files of the app build plus the extras, one entry per name: an extra replaces a file
+/// of the same name (a copy of `watchd.exe` left in the build folder, say) instead of making
+/// the zip hold two.
+fn with_extras(
+    found: Vec<(PathBuf, String)>,
+    extras: impl IntoIterator<Item = (PathBuf, String)>,
+) -> Vec<(PathBuf, String)> {
+    let mut files: Vec<(PathBuf, String)> = found;
+    for (path, entry) in extras {
+        files.retain(|(_, name)| *name != entry);
+        files.push((path, entry));
+    }
+    files
+}
+
 /// Every file under `dir`, with the entry name it gets under `prefix`.
 fn collect(dir: &Path, prefix: &str, out: &mut Vec<(PathBuf, String)>) -> anyhow::Result<()> {
     let mut entries: Vec<_> = fs::read_dir(dir)?.collect::<Result<_, _>>()?;
@@ -102,4 +122,34 @@ fn collect(dir: &Path, prefix: &str, out: &mut Vec<(PathBuf, String)>) -> anyhow
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_extra_replaces_a_file_of_the_same_name() {
+        let found = vec![
+            (
+                PathBuf::from("build/watch-overwatch.exe"),
+                "p/watch-overwatch.exe".to_owned(),
+            ),
+            (PathBuf::from("build/watchd.exe"), "p/watchd.exe".to_owned()),
+        ];
+        let files = with_extras(
+            found,
+            [
+                (
+                    PathBuf::from("target/watchd.exe"),
+                    "p/watchd.exe".to_owned(),
+                ),
+                (PathBuf::from("docs/a.md"), "p/a.md".to_owned()),
+            ],
+        );
+        let names: Vec<&str> = files.iter().map(|(_, n)| n.as_str()).collect();
+        assert_eq!(names, ["p/watch-overwatch.exe", "p/watchd.exe", "p/a.md"]);
+        let service = files.iter().find(|(_, n)| n == "p/watchd.exe").unwrap();
+        assert_eq!(service.0, PathBuf::from("target/watchd.exe"));
+    }
 }
