@@ -179,7 +179,7 @@ pub fn breakdown(rows: &[MatchSummary], dimension: Dimension) -> Vec<Group> {
             aggregate: aggregate(rows),
         })
         .collect();
-    out.sort_by(|a, b| b.aggregate.record.matches.cmp(&a.aggregate.record.matches));
+    out.sort_by_key(|g| std::cmp::Reverse(g.aggregate.record.matches));
     out
 }
 
