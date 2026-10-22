@@ -895,7 +895,7 @@ class AppState extends ChangeNotifier {
       cacheStats = await api.clearCache();
       toast?.call(tr.core.cacheCleared);
     } on ApiError catch (e) {
-      toast?.call(tr.core.cacheClearFailed(e.message));
+      toast?.call(tr.core.cacheClearFailed(tr.shell.errorSentence(e.kind)));
     }
     notifyListeners();
   }
@@ -959,7 +959,9 @@ class AppState extends ChangeNotifier {
     try {
       players = await api.savePlayer(name, remove: true);
     } on ApiError catch (e) {
-      toast?.call(tr.core.playerRemoveFailed(name, e.message));
+      toast?.call(
+        tr.core.playerRemoveFailed(name, tr.shell.errorSentence(e.kind)),
+      );
       return;
     }
     final wasCurrent = current?.name.toLowerCase() == name.toLowerCase();
@@ -979,7 +981,9 @@ class AppState extends ChangeNotifier {
           notifyListeners();
           if (wasCurrent) await selectPlayer(name);
         } on ApiError catch (e) {
-          toast?.call(tr.core.playerRestoreFailed(name, e.message));
+          toast?.call(
+            tr.core.playerRestoreFailed(name, tr.shell.errorSentence(e.kind)),
+          );
         }
       },
     );
@@ -1074,7 +1078,13 @@ class AppState extends ChangeNotifier {
     if (tab == 'growth') jobs.add(ws.loadGrowth(mode));
     if (tab == 'overview') jobs.add(ws.loadOverview(mode));
     if (tab == 'maps') jobs.add(ws.loadMaps(mode));
-    if (tab == 'people' || tab == 'matches') jobs.add(ws.loadPeople(mode));
+    if (tab == 'people') jobs.add(ws.loadPeople(mode));
+    // The match list only marks group sizes: read once, the people tab keeps it fresh.
+    if (tab == 'matches' &&
+        !ws.peopleFor(mode).has &&
+        !ws.peopleFor(mode).loading) {
+      jobs.add(ws.loadPeople(mode));
+    }
     await Future.wait(jobs);
   }
 
@@ -1150,7 +1160,7 @@ class AppState extends ChangeNotifier {
       toast?.call(tr.core.exportWriteFailed);
       return null;
     } on ApiError catch (e) {
-      toast?.call(tr.core.exportFailed(e.message));
+      toast?.call(tr.core.exportFailed(tr.shell.errorSentence(e.kind)));
       return null;
     } finally {
       exporting = false;

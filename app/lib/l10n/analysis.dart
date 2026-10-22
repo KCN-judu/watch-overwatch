@@ -320,7 +320,7 @@ class AnalysisStrings {
   String get seasonColumn => '赛季';
 
   /// Short season label for axes, cells and cards: S5.
-  String seasonShort(int? season) => 'S${season ?? '?'}';
+  String seasonShort(int? season) => season == null ? '—' : 'S$season';
   String get seasonEndRank => '赛季末段位';
   String get peakRank => '最高段位';
   String seasonRow({

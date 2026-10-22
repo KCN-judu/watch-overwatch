@@ -76,12 +76,18 @@ class _NavigatorPaneState extends State<NavigatorPane> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Not found / bad input: the service's own sentence says what to
+                    // type. Anything else: the fixed sentence for its kind.
                     Text(
-                      tr.shell.playerNotFound,
+                      app.searchError!.isLookup
+                          ? tr.shell.playerNotFound
+                          : tr.shell.searchFailed,
                       style: Ty.bodyStrong.copyWith(color: c.error),
                     ),
                     Text(
-                      app.searchError!.message,
+                      app.searchError!.isLookup
+                          ? app.searchError!.message
+                          : tr.shell.errorSentence(app.searchError!.kind),
                       style: Ty.meta.copyWith(color: c.textSecondary),
                     ),
                     if (app.searchError!.isAuth)

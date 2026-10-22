@@ -23,6 +23,10 @@ class ApiError implements Exception {
 
   bool get isAuth => kind == 'auth' || kind == 'no_account';
   bool get isOffline => kind == 'offline';
+
+  /// A player lookup that got an answer: not found, or a malformed name. Its message is
+  /// the service's own sentence about what to type.
+  bool get isLookup => kind == 'business' || kind == 'validation';
   bool get isExpiredSession =>
       kind == 'validation' && message.contains('会话已过期');
 

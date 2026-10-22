@@ -307,7 +307,10 @@ class _RankLine extends StatelessWidget {
     final label = Ty.meta.copyWith(color: c.textSecondary);
     if (career == null) {
       if (l.error != null) {
-        return Text(tr.shell.rankUnavailable(l.error!.message), style: label);
+        return Text(
+          tr.shell.rankUnavailable(tr.shell.errorSentence(l.error!.kind)),
+          style: label,
+        );
       }
       return Text(tr.shell.rankMissing, style: label);
     }
