@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../l10n/strings.dart';
 import 'benchmark.dart';
 import 'maps.dart';
+import 'ranks.dart';
 import 'stadium.dart';
 import 'models.dart';
 import 'overview.dart';
@@ -282,6 +283,22 @@ class Api {
           'scope': scope.id,
         }),
       );
+
+  /// Rank tracks per role from the stored match list; [seasonMatches] (each season's
+  /// career match count) places matches in seasons.
+  Future<RanksResult> ranks(
+    String session,
+    Mode mode,
+    Map<int, int> seasonMatches,
+  ) async => RanksResult(
+    await post('/api/player/ranks', {
+      'session': session,
+      'mode': mode.id,
+      'season_matches': {
+        for (final e in seasonMatches.entries) '${e.key}': e.value,
+      },
+    }),
+  );
 
   Future<BenchmarkResult> benchmark(String session, Mode mode) async =>
       BenchmarkResult(

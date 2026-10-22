@@ -12,6 +12,7 @@ import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
+import 'rank_track.dart';
 import '../player_view.dart';
 
 class TrendPage extends StatefulWidget {
@@ -117,6 +118,18 @@ class _TrendPageState extends State<TrendPage> {
           ],
         ),
         const SizedBox(height: Sp.betweenGroups),
+        RankTrackSection(
+          workspace: ws,
+          mode: mode,
+          seasonMatches: {
+            for (final p in points)
+              if (p.season != null)
+                p.season!: points
+                    .where((q) => q.season == p.season)
+                    .fold(0, (n, q) => n + (q.matches ?? 0)),
+          },
+        ),
+        const SizedBox(height: Sp.betweenSections),
         if (range.length == 1) ...[
           Wrap(
             spacing: Sp.betweenGroups,

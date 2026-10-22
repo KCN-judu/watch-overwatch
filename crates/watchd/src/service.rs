@@ -1124,6 +1124,60 @@ pub(crate) async fn player_stadium(
     }
 }
 
+#[derive(Deserialize)]
+pub(crate) struct RanksInput {
+    session: String,
+    #[serde(default = "sport")]
+    mode: String,
+    /// Career match count per season (from the season trend), to place matches in seasons.
+    #[serde(default)]
+    season_matches: BTreeMap<u32, usize>,
+}
+
+/// Rank tracks per role (see [`watch_core::ranks`]) from the stored match list, with the
+/// lobby strength of stored details for the drops: no upstream request.
+pub(crate) async fn player_ranks(
+    State(s): State<AppState>,
+    Json(input): Json<RanksInput>,
+) -> Response {
+    let Some(mode) = Mode::parse(&input.mode) else {
+        return fail(error("validation", "无效的模式。 ")).into_response();
+    };
+    let player = match session(&s, &input.session, "玩家会话已过期，请重新查找玩家。 ").await
+    {
+        Ok(p) => p,
+        Err(e) => return fail(e).into_response(),
+    };
+    let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
+        return Json(json!({"enabled":false})).into_response();
+    };
+    let rows = store
+        .match_list(ListKey {
+            subject: &subject,
+            mode,
+            season: None,
+        })
+        .rows;
+    let current = s.catalog.current_season.get();
+    let result = tokio::task::spawn_blocking(move || {
+        let inputs = PeerInputs::read(&store, &subject, mode, current);
+        let by_id: BTreeMap<String, MatchDetail> = inputs
+            .mine
+            .iter()
+            .map(|d| (d.id.clone(), d.clone()))
+            .collect();
+        let strength = watch_core::strength::lobby_strength(&by_id, &inputs.ratings);
+        let track =
+            watch_core::ranks::rank_track(&rows, &input.season_matches, current, Some(&strength));
+        json!({"enabled": true, "listed": rows.len(), "current_season": current, "ranks": track})
+    })
+    .await;
+    match result {
+        Ok(v) => Json(v).into_response(),
+        Err(_) => fail(error("internal", "段位轨迹计算失败。 ")).into_response(),
+    }
+}
+
 /// What the peer benchmarks and the overview's findings are worked out from: every stored
 /// detail of `mode`, the stored ranks of everyone in them, and the subject's own details.
 struct PeerInputs {

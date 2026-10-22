@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/benchmark.dart';
 import '../core/maps.dart';
+import '../core/ranks.dart';
 import '../core/stadium.dart';
 import '../core/export_file.dart';
 import '../core/models.dart';
@@ -69,6 +70,7 @@ class PlayerWorkspace extends ChangeNotifier {
   final overview = <Mode, Load<OverviewResult>>{};
   final benchmark = <Mode, Load<BenchmarkResult>>{};
   final maps = <Mode, Load<MapsResult>>{};
+  final ranks = <Mode, Load<RanksResult>>{};
   final stadium = <BuildSample, Load<StadiumResult>>{};
   final strength = <Mode, Load<StrengthResult>>{};
   final _strengthCancel = <Mode, CancelToken>{};
@@ -131,6 +133,7 @@ class PlayerWorkspace extends ChangeNotifier {
   Load<GrowthResult> growthFor(Mode m) => growth.putIfAbsent(m, Load.new);
   Load<OverviewResult> overviewFor(Mode m) => overview.putIfAbsent(m, Load.new);
   Load<MapsResult> mapsFor(Mode m) => maps.putIfAbsent(m, Load.new);
+  Load<RanksResult> ranksFor(Mode m) => ranks.putIfAbsent(m, Load.new);
   Load<StadiumResult> stadiumFor(BuildSample s) =>
       stadium.putIfAbsent(s, Load.new);
   Load<BenchmarkResult> benchmarkFor(Mode m) =>
@@ -414,6 +417,13 @@ class PlayerWorkspace extends ChangeNotifier {
   /// Maps by mode type, from the stored list like the overview, and followed the same way.
   Future<void> loadMaps(Mode mode) =>
       _run(mapsFor(mode), () => _call((s) => app.api.maps(s, mode)));
+
+  /// Rank tracks, from the stored list (no upstream request); [seasonMatches] comes
+  /// from the season trend.
+  Future<void> loadRanks(Mode mode, Map<int, int> seasonMatches) => _run(
+    ranksFor(mode),
+    () => _call((s) => app.api.ranks(s, mode, seasonMatches)),
+  );
 
   /// Stadium builds (no upstream request); read once per scope while the app runs, and
   /// again with [fresh].

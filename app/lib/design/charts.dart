@@ -87,8 +87,22 @@ class LineChart extends StatefulWidget {
     this.yMax,
     this.band,
     this.sync,
+    this.markers = const [],
+    this.onOpen,
+    this.openHint,
   });
   final List<ChartSeries> series;
+
+  /// Vertical dividers before an x index, each with a short label at the top (a new
+  /// season).
+  final List<({int index, String label})> markers;
+
+  /// Opens what a column is (its match): a click on the column the readout is already
+  /// about (with a mouse, the one under the pointer), or Enter.
+  final ValueChanged<int>? onOpen;
+
+  /// Said under the chart when columns open.
+  final String? openHint;
 
   /// Shaded behind the lines (see [ChartBand]); part of the axis range.
   final ChartBand? band;
@@ -276,6 +290,10 @@ class _LineChartState extends State<LineChart> {
                       (_series + step + widget.series.length) %
                       widget.series.length,
                 );
+              } else if (e.logicalKey == LogicalKeyboardKey.enter &&
+                  widget.onOpen != null &&
+                  _index != null) {
+                widget.onOpen!(_index!);
               } else if (e.logicalKey == LogicalKeyboardKey.escape) {
                 setState(() => _index = null);
               } else {
@@ -305,6 +323,11 @@ class _LineChartState extends State<LineChart> {
                     behavior: HitTestBehavior.opaque,
                     onTapDown: (d) {
                       _focus.requestFocus();
+                      final at = geom.nearest(d.localPosition.dx);
+                      if (widget.onOpen != null && at == _index) {
+                        widget.onOpen!(at);
+                        return;
+                      }
                       setState(() {
                         _index = geom.nearest(d.localPosition.dx);
                         if (_perSeries) {
@@ -348,6 +371,7 @@ class _LineChartState extends State<LineChart> {
                             countFormat: widget.countFormat,
                             notes: widget.pointNotes,
                             band: widget.band,
+                            markers: widget.markers,
                           ),
                         ),
                       ),
@@ -395,6 +419,11 @@ class _LineChartState extends State<LineChart> {
                 _perSeries ? tr.shell.chartHintPerTeam : tr.shell.chartHint,
                 style: Ty.meta.copyWith(color: c.textSecondary),
               ),
+              if (widget.openHint != null)
+                Text(
+                  widget.openHint!,
+                  style: Ty.meta.copyWith(color: c.textSecondary),
+                ),
             ],
           ),
         ],
@@ -486,8 +515,10 @@ class _LinePainter extends CustomPainter {
     required this.countFormat,
     required this.notes,
     required this.band,
+    this.markers = const [],
   });
   final ChartBand? band;
+  final List<({int index, String label})> markers;
   final AppColors colors;
   final _Axis axis;
   final List<ChartSeries> series;
@@ -569,6 +600,22 @@ class _LinePainter extends CustomPainter {
       );
       final tp = _text(axisFormat(t));
       tp.paint(canvas, Offset(_Geom.left - 8 - tp.width, y(t) - tp.height / 2));
+    }
+    // Dividers (a new season) halfway before their column, labelled at the top.
+    for (final m in markers) {
+      if (m.index <= 0 || m.index >= xLabels.length) continue;
+      final x = (g.x(m.index - 1) + g.x(m.index)) / 2;
+      final line = Paint()
+        ..color = colors.textSecondary.withValues(alpha: 0.6)
+        ..strokeWidth = 1;
+      for (var yy = _Geom.top; yy < _Geom.top + g.h; yy += 6) {
+        canvas.drawLine(
+          Offset(x, yy),
+          Offset(x, math.min(yy + 3, _Geom.top + g.h)),
+          line,
+        );
+      }
+      _text(m.label, size: 11).paint(canvas, Offset(x + 3, _Geom.top));
     }
     // Columns without a death: the match's whole stretch of the x axis is filled.
     final sh = shielded;
@@ -915,5 +962,6 @@ class _LinePainter extends CustomPainter {
       old.xLabels != xLabels ||
       old.colors != colors ||
       old.hollow != hollow ||
-      old.notes != notes;
+      old.notes != notes ||
+      old.markers != markers;
 }
