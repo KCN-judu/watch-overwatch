@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../l10n/strings.dart';
 import 'benchmark.dart';
 import 'maps.dart';
+import 'people.dart';
 import 'ranks.dart';
 import 'stadium.dart';
 import 'models.dart';
@@ -299,6 +300,21 @@ class Api {
       },
     }),
   );
+
+  /// Players met in the stored matches, and group against solo results.
+  Future<PeopleResult> people(String session, Mode mode) async => PeopleResult(
+    await post('/api/player/people', {'session': session, 'mode': mode.id}),
+  );
+
+  /// The shared matches with one player (a [Mate.key]).
+  Future<DuoResult> duo(String session, Mode mode, String other) async =>
+      DuoResult(
+        await post('/api/player/duo', {
+          'session': session,
+          'mode': mode.id,
+          'other': other,
+        }),
+      );
 
   Future<BenchmarkResult> benchmark(String session, Mode mode) async =>
       BenchmarkResult(

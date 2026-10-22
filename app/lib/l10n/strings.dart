@@ -23,6 +23,7 @@ import 'heroes.dart';
 import 'maps.dart';
 import 'matches.dart';
 import 'overview.dart';
+import 'people.dart';
 import 'shell.dart';
 
 export 'analysis.dart';
@@ -32,6 +33,7 @@ export 'heroes.dart';
 export 'maps.dart';
 export 'matches.dart';
 export 'overview.dart';
+export 'people.dart';
 export 'shell.dart';
 
 class Strings {
@@ -51,6 +53,9 @@ class Strings {
 
   /// Heroes list, hero detail and profile pages.
   HeroStrings get heroes => const HeroStrings();
+
+  /// The frequent players page.
+  PeopleStrings get people => const PeopleStrings();
 
   /// The maps page.
   MapStrings get maps => const MapStrings();

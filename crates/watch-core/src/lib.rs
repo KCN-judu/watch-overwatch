@@ -11,6 +11,7 @@ pub mod growth;
 pub mod insights;
 pub mod ir;
 pub mod maps;
+pub mod party;
 pub mod progress;
 pub mod ranks;
 mod report;

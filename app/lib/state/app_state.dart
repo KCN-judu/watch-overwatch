@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/benchmark.dart';
 import '../core/maps.dart';
+import '../core/people.dart';
 import '../core/ranks.dart';
 import '../core/stadium.dart';
 import '../core/export_file.dart';
@@ -38,6 +39,7 @@ const tabIds = [
   'heroes',
   'maps',
   'strength',
+  'people',
   'growth',
   'trend',
   'profile',
@@ -48,6 +50,7 @@ Map<String, String> get tabLabels => {
   'heroes': tr.core.tabHeroes,
   'maps': tr.core.tabMaps,
   'strength': tr.core.tabStrength,
+  'people': tr.core.tabPeople,
   'growth': tr.core.tabGrowth,
   'trend': tr.core.tabTrend,
   'profile': tr.core.tabProfile,
@@ -70,6 +73,8 @@ class PlayerWorkspace extends ChangeNotifier {
   final overview = <Mode, Load<OverviewResult>>{};
   final benchmark = <Mode, Load<BenchmarkResult>>{};
   final maps = <Mode, Load<MapsResult>>{};
+  final people = <Mode, Load<PeopleResult>>{};
+  final duos = <(Mode, String), Load<DuoResult>>{};
   final ranks = <Mode, Load<RanksResult>>{};
   final stadium = <BuildSample, Load<StadiumResult>>{};
   final strength = <Mode, Load<StrengthResult>>{};
@@ -133,6 +138,9 @@ class PlayerWorkspace extends ChangeNotifier {
   Load<GrowthResult> growthFor(Mode m) => growth.putIfAbsent(m, Load.new);
   Load<OverviewResult> overviewFor(Mode m) => overview.putIfAbsent(m, Load.new);
   Load<MapsResult> mapsFor(Mode m) => maps.putIfAbsent(m, Load.new);
+  Load<PeopleResult> peopleFor(Mode m) => people.putIfAbsent(m, Load.new);
+  Load<DuoResult> duoFor(Mode m, String key) =>
+      duos.putIfAbsent((m, key), Load.new);
   Load<RanksResult> ranksFor(Mode m) => ranks.putIfAbsent(m, Load.new);
   Load<StadiumResult> stadiumFor(BuildSample s) =>
       stadium.putIfAbsent(s, Load.new);
@@ -424,6 +432,14 @@ class PlayerWorkspace extends ChangeNotifier {
     ranksFor(mode),
     () => _call((s) => app.api.ranks(s, mode, seasonMatches)),
   );
+
+  /// Players met (no upstream request), from the stored details: read whenever the tab
+  /// or the match list shows, as more details may have been stored.
+  Future<void> loadPeople(Mode mode) =>
+      _run(peopleFor(mode), () => _call((s) => app.api.people(s, mode)));
+
+  Future<void> loadDuo(Mode mode, String key) =>
+      _run(duoFor(mode, key), () => _call((s) => app.api.duo(s, mode, key)));
 
   /// Stadium builds (no upstream request); read once per scope while the app runs, and
   /// again with [fresh].
@@ -1021,6 +1037,7 @@ class AppState extends ChangeNotifier {
     if (tab == 'growth') jobs.add(ws.loadGrowth(mode));
     if (tab == 'overview') jobs.add(ws.loadOverview(mode));
     if (tab == 'maps') jobs.add(ws.loadMaps(mode));
+    if (tab == 'people' || tab == 'matches') jobs.add(ws.loadPeople(mode));
     await Future.wait(jobs);
   }
 
@@ -1036,6 +1053,7 @@ class AppState extends ChangeNotifier {
     if (tab == 'growth') jobs.add(ws.loadGrowth(mode));
     if (tab == 'overview') jobs.add(ws.loadOverview(mode));
     if (tab == 'maps') jobs.add(ws.loadMaps(mode));
+    if (tab == 'people') jobs.add(ws.loadPeople(mode));
     // The refresh button only looks for new matches. Looking every player's rank up
     // again is a few hundred requests, so it stays with "强制刷新" on the strength page.
     if (tab == 'strength' && ws.strengthFor(mode).has) {

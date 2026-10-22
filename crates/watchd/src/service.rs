@@ -1178,6 +1178,79 @@ pub(crate) async fn player_ranks(
     }
 }
 
+/// The player's stored details of `mode`.
+fn own_details(store: &crate::store::LocalStore, subject: &str, mode: Mode) -> Vec<MatchDetail> {
+    store
+        .all_details()
+        .into_iter()
+        .filter(|d| {
+            d.mode == mode && d.subject().and_then(|p| p.bnet_id.as_deref()) == Some(subject)
+        })
+        .collect()
+}
+
+#[derive(Deserialize)]
+pub(crate) struct DuoInput {
+    session: String,
+    #[serde(default = "sport")]
+    mode: String,
+    /// A `Mate::key` from `/api/player/people`.
+    other: String,
+}
+
+/// Who the player meets (see [`watch_core::party`]): frequent players, group against solo
+/// results and group sizes per match, from the stored details. No upstream request.
+pub(crate) async fn player_people(
+    State(s): State<AppState>,
+    Json(input): Json<GrowthInput>,
+) -> Response {
+    let Some(mode) = Mode::parse(&input.mode) else {
+        return fail(error("validation", "无效的模式。 ")).into_response();
+    };
+    let player = match session(&s, &input.session, "玩家会话已过期，请重新查找玩家。 ").await
+    {
+        Ok(p) => p,
+        Err(e) => return fail(e).into_response(),
+    };
+    let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
+        return Json(json!({"enabled":false})).into_response();
+    };
+    let result = tokio::task::spawn_blocking(move || {
+        let view = watch_core::party::people(&own_details(&store, &subject, mode));
+        json!({"enabled": true, "people": view})
+    })
+    .await;
+    match result {
+        Ok(v) => Json(v).into_response(),
+        Err(_) => fail(error("internal", "常遇玩家统计失败。 ")).into_response(),
+    }
+}
+
+/// The player's shared matches with one other player, both lines side by side.
+pub(crate) async fn player_duo(State(s): State<AppState>, Json(input): Json<DuoInput>) -> Response {
+    let Some(mode) = Mode::parse(&input.mode) else {
+        return fail(error("validation", "无效的模式。 ")).into_response();
+    };
+    let player = match session(&s, &input.session, "玩家会话已过期，请重新查找玩家。 ").await
+    {
+        Ok(p) => p,
+        Err(e) => return fail(e).into_response(),
+    };
+    let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
+        return Json(json!({"enabled":false})).into_response();
+    };
+    let other = input.other;
+    let result = tokio::task::spawn_blocking(move || {
+        let view = watch_core::party::duo(&own_details(&store, &subject, mode), &other);
+        json!({"enabled": true, "duo": view})
+    })
+    .await;
+    match result {
+        Ok(v) => Json(v).into_response(),
+        Err(_) => fail(error("internal", "共同对局统计失败。 ")).into_response(),
+    }
+}
+
 /// What the peer benchmarks and the overview's findings are worked out from: every stored
 /// detail of `mode`, the stored ranks of everyone in them, and the subject's own details.
 struct PeerInputs {
