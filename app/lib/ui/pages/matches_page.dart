@@ -289,7 +289,7 @@ class _MatchCard extends StatelessWidget {
                   children: [
                     if (ModeGlyph.has(mapMode)) ...[
                       ModeGlyph(mapMode, size: 16),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: Sp.iconGap),
                     ],
                     Flexible(
                       child: Text(
@@ -312,7 +312,7 @@ class _MatchCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               RoleIcon(role, size: 22),
-              const SizedBox(width: 8),
+              const SizedBox(width: Sp.withinGroup),
               Text(m.hero?.label ?? tr.common.unknownHero, style: Ty.title),
             ],
           ),
@@ -475,13 +475,13 @@ class _ToggleChip extends StatelessWidget {
       outlineAtRest: true,
       semanticLabel: tr.matches.chipLabel(name, count),
       tooltip: tip ?? name,
-      height: 34,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      height: Ctl.regular,
+      padding: const EdgeInsets.symmetric(horizontal: Sp.withinGroup),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           leading,
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.iconGap),
           Text(
             '$count',
             style: Ty.num(Ty.body).copyWith(
@@ -535,7 +535,7 @@ class _FacetMenu extends StatelessWidget {
       ],
       builder: (context, controller, _) => OutlinedButton(
         style: buttonStyle(context).copyWith(
-          minimumSize: const WidgetStatePropertyAll(Size(0, 34)),
+          minimumSize: const WidgetStatePropertyAll(Size(0, Ctl.regular)),
           side: WidgetStateProperty.resolveWith(
             (s) => BorderSide(
               color: s.contains(WidgetState.focused)
@@ -554,7 +554,7 @@ class _FacetMenu extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 16),
-            const SizedBox(width: 6),
+            const SizedBox(width: Sp.iconGap),
             Text(value ?? title),
             const Icon(Icons.arrow_drop_down, size: 18),
           ],
@@ -606,7 +606,7 @@ class _ScopeLine extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 15, color: color),
-            const SizedBox(width: 2),
+            const SizedBox(width: Sp.hairline),
             Text('$n', style: Ty.num(Ty.bodyStrong)),
           ],
         ),
@@ -629,9 +629,9 @@ class _ScopeLine extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               record(Icons.check_rounded, c.win, a.wins, Outcome.win.label),
-              const SizedBox(width: 10),
+              const SizedBox(width: Sp.withinGroup),
               record(Icons.close_rounded, c.loss, a.losses, Outcome.loss.label),
-              const SizedBox(width: 10),
+              const SizedBox(width: Sp.withinGroup),
               record(Icons.remove_rounded, c.draw, a.draws, Outcome.draw.label),
             ],
           ),
@@ -680,7 +680,7 @@ class _ScopeLine extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.done_all, size: 15, color: c.textSecondary),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: Sp.withinControl),
                   Text(
                     coverage!.newMatches > 0
                         ? tr.matches.allReadWithNew(coverage!.newMatches)
@@ -695,7 +695,7 @@ class _ScopeLine extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Spinner(color: c.accent),
-                const SizedBox(width: 6),
+                const SizedBox(width: Sp.iconGap),
                 Text(
                   tr.matches.readingOlder(load.value?.matches.length ?? 0),
                   style: secondary,
@@ -716,7 +716,7 @@ class _ScopeLine extends StatelessWidget {
                         size: 15,
                         color: c.warning,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: Sp.withinControl),
                       Text(
                         tr.matches.notAllRead,
                         style: Ty.num(Ty.body).copyWith(color: c.warning),
@@ -724,7 +724,7 @@ class _ScopeLine extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: Sp.withinControl),
                 AppButton(
                   tr.matches.continueReading,
                   quiet: true,

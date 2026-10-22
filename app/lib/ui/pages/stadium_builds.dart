@@ -251,7 +251,7 @@ class _Matches extends StatelessWidget {
               ].join(' · '),
               padding: const EdgeInsets.symmetric(
                 horizontal: Sp.withinGroup,
-                vertical: 4,
+                vertical: Sp.withinControl,
               ),
               child: Row(
                 children: [

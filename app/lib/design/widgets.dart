@@ -20,11 +20,17 @@ ButtonStyle buttonStyle(
   BuildContext context, {
   bool primary = false,
   bool quiet = false,
+  bool danger = false,
 }) {
   final c = context.c;
+  // A destructive action is a primary one in the error colour.
+  final fill = danger ? c.error : c.accent;
+  primary = primary || danger;
   return ButtonStyle(
-    minimumSize: const WidgetStatePropertyAll(Size(0, 32)),
-    padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 12)),
+    minimumSize: const WidgetStatePropertyAll(Size(0, Ctl.regular)),
+    padding: const WidgetStatePropertyAll(
+      EdgeInsets.symmetric(horizontal: Sp.betweenItems),
+    ),
     // The button's own style replaces the inherited one: name the app's font, or button
     // labels fall back to the platform's default face.
     textStyle: WidgetStatePropertyAll(
@@ -43,7 +49,7 @@ ButtonStyle buttonStyle(
       if (s.contains(WidgetState.disabled)) {
         return primary ? c.border : Colors.transparent;
       }
-      if (primary) return c.accent;
+      if (primary) return fill;
       return quiet ? Colors.transparent : c.raised;
     }),
     foregroundColor: WidgetStateProperty.resolveWith((s) {
@@ -76,11 +82,17 @@ class AppButton extends StatelessWidget {
     this.quiet = false,
     this.tooltip,
     this.disabledReason,
+    this.danger = false,
+    this.autofocus = false,
   });
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
   final bool primary, quiet;
+
+  /// Destroys something (a removal that cannot be taken back): drawn in the error colour.
+  final bool danger;
+  final bool autofocus;
   final String? tooltip;
 
   /// Shown as the tooltip while disabled, so the user can see why.
@@ -88,18 +100,28 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = buttonStyle(context, primary: primary, quiet: quiet);
+    final style = buttonStyle(
+      context,
+      primary: primary,
+      quiet: quiet,
+      danger: danger,
+    );
     final child = icon == null
         ? Text(label)
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 16),
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.iconGap),
               Text(label),
             ],
           );
-    final button = TextButton(onPressed: onPressed, style: style, child: child);
+    final button = TextButton(
+      onPressed: onPressed,
+      style: style,
+      autofocus: autofocus,
+      child: child,
+    );
     final tip = onPressed == null ? (disabledReason ?? tooltip) : tooltip;
     return tip == null ? button : Tooltip(message: tip, child: button);
   }
@@ -130,7 +152,9 @@ class IconAction extends StatelessWidget {
         tooltip: null,
         icon: Icon(icon, size: 18),
         style: ButtonStyle(
-          minimumSize: const WidgetStatePropertyAll(Size(32, 32)),
+          minimumSize: const WidgetStatePropertyAll(
+            Size(Ctl.regular, Ctl.regular),
+          ),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(Radii.control),
@@ -147,7 +171,10 @@ class IconAction extends StatelessWidget {
           ),
         ),
         // Semantics name comes from the label, not the glyph.
-        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        constraints: const BoxConstraints(
+          minWidth: Ctl.regular,
+          minHeight: Ctl.regular,
+        ),
       ),
     );
   }
@@ -232,7 +259,7 @@ class _SegmentedBarState<V> extends State<SegmentedBar<V>> {
           builder: (context, _) {
             final ring = _focus.hasFocus && keyboardModality;
             return Container(
-              padding: const EdgeInsets.all(2),
+              padding: const EdgeInsets.all(Sp.hairline),
               decoration: BoxDecoration(
                 color: c.window,
                 borderRadius: BorderRadius.circular(Radii.control + 2),
@@ -316,8 +343,11 @@ class _SegmentButtonState extends State<_SegmentButton> {
           behavior: HitTestBehavior.opaque,
           onTap: widget.onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 28, minWidth: 40),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            constraints: const BoxConstraints(
+              minHeight: Ctl.small,
+              minWidth: 40,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.betweenItems),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: c.itemFill(
@@ -338,7 +368,7 @@ class _SegmentButtonState extends State<_SegmentButton> {
                   ],
                   if (widget.leading != null) ...[
                     widget.leading!,
-                    const SizedBox(width: 5),
+                    const SizedBox(width: Sp.withinControl),
                   ],
                   Text(
                     widget.label,
@@ -407,7 +437,7 @@ class OutcomeMark extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 15, color: color),
-        const SizedBox(width: 3),
+        const SizedBox(width: Sp.withinControl),
         Text(
           outcome.label,
           style: Ty.cell.copyWith(color: color, fontWeight: FontWeight.w600),
@@ -425,7 +455,10 @@ class TeamTag extends StatelessWidget {
     final c = context.c;
     final color = ally ? c.ally : c.enemy;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Sp.withinGroup,
+        vertical: 1,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(Radii.control),
         border: Border.all(color: color),
@@ -505,7 +538,7 @@ class DataBar extends StatelessWidget {
         ? 0.0
         : (value! / max).clamp(0.0, 1.0);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.iconGap),
       child: Stack(
         fit: StackFit.expand,
         alignment: Alignment.centerRight,
@@ -528,7 +561,7 @@ class DataBar extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: Sp.withinGroup),
               child: child,
             ),
           ),
@@ -592,18 +625,18 @@ class StatusBanner extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(width: 3, color: color),
+              Container(width: accentBar, color: color),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: Sp.betweenItems,
+                    vertical: Sp.withinGroup,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(icon, size: 18, color: color),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: Sp.withinGroup),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -623,7 +656,7 @@ class StatusBanner extends StatelessWidget {
                         ),
                       ),
                       if (actions.isNotEmpty) ...[
-                        const SizedBox(width: 12),
+                        const SizedBox(width: Sp.betweenItems),
                         Wrap(spacing: 8, children: actions),
                       ],
                     ],
@@ -724,7 +757,7 @@ class ErrorPanel extends StatelessWidget {
                 Row(
                   children: [
                     Icon(Icons.error_outline, color: c.error, size: 20),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Sp.withinGroup),
                     Expanded(child: Text(what, style: Ty.section)),
                   ],
                 ),
@@ -869,7 +902,7 @@ class RefreshingChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Spinner(),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.iconGap),
           Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
         ],
       ),
@@ -891,13 +924,18 @@ class FilterTag extends StatelessWidget {
       selected: true,
       semanticLabel: tr.shell.removeFilterLabel(label),
       tooltip: tr.shell.removeFilter,
-      height: 28,
-      padding: const EdgeInsets.fromLTRB(8, 0, 4, 0),
+      height: Ctl.small,
+      padding: const EdgeInsets.fromLTRB(
+        Sp.withinGroup,
+        0,
+        Sp.withinControl,
+        0,
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(label, style: Ty.meta.copyWith(color: c.textPrimary)),
-          const SizedBox(width: 2),
+          const SizedBox(width: Sp.hairline),
           Icon(Icons.close, size: 14, color: c.textSecondary),
         ],
       ),
@@ -913,7 +951,7 @@ class Kbd extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.iconGap, vertical: 1),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: c.border),
@@ -966,10 +1004,17 @@ class KpiTile extends StatelessWidget {
       excludeSemantics: true,
       child: Container(
         width: 160,
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+        padding: const EdgeInsets.fromLTRB(
+          Sp.betweenItems,
+          Sp.withinGroup,
+          Sp.betweenItems,
+          Sp.withinGroup,
+        ),
         decoration: BoxDecoration(
           color: color == null ? c.raised : c.barFill(color!),
-          border: Border(left: BorderSide(color: color ?? c.border, width: 3)),
+          border: Border(
+            left: BorderSide(color: color ?? c.border, width: accentBar),
+          ),
           borderRadius: const BorderRadius.horizontal(
             right: Radius.circular(2),
           ),

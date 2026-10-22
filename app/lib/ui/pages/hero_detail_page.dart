@@ -73,7 +73,7 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
           onPressed: ws.closeHero,
         ),
         Text('›', style: Ty.body.copyWith(color: c.textSecondary)),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.withinGroup),
         Expanded(
           child: Text(
             hero.hero.label,
@@ -117,7 +117,8 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
       builder: (context, snap) {
         final game = snap.data?.hero(hero.hero.name);
         // The hero's own colour from the game.
-        final accent = game?.color ?? c.accent;
+        // The hero's colour, kept clear of the page in either theme.
+        final accent = legibleOn(game?.color ?? c.accent, c.raised, ratio: 3);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -126,7 +127,10 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
             Expanded(
               child: ListView(
                 controller: _scroll,
-                padding: const EdgeInsets.only(right: 16, bottom: 28),
+                padding: const EdgeInsets.only(
+                  right: Sp.betweenGroups,
+                  bottom: 28,
+                ),
                 children: [
                   _Poster(
                     hero: hero,
@@ -221,12 +225,7 @@ class _Poster extends StatelessWidget {
               Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
               Text(
                 value,
-                style: Ty.num(Ty.figure).copyWith(
-                  fontSize: 34,
-                  height: 1.1,
-                  fontWeight: FontWeight.w700,
-                  color: color ?? ink,
-                ),
+                style: Ty.num(Ty.posterFigure).copyWith(color: color ?? ink),
               ),
               SizedBox(
                 height: 16,
@@ -280,9 +279,8 @@ class _Poster extends StatelessWidget {
                   begin: Alignment.centerRight,
                   end: Alignment.centerLeft,
                   colors: [
-                    c.raised.withValues(alpha: 0.96),
-                    c.raised.withValues(alpha: 0.78),
-                    c.raised.withValues(alpha: 0.0),
+                    for (final a in AppColors.posterScrim)
+                      c.raised.withValues(alpha: a),
                   ],
                   stops: const [0, 0.5, 0.78],
                 ),
@@ -317,7 +315,7 @@ class _Poster extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               SubroleIcon(name, size: 22),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: Sp.iconGap),
                               Text(game!.subrole!, style: Ty.bodyStrong),
                             ],
                           ),
@@ -341,7 +339,7 @@ class _Poster extends StatelessWidget {
                                 size: 18,
                                 color: accent,
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: Sp.iconGap),
                               Text(
                                 tr.heroes.heroBoard(
                                   board!.province ?? '',
@@ -354,28 +352,23 @@ class _Poster extends StatelessWidget {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: Sp.withinControl),
                   Semantics(
                     header: true,
                     child: Text(
                       name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: Ty.family,
-                        fontFamilyFallback: Ty.fallback,
-                        fontSize: 68,
-                        height: 1.12,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
-                        color: ink,
-                      ),
+                      style: Ty.posterName.copyWith(color: ink),
                     ),
                   ),
                   Container(
                     width: 72,
                     height: 4,
-                    margin: const EdgeInsets.only(top: 2, bottom: 10),
+                    margin: const EdgeInsets.only(
+                      top: Sp.hairline,
+                      bottom: Sp.withinGroup,
+                    ),
                     color: accent,
                   ),
                   if (game != null && game!.description.isNotEmpty)
@@ -409,9 +402,7 @@ class _Poster extends StatelessWidget {
                         tr.heroes.playTimeLabel,
                         hero.playTimeS == null
                             ? missing
-                            : tr.heroes.hours(
-                                (hero.playTimeS! / 3600).toStringAsFixed(1),
-                              ),
+                            : fmtPlayTime(hero.playTimeS),
                         note: hero.avgMatchSeconds == null
                             ? null
                             : tr.heroes.avgMatchTime(
@@ -611,7 +602,10 @@ class _SeasonStats extends StatelessWidget {
           children: [
             for (final (g, list) in shown) ...[
               Padding(
-                padding: const EdgeInsets.only(top: 10, bottom: 6),
+                padding: const EdgeInsets.only(
+                  top: Sp.withinGroup,
+                  bottom: Sp.iconGap,
+                ),
                 child: Text(
                   _groupTitle(g),
                   style: Ty.meta.copyWith(color: c.textSecondary),
@@ -654,7 +648,7 @@ class _SeasonStats extends StatelessWidget {
         ],
         if (unnamed > 0)
           Padding(
-            padding: const EdgeInsets.only(top: 10),
+            padding: const EdgeInsets.only(top: Sp.withinGroup),
             child: Text(
               tr.heroes.unnamedStats(unnamed),
               style: Ty.meta.copyWith(color: c.textSecondary),
@@ -740,7 +734,7 @@ class _Recent extends StatelessWidget {
               },
               child: Container(
                 height: 48,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: Sp.withinGroup),
                 decoration: BoxDecoration(
                   border: Border(bottom: BorderSide(color: c.grid)),
                 ),
@@ -757,12 +751,8 @@ class _Recent extends StatelessWidget {
                         style: Ty.num(Ty.bodyStrong),
                       ),
                     ),
-                    MapThumb(
-                      app.catalog.mapImage(m.map),
-                      width: 60,
-                      height: 34,
-                    ),
-                    const SizedBox(width: 12),
+                    MapThumb.row(app.catalog.mapImage(m.map)),
+                    const SizedBox(width: Sp.betweenItems),
                     Expanded(
                       child: Text(
                         m.map?.label ?? tr.common.unknownMap,
@@ -787,7 +777,7 @@ class _Recent extends StatelessWidget {
             ),
           if (rows.length > 12)
             Padding(
-              padding: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.only(top: Sp.iconGap),
               child: Text(
                 tr.heroes.moreMatches(rows.length - 12),
                 style: Ty.meta.copyWith(color: c.textSecondary),
@@ -828,7 +818,7 @@ class _Kit extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.only(bottom: Sp.iconGap),
           child: Text(title, style: Ty.meta.copyWith(color: c.textSecondary)),
         ),
         CardGrid([

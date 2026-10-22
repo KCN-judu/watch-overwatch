@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/models.dart';
+import '../design/dialog.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
 import '../l10n/strings.dart';
@@ -208,8 +209,8 @@ class _PaletteState extends State<_Palette> {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: Sp.betweenItems,
+                  vertical: Sp.iconGap,
                 ),
                 decoration: BoxDecoration(
                   border: Border(top: BorderSide(color: c.border)),
@@ -224,21 +225,21 @@ class _PaletteState extends State<_Palette> {
                     ),
                     const Spacer(),
                     const Kbd('↑↓'),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: Sp.withinControl),
                     Text(
                       tr.shell.paletteSelect,
                       style: Ty.meta.copyWith(color: c.textSecondary),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: Sp.betweenItems),
                     const Kbd('Enter'),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: Sp.withinControl),
                     Text(
                       tr.shell.paletteRun,
                       style: Ty.meta.copyWith(color: c.textSecondary),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: Sp.betweenItems),
                     const Kbd('Esc'),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: Sp.withinControl),
                     Text(
                       tr.common.close,
                       style: Ty.meta.copyWith(color: c.textSecondary),
@@ -274,7 +275,12 @@ class _PaletteRow extends StatelessWidget {
       children: [
         if (showGroup)
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),
+            padding: const EdgeInsets.fromLTRB(
+              Sp.betweenItems,
+              Sp.withinGroup,
+              Sp.betweenItems,
+              Sp.hairline,
+            ),
             child: Text(
               entry.group,
               style: Ty.meta.copyWith(color: c.textSecondary),
@@ -298,10 +304,13 @@ class _PaletteRow extends StatelessWidget {
                 color: c.itemFill(selected: active),
                 border: c.itemOutline(selected: active),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Sp.betweenItems,
+                vertical: Sp.iconGap,
+              ),
               child: Row(
                 children: [
-                  const SizedBox(width: 12),
+                  const SizedBox(width: Sp.betweenItems),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,7 +335,7 @@ class _PaletteRow extends StatelessWidget {
                       style: Ty.meta.copyWith(color: c.textSecondary),
                     ),
                   if (cmd?.shortcutLabel != null) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Sp.withinGroup),
                     Kbd(cmd!.shortcutLabel!),
                   ],
                 ],
@@ -350,69 +359,54 @@ Future<void> showShortcuts(BuildContext context, List<Cmd> cmds) {
       for (final cmd in cmds) {
         byCategory.putIfAbsent(cmd.category, () => []).add(cmd);
       }
-      return Dialog(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 620),
-          child: Padding(
-            padding: const EdgeInsets.all(Sp.betweenSections),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(tr.shell.shortcutsTitle, style: Ty.section),
-                    ),
-                    AppButton(
-                      tr.common.close,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: Sp.withinControl),
-                Text(
-                  tr.shell.shortcutsNote,
-                  style: Ty.body.copyWith(color: c.textSecondary),
-                ),
-                const SizedBox(height: Sp.betweenGroups),
-                Expanded(
-                  child: ListView(
-                    children: [
-                      for (final e in byCategory.entries) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: Sp.withinGroup,
-                            bottom: Sp.withinControl,
-                          ),
-                          child: Text(e.key, style: Ty.bodyStrong),
-                        ),
-                        for (final cmd in e.value)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(cmd.menuLabel, style: Ty.body),
-                                ),
-                                if (cmd.shortcutLabel != null)
-                                  Kbd(cmd.shortcutLabel!)
-                                else
-                                  Text(
-                                    tr.common.missing,
-                                    style: Ty.meta.copyWith(
-                                      color: c.textSecondary,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+      return AppDialog(
+        title: tr.shell.shortcutsTitle,
+        width: 560,
+        maxHeight: 620,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              tr.shell.shortcutsNote,
+              style: Ty.body.copyWith(color: c.textSecondary),
             ),
-          ),
+            const SizedBox(height: Sp.betweenGroups),
+            Expanded(
+              child: ListView(
+                children: [
+                  for (final e in byCategory.entries) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        top: Sp.withinGroup,
+                        bottom: Sp.withinControl,
+                      ),
+                      child: Text(e.key, style: Ty.bodyStrong),
+                    ),
+                    for (final cmd in e.value)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: Sp.withinControl,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(cmd.menuLabel, style: Ty.body),
+                            ),
+                            if (cmd.shortcutLabel != null)
+                              Kbd(cmd.shortcutLabel!)
+                            else
+                              Text(
+                                tr.common.missing,
+                                style: Ty.meta.copyWith(color: c.textSecondary),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       );
     },
@@ -442,128 +436,117 @@ Future<void> showExportDialog(BuildContext context, AppState app) async {
       builder: (context, setState) {
         final c = context.c;
         final n = count();
-        return Dialog(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Padding(
-              padding: const EdgeInsets.all(Sp.betweenSections),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(tr.shell.exportTitle(ws.name), style: Ty.section),
-                  const SizedBox(height: Sp.withinControl),
-                  Text(
-                    tr.shell.exportIntro,
-                    style: Ty.body.copyWith(color: c.textSecondary),
+        return AppDialog(
+          title: tr.shell.exportTitle(ws.name),
+          onClose: () => Navigator.of(context).pop(false),
+          actions: [
+            AppButton(
+              tr.common.cancel,
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            AppButton(
+              tr.shell.startExport,
+              primary: true,
+              onPressed: modes.isEmpty || (choice == -1 && n == null)
+                  ? null
+                  : () => Navigator.of(context).pop(true),
+              disabledReason: modes.isEmpty
+                  ? tr.shell.exportNeedMode
+                  : tr.shell.exportNeedCount,
+            ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                tr.shell.exportIntro,
+                style: Ty.body.copyWith(color: c.textSecondary),
+              ),
+              const SizedBox(height: Sp.betweenGroups),
+              Text(tr.shell.exportModes, style: Ty.bodyStrong),
+              CheckboxListTile(
+                dense: true,
+                tristate: true,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(tr.shell.exportAllModes, style: Ty.body),
+                value: modes.length == Mode.values.length
+                    ? true
+                    : modes.isEmpty
+                    ? false
+                    : null,
+                onChanged: (v) => setState(() {
+                  if (modes.length == Mode.values.length) {
+                    modes.clear();
+                  } else {
+                    modes.addAll(Mode.values);
+                  }
+                }),
+              ),
+              for (final m in Mode.values)
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(m.label, style: Ty.body),
+                  value: modes.contains(m),
+                  onChanged: (v) => setState(
+                    () => v == true ? modes.add(m) : modes.remove(m),
                   ),
-                  const SizedBox(height: Sp.betweenGroups),
-                  Text(tr.shell.exportModes, style: Ty.bodyStrong),
-                  CheckboxListTile(
-                    dense: true,
-                    tristate: true,
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: Text(tr.shell.exportAllModes, style: Ty.body),
-                    value: modes.length == Mode.values.length
-                        ? true
-                        : modes.isEmpty
-                        ? false
-                        : null,
-                    onChanged: (v) => setState(() {
-                      if (modes.length == Mode.values.length) {
-                        modes.clear();
-                      } else {
-                        modes.addAll(Mode.values);
-                      }
-                    }),
-                  ),
-                  for (final m in Mode.values)
-                    CheckboxListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      title: Text(m.label, style: Ty.body),
-                      value: modes.contains(m),
-                      onChanged: (v) => setState(
-                        () => v == true ? modes.add(m) : modes.remove(m),
-                      ),
-                    ),
-                  const SizedBox(height: Sp.withinGroup),
-                  Text(tr.shell.exportCount, style: Ty.bodyStrong),
-                  const SizedBox(height: Sp.withinControl),
-                  SegmentedBar<int>(
-                    semanticLabel: tr.shell.exportCountLabel,
-                    value: choice,
-                    onChanged: (v) => setState(() => choice = v),
-                    segments: [
-                      Segment(20, tr.common.matchCount(20)),
-                      Segment(50, tr.common.matchCount(50)),
-                      Segment(100, tr.common.matchCount(100)),
-                      Segment(0, tr.shell.exportCountAll),
-                      Segment(-1, tr.shell.exportCountCustom),
-                    ],
-                  ),
-                  if (choice == -1) ...[
-                    const SizedBox(height: Sp.withinControl),
-                    SizedBox(
-                      width: 160,
-                      child: TextField(
-                        controller: custom,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(4),
-                        ],
-                        decoration: InputDecoration(
-                          labelText: tr.shell.exportCountField,
-                        ),
-                        onChanged: (_) => setState(() {}),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: Sp.withinGroup),
-                  CheckboxListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: Text(tr.shell.exportRanks, style: Ty.body),
-                    subtitle: Text(
-                      tr.shell.exportRanksNote,
-                      style: Ty.meta.copyWith(color: c.textSecondary),
-                    ),
-                    value: ratings,
-                    onChanged: (v) => setState(() => ratings = v == true),
-                  ),
-                  const SizedBox(height: Sp.withinGroup),
-                  Text(
-                    tr.shell.exportReadNote,
-                    style: Ty.meta.copyWith(color: c.textSecondary),
-                  ),
-                  const SizedBox(height: Sp.betweenGroups),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      AppButton(
-                        tr.common.cancel,
-                        onPressed: () => Navigator.of(context).pop(false),
-                      ),
-                      const SizedBox(width: Sp.withinGroup),
-                      AppButton(
-                        tr.shell.startExport,
-                        primary: true,
-                        onPressed: modes.isEmpty || (choice == -1 && n == null)
-                            ? null
-                            : () => Navigator.of(context).pop(true),
-                        disabledReason: modes.isEmpty
-                            ? tr.shell.exportNeedMode
-                            : tr.shell.exportNeedCount,
-                      ),
-                    ],
-                  ),
+                ),
+              const SizedBox(height: Sp.withinGroup),
+              Text(tr.shell.exportCount, style: Ty.bodyStrong),
+              const SizedBox(height: Sp.withinControl),
+              SegmentedBar<int>(
+                semanticLabel: tr.shell.exportCountLabel,
+                value: choice,
+                onChanged: (v) => setState(() => choice = v),
+                segments: [
+                  Segment(20, tr.common.matchCount(20)),
+                  Segment(50, tr.common.matchCount(50)),
+                  Segment(100, tr.common.matchCount(100)),
+                  Segment(0, tr.shell.exportCountAll),
+                  Segment(-1, tr.shell.exportCountCustom),
                 ],
               ),
-            ),
+              if (choice == -1) ...[
+                const SizedBox(height: Sp.withinControl),
+                SizedBox(
+                  width: 160,
+                  child: TextField(
+                    controller: custom,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(4),
+                    ],
+                    decoration: InputDecoration(
+                      labelText: tr.shell.exportCountField,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+              ],
+              const SizedBox(height: Sp.withinGroup),
+              CheckboxListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(tr.shell.exportRanks, style: Ty.body),
+                subtitle: Text(
+                  tr.shell.exportRanksNote,
+                  style: Ty.meta.copyWith(color: c.textSecondary),
+                ),
+                value: ratings,
+                onChanged: (v) => setState(() => ratings = v == true),
+              ),
+              const SizedBox(height: Sp.withinGroup),
+              Text(
+                tr.shell.exportReadNote,
+                style: Ty.meta.copyWith(color: c.textSecondary),
+              ),
+            ],
           ),
         );
       },

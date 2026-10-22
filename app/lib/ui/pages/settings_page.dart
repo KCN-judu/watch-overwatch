@@ -8,6 +8,7 @@ import '../../core/models.dart';
 import '../../core/support.dart';
 import '../../design/cards.dart';
 import '../../design/data_table.dart';
+import '../../design/dialog.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../l10n/strings.dart';
@@ -74,29 +75,14 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _remove(AppState app, String name) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(tr.shell.removeAccountTitle(name), style: Ty.section),
-        content: SizedBox(
-          width: 420,
-          child: Text(tr.shell.removeAccountBody, style: Ty.body),
-        ),
-        actions: [
-          // Safe action first and focused; the destructive verb names the destruction.
-          AppButton(
-            tr.shell.keepAccount,
-            onPressed: () => Navigator.of(context).pop(false),
-          ),
-          AppButton(
-            tr.shell.removeAccount,
-            primary: true,
-            onPressed: () => Navigator.of(context).pop(true),
-          ),
-        ],
-      ),
+    final ok = await confirmDanger(
+      context,
+      title: tr.shell.removeAccountTitle(name),
+      body: tr.shell.removeAccountBody,
+      keep: tr.shell.keepAccount,
+      destroy: tr.shell.removeAccount,
     );
-    if (ok != true) return;
+    if (!ok) return;
     try {
       await app.api.removeAccount(name);
       await app.refreshServer();
@@ -129,7 +115,7 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Padding(
           padding: const EdgeInsets.all(Sp.betweenGroups),
           child: ListView(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: Sp.betweenItems),
             children: [
               Row(
                 children: [
@@ -151,7 +137,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
               // ---- Accounts
               SectionHeader(tr.shell.dashenAccounts),
-              const SizedBox(height: 4),
+              const SizedBox(height: Sp.withinControl),
               Text(
                 tr.shell.dashenAccountsNote,
                 style: Ty.body.copyWith(color: c.textSecondary),
@@ -343,7 +329,7 @@ class _SettingsPageState extends State<SettingsPage> {
               // ---- Request log
               const SizedBox(height: Sp.betweenSections),
               SectionHeader(tr.shell.requestLog),
-              const SizedBox(height: 4),
+              const SizedBox(height: Sp.withinControl),
               Text(
                 tr.shell.requestLogNote(metrics.length),
                 style: Ty.meta.copyWith(color: c.textSecondary),
@@ -436,7 +422,7 @@ class _SettingsPageState extends State<SettingsPage> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Padding(
-        padding: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.only(bottom: Sp.withinControl),
         child: Text(
           label,
           style: Ty.meta.copyWith(color: context.c.textSecondary),
@@ -461,7 +447,7 @@ class _SettingsPageState extends State<SettingsPage> {
   );
 
   Widget _row(String label, Widget control) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
+    padding: const EdgeInsets.symmetric(vertical: Sp.withinControl),
     child: Row(
       children: [
         SizedBox(
@@ -480,9 +466,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _cacheRow(AppState app) {
     final s = app.cacheStats;
     final bytes = (s?['bytes'] as num?)?.toInt() ?? 0;
-    final size = bytes >= 1048576
-        ? '${(bytes / 1048576).toStringAsFixed(1)} MB'
-        : '${(bytes / 1024).round()} KB';
+    final size = fmtBytes(bytes);
     final text = s == null
         ? tr.shell.unavailable
         : tr.shell.cacheStats(
@@ -493,7 +477,7 @@ class _SettingsPageState extends State<SettingsPage> {
             size,
           );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: Sp.withinControl),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -517,7 +501,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _info(String label, String value) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 3),
+    padding: const EdgeInsets.symmetric(vertical: Sp.withinControl),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -558,7 +542,7 @@ class _AccountStatus extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
+        const SizedBox(width: Sp.withinControl),
         Flexible(child: Text(_statusText(a), overflow: TextOverflow.ellipsis)),
       ],
     );
@@ -580,7 +564,7 @@ class _MetricStatus extends StatelessWidget {
           size: 14,
           color: ok ? c.success : c.error,
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: Sp.withinControl),
         Text(ok ? tr.shell.requestOk : status),
       ],
     );

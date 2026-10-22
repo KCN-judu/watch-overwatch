@@ -36,7 +36,7 @@ class SectionHeader extends StatelessWidget {
     return Row(
       children: [
         Container(width: 4, height: 20, color: accent ?? context.c.accent),
-        const SizedBox(width: 10),
+        const SizedBox(width: Sp.withinGroup),
         Flexible(
           child: Semantics(header: true, child: Text(text, style: Ty.section)),
         ),
@@ -130,7 +130,7 @@ class _FoldSectionState extends State<FoldSection> {
           child: InkWell(
             onTap: () => setState(() => _open = !_open),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(vertical: Sp.withinControl),
               child: Row(
                 children: [
                   Icon(
@@ -138,10 +138,12 @@ class _FoldSectionState extends State<FoldSection> {
                     size: 20,
                     color: c.textSecondary,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: Sp.withinControl),
                   Text(
                     widget.title,
-                    style: Ty.bodyStrong.copyWith(color: widget.accent),
+                    style: Ty.bodyStrong.copyWith(
+                      color: legibleOn(widget.accent, context.c.window),
+                    ),
                   ),
                 ],
               ),
@@ -221,7 +223,7 @@ class CardSurface extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(width: 3, color: accent),
+            Container(width: accentBar, color: accent),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(Sp.betweenGroups),
@@ -302,7 +304,7 @@ class InfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           icon,
-          const SizedBox(width: 12),
+          const SizedBox(width: Sp.betweenItems),
           Expanded(
             child: Column(
               // Only as tall as its text, so the Row centres it against the icon.
@@ -319,7 +321,7 @@ class InfoCard extends StatelessWidget {
                       ),
                     ),
                     if (tag != null && tag!.isNotEmpty) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: Sp.withinGroup),
                       Text(
                         tag!,
                         style: Ty.meta.copyWith(color: c.textSecondary),
@@ -329,7 +331,7 @@ class InfoCard extends StatelessWidget {
                 ),
                 if (text.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(top: 2),
+                    padding: const EdgeInsets.only(top: Sp.hairline),
                     child: Tooltip(
                       message: text,
                       waitDuration: const Duration(milliseconds: 400),
@@ -417,14 +419,14 @@ class StatCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
-          const SizedBox(height: 2),
+          const SizedBox(height: Sp.hairline),
           Text(value, style: Ty.num(Ty.figure)),
           if (share != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: Sp.iconGap),
             ProgressLine(value: share!.clamp(0.0, 1.0), color: accent),
           ],
           if (caption != null) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: Sp.withinControl),
             Text(
               caption!,
               maxLines: 2,

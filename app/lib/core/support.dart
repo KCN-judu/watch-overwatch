@@ -193,11 +193,29 @@ String fmtPct(num? v, {int digits = 1}) => v == null
 
 String two(int n) => n.toString().padLeft(2, '0');
 
-String fmtDateTime(int? ms) {
+/// `10-22`, or `2025-10-22` for another year than this one.
+String fmtDate(int? ms) {
   if (ms == null) return missing;
   final d = DateTime.fromMillisecondsSinceEpoch(ms);
-  return '${two(d.month)}-${two(d.day)} ${two(d.hour)}:${two(d.minute)}';
+  final md = '${two(d.month)}-${two(d.day)}';
+  return d.year == DateTime.now().year ? md : '${d.year}-$md';
 }
+
+/// `21:40`.
+String fmtTimeOfDay(int? ms) {
+  if (ms == null) return missing;
+  final d = DateTime.fromMillisecondsSinceEpoch(ms);
+  return '${two(d.hour)}:${two(d.minute)}';
+}
+
+/// `10-22 21:40` (with the year when it is not this one).
+String fmtDateTime(int? ms) =>
+    ms == null ? missing : '${fmtDate(ms)} ${fmtTimeOfDay(ms)}';
+
+/// `3.4 MB`.
+String fmtBytes(num bytes) => bytes < 1048576
+    ? '${(bytes / 1024).toStringAsFixed(0)} KB'
+    : '${(bytes / 1048576).toStringAsFixed(1)} MB';
 
 String fmtTime(DateTime d) => '${two(d.hour)}:${two(d.minute)}';
 

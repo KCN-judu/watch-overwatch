@@ -282,7 +282,7 @@ class _CardListState<T> extends State<CardList<T>> {
                   controller: _scroll,
                   itemExtent: extent,
                   itemCount: widget.rows.length,
-                  padding: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.only(right: Sp.betweenItems),
                   itemBuilder: (context, i) {
                     final row = widget.rows[i];
                     final state = CardState(
@@ -311,7 +311,9 @@ class _CardListState<T> extends State<CardList<T>> {
                               widget.onOpen?.call(row, i);
                             },
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: Sp.withinControl,
+                              ),
                               child: _arrive(
                                 row,
                                 widget.builder(context, row, state),
@@ -348,7 +350,7 @@ class _Skeleton extends StatelessWidget {
               SizedBox(
                 height: extent,
                 child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4),
+                  padding: EdgeInsets.symmetric(vertical: Sp.withinControl),
                   child: Skeleton(radius: 0),
                 ),
               ),

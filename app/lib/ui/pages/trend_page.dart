@@ -72,7 +72,7 @@ class _TrendPageState extends State<TrendPage> {
         .toList();
 
     return ListView(
-      padding: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.only(right: Sp.betweenGroups),
       children: [
         Wrap(
           spacing: Sp.betweenGroups,
@@ -333,7 +333,7 @@ class _RoleChart extends StatelessWidget {
                 child: RoleIcon(role, size: 18, showLabel: true),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: Sp.withinControl),
             LineChart(
               height: 200,
               yMin: lo,
@@ -427,14 +427,14 @@ class _SeasonCard extends StatelessWidget {
                   tr.analysis.seasonEnd,
                   style: Ty.meta.copyWith(color: c.textSecondary),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: Sp.iconGap),
                 RankBadge(p.current, catalog: catalog, showText: true),
                 const Spacer(),
                 Text(
                   tr.analysis.peak,
                   style: Ty.meta.copyWith(color: c.textSecondary),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: Sp.iconGap),
                 RankBadge(p.peak, catalog: catalog, showText: true),
               ],
             ),

@@ -195,11 +195,7 @@ class _List extends StatelessWidget {
                       n: m.aggregate.record.decided,
                       enough: m.ranked,
                       selected: m.key == picked,
-                      leading: MapThumb(
-                        app.catalog.mapImage(m.map),
-                        width: 40,
-                        height: 22,
-                      ),
+                      leading: MapThumb(app.catalog.mapImage(m.map)),
                       onTap: () => onPick(m.key),
                     ),
                 ],

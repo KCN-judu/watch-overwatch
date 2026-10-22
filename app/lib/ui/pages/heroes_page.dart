@@ -328,9 +328,7 @@ class _HeroCard extends StatelessWidget {
   static String _time(double? seconds) {
     if (seconds == null) return missing;
     final minutes = (seconds / 60).round();
-    return minutes < 60
-        ? tr.heroes.minutes(minutes)
-        : tr.heroes.hours((seconds / 3600).toStringAsFixed(1));
+    return minutes < 60 ? tr.heroes.minutes(minutes) : fmtPlayTime(seconds);
   }
 
   @override
@@ -345,7 +343,7 @@ class _HeroCard extends StatelessWidget {
         : subroleNames[subKey]!.split(' ').first;
     final enough = (h.matches ?? 0) >= AppScope.of(context).minGroupMatches;
     final bar = h.winRatePct == null || !enough
-        ? c.textSecondary.withValues(alpha: 0.5)
+        ? c.textSecondary.withValues(alpha: Alpha.muted)
         : (h.winRatePct! >= 50 ? c.win : c.loss);
 
     // The figure the list is currently ordered by, so the order is visible on the row.
@@ -413,21 +411,21 @@ class _HeroCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: Sp.withinControl),
                 Row(
                   children: [
                     RoleIcon(role, size: 18),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Sp.withinGroup),
                     SubroleIcon(h.hero.name, size: 18),
                     if (subName != null) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: Sp.iconGap),
                       Text(
                         subName,
                         style: Ty.meta.copyWith(color: c.textSecondary),
                       ),
                     ],
                     if (h.queue.label.isNotEmpty) ...[
-                      const SizedBox(width: 12),
+                      const SizedBox(width: Sp.betweenItems),
                       Text(
                         h.queue.label,
                         style: Ty.meta.copyWith(color: c.textSecondary),

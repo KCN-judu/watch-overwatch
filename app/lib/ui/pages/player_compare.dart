@@ -184,7 +184,10 @@ class _Table extends StatelessWidget {
       children: [
         for (final (i, t) in cells.indexed)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+            padding: const EdgeInsets.symmetric(
+              vertical: Sp.iconGap,
+              horizontal: Sp.withinGroup,
+            ),
             child: Text(
               t,
               textAlign: i == 0 ? TextAlign.left : TextAlign.right,

@@ -44,7 +44,12 @@ class _NavigatorPaneState extends State<NavigatorPane> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            padding: const EdgeInsets.fromLTRB(
+              Sp.betweenItems,
+              Sp.betweenItems,
+              Sp.betweenItems,
+              0,
+            ),
             child: Semantics(
               textField: true,
               label: tr.shell.battleTag,
@@ -60,7 +65,7 @@ class _NavigatorPaneState extends State<NavigatorPane> {
                   prefixIcon: const Icon(Icons.search, size: 18),
                   suffixIcon: app.searching
                       ? const Padding(
-                          padding: EdgeInsets.all(10),
+                          padding: EdgeInsets.all(Sp.withinGroup),
                           child: Spinner(),
                         )
                       : null,
@@ -70,7 +75,12 @@ class _NavigatorPaneState extends State<NavigatorPane> {
           ),
           if (app.searchError != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              padding: const EdgeInsets.fromLTRB(
+                Sp.betweenItems,
+                Sp.withinGroup,
+                Sp.betweenItems,
+                0,
+              ),
               child: Semantics(
                 liveRegion: true,
                 child: Column(
@@ -92,7 +102,7 @@ class _NavigatorPaneState extends State<NavigatorPane> {
                     ),
                     if (app.searchError!.isAuth)
                       Padding(
-                        padding: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.only(top: Sp.withinControl),
                         child: AppButton(
                           tr.common.openSettings,
                           quiet: true,
@@ -105,14 +115,24 @@ class _NavigatorPaneState extends State<NavigatorPane> {
             )
           else
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+              padding: const EdgeInsets.fromLTRB(
+                Sp.betweenItems,
+                Sp.iconGap,
+                Sp.betweenItems,
+                0,
+              ),
               child: Text(
                 tr.shell.searchHint,
                 style: Ty.meta.copyWith(color: c.textSecondary),
               ),
             ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 16, 12, 4),
+            padding: const EdgeInsets.fromLTRB(
+              Sp.betweenItems,
+              Sp.betweenGroups,
+              Sp.betweenItems,
+              Sp.withinControl,
+            ),
             child: Text(
               tr.shell.playerLibraryCount(app.players.length),
               style: Ty.meta.copyWith(
@@ -124,7 +144,7 @@ class _NavigatorPaneState extends State<NavigatorPane> {
           Expanded(
             child: app.players.isEmpty
                 ? Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(Sp.betweenItems),
                     child: Text(
                       tr.shell.playerLibraryEmpty,
                       style: Ty.body.copyWith(color: c.textSecondary),
@@ -136,7 +156,7 @@ class _NavigatorPaneState extends State<NavigatorPane> {
             decoration: BoxDecoration(
               border: Border(top: BorderSide(color: c.border)),
             ),
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(Sp.withinGroup),
             child: Row(
               children: [
                 Expanded(
@@ -250,7 +270,7 @@ class _PlayerListState extends State<_PlayerList> {
                     },
                     child: Container(
                       margin: const EdgeInsets.symmetric(
-                        horizontal: 6,
+                        horizontal: Sp.iconGap,
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
@@ -266,7 +286,7 @@ class _PlayerListState extends State<_PlayerList> {
                       ),
                       child: Row(
                         children: [
-                          const SizedBox(width: 13),
+                          const SizedBox(width: Sp.betweenItems),
                           Expanded(
                             child: Text.rich(
                               TextSpan(
@@ -300,7 +320,7 @@ class _PlayerListState extends State<_PlayerList> {
                               onPressed: () => app.removePlayer(name),
                             )
                           else
-                            const SizedBox(width: 32),
+                            const SizedBox(width: Sp.page),
                         ],
                       ),
                     ),
@@ -326,14 +346,14 @@ class _Rail extends StatelessWidget {
       color: c.nav,
       child: Column(
         children: [
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.withinGroup),
           IconAction(
             icon: Icons.search,
             label: tr.shell.findPlayer,
             shortcut: 'Ctrl+L',
             onPressed: scope.actions.focusSearch,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: Sp.withinControl),
           IconAction(
             icon: Icons.keyboard_double_arrow_right,
             label: tr.shell.expandLibrary,
@@ -382,14 +402,14 @@ class _Rail extends StatelessWidget {
             ),
           ),
           const Divider(height: 1),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.withinGroup),
           IconAction(
             icon: Icons.settings_outlined,
             label: tr.shell.settings,
             shortcut: 'Ctrl+,',
             onPressed: () => app.showSettings(true),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Sp.withinGroup),
         ],
       ),
     );

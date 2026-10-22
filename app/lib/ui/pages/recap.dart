@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/models.dart';
 import '../../core/overview.dart';
 import '../../core/support.dart';
+import '../../design/dialog.dart';
 import '../../design/share.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
@@ -22,17 +23,17 @@ Future<void> showRecap(
   workspace.loadGrowth(mode);
   return showDialog<void>(
     context: context,
-    builder: (context) => Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720, maxHeight: 720),
-        child: ListenableBuilder(
-          listenable: workspace,
-          builder: (context, _) => _Recap(
-            workspace: workspace,
-            mode: mode,
-            o: overview,
-            listed: listed,
-          ),
+    builder: (context) => AppDialog(
+      title: tr.recap.title,
+      width: 720,
+      maxHeight: 720,
+      child: ListenableBuilder(
+        listenable: workspace,
+        builder: (context, _) => _Recap(
+          workspace: workspace,
+          mode: mode,
+          o: overview,
+          listed: listed,
         ),
       ),
     ),
@@ -246,92 +247,88 @@ class _RecapState extends State<_Recap> {
     final at = _at.clamp(0, steps.length - 1);
     final name = widget.workspace.app.maskName(widget.workspace.name);
     final caption = tr.recap.caption(name, widget.mode.label, widget.listed);
-    return Padding(
-      padding: const EdgeInsets.all(Sp.betweenSections),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(child: Text(tr.recap.title, style: Ty.section)),
-              AppButton(
-                _all ? tr.recap.stepByStep : tr.recap.showAll,
-                quiet: true,
-                onPressed: () => setState(() => _all = !_all),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                caption,
+                style: Ty.meta.copyWith(color: c.textSecondary),
               ),
-              const SizedBox(width: Sp.withinGroup),
-              AppButton(
-                tr.common.close,
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-          Text(caption, style: Ty.meta.copyWith(color: c.textSecondary)),
-          const SizedBox(height: Sp.betweenGroups),
-          Expanded(
-            child: _all
-                ? SingleChildScrollView(
-                    child: Shareable(
-                      title: tr.recap.title,
-                      caption: caption,
-                      fileName: tr.recap.fileName,
-                      child: Column(
-                        children: [
-                          for (final s in steps) ...[
-                            _card(context, s),
-                            const SizedBox(height: Sp.withinGroup),
-                          ],
+            ),
+            AppButton(
+              _all ? tr.recap.stepByStep : tr.recap.showAll,
+              quiet: true,
+              onPressed: () => setState(() => _all = !_all),
+            ),
+          ],
+        ),
+        const SizedBox(height: Sp.betweenGroups),
+        Expanded(
+          child: _all
+              ? SingleChildScrollView(
+                  child: Shareable(
+                    title: tr.recap.title,
+                    caption: caption,
+                    fileName: tr.recap.fileName,
+                    child: Column(
+                      children: [
+                        for (final s in steps) ...[
+                          _card(context, s),
+                          const SizedBox(height: Sp.withinGroup),
                         ],
+                      ],
+                    ),
+                  ),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: _card(context, steps[at], big: true),
                       ),
                     ),
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: Center(
-                          child: _card(context, steps[at], big: true),
+                    const SizedBox(height: Sp.betweenGroups),
+                    Row(
+                      children: [
+                        AppButton(
+                          tr.recap.previous,
+                          quiet: true,
+                          onPressed: at > 0
+                              ? () => setState(() => _at = at - 1)
+                              : null,
                         ),
-                      ),
-                      const SizedBox(height: Sp.betweenGroups),
-                      Row(
-                        children: [
-                          AppButton(
-                            tr.recap.previous,
-                            quiet: true,
-                            onPressed: at > 0
-                                ? () => setState(() => _at = at - 1)
-                                : null,
+                        Expanded(
+                          child: Text(
+                            tr.recap.position(at + 1, steps.length),
+                            textAlign: TextAlign.center,
+                            style: Ty.num(
+                              Ty.meta,
+                            ).copyWith(color: c.textSecondary),
                           ),
-                          Expanded(
-                            child: Text(
-                              tr.recap.position(at + 1, steps.length),
-                              textAlign: TextAlign.center,
-                              style: Ty.num(
-                                Ty.meta,
-                              ).copyWith(color: c.textSecondary),
-                            ),
-                          ),
-                          AppButton(
-                            at < steps.length - 1
-                                ? tr.recap.next
-                                : tr.recap.showAll,
-                            primary: true,
-                            onPressed: () => setState(() {
-                              if (at < steps.length - 1) {
-                                _at = at + 1;
-                              } else {
-                                _all = true;
-                              }
-                            }),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-          ),
-        ],
-      ),
+                        ),
+                        AppButton(
+                          at < steps.length - 1
+                              ? tr.recap.next
+                              : tr.recap.showAll,
+                          primary: true,
+                          onPressed: () => setState(() {
+                            if (at < steps.length - 1) {
+                              _at = at + 1;
+                            } else {
+                              _all = true;
+                            }
+                          }),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+        ),
+      ],
     );
   }
 }

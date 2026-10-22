@@ -51,7 +51,7 @@ class RoleIcon extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               glyph,
-              const SizedBox(width: 6),
+              const SizedBox(width: Sp.iconGap),
               Text(label, style: Ty.body.copyWith(color: tint)),
             ],
           )
@@ -72,14 +72,19 @@ class RoleIcon extends StatelessWidget {
 String get roleLegend => tr.shell.roleLegend;
 
 /// Map picture as a recognition aid next to the map name. Never replaces the name.
+///
+/// Three sizes, all 16:9-ish: inline beside a name in a list or bar ([MapThumb.new]), a
+/// match row ([MapThumb.row]), a match's own header ([MapThumb.large]).
 class MapThumb extends StatelessWidget {
-  const MapThumb(
-    this.url, {
-    super.key,
-    this.width = 44,
-    this.height = 26,
-    this.radius = 4,
-  });
+  const MapThumb(this.url, {super.key}) : width = 40, height = 22, radius = 4;
+  const MapThumb.row(this.url, {super.key})
+    : width = 60,
+      height = 34,
+      radius = 4;
+  const MapThumb.large(this.url, {super.key})
+    : width = 88,
+      height = 48,
+      radius = Radii.control;
   final String? url;
   final double width, height, radius;
   @override
@@ -180,7 +185,7 @@ class RankBadge extends StatelessWidget {
               height: size,
               error: Text(text, style: Ty.cell),
             ),
-            const SizedBox(width: 3),
+            const SizedBox(width: Sp.withinControl),
             // The division is the number inside the tier; showing it keeps ranks comparable at a glance.
             Text(
               showText
@@ -327,8 +332,8 @@ class _InfoTipState extends State<InfoTip> {
                   ? MouseCursor.defer
                   : SystemMouseCursors.click,
               child: Container(
-                width: 28,
-                height: 28,
+                width: Ctl.small,
+                height: Ctl.small,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(Radii.control),
@@ -440,7 +445,7 @@ class LevelBadge extends StatelessWidget {
             filterQuality: FilterQuality.medium,
             excludeFromSemantics: true,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.iconGap),
           Text('$v', style: Ty.num(Ty.body)),
         ],
       ),
@@ -473,7 +478,7 @@ class PerkChip extends StatelessWidget {
               error: SizedBox(width: size, height: size),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: Sp.iconGap),
         ],
         Flexible(child: Text(perk.label, overflow: TextOverflow.ellipsis)),
       ],

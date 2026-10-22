@@ -117,9 +117,9 @@ class _Days extends StatelessWidget {
                   onTap: () => onPick(d.day),
                   selected: d.day == picked,
                   semanticLabel: '${d.day} ${_weekday(d.day)}',
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: Sp.withinGroup,
-                    vertical: 6,
+                    vertical: context.density.padV,
                   ),
                   child: Row(
                     children: [
@@ -201,10 +201,7 @@ class _Summary extends StatelessWidget {
     };
     final span = s.firstMs == null || s.lastMs == null
         ? null
-        : tr.daily.timeSpan(
-            fmtDateTime(s.firstMs).substring(6),
-            fmtDateTime(s.lastMs).substring(6),
-          );
+        : tr.daily.timeSpan(fmtTimeOfDay(s.firstMs), fmtTimeOfDay(s.lastMs));
     final caption = tr.daily.caption(
       app.maskName(workspace.name),
       mode.label,
@@ -335,8 +332,6 @@ class _Summary extends StatelessWidget {
                         .firstOrNull
                         ?.map,
                   ),
-                  width: 40,
-                  height: 22,
                 ),
               );
               if (box.maxWidth < 700) {
@@ -374,9 +369,9 @@ class _Summary extends StatelessWidget {
                         fmtDateTime(rows[id]!.startedAtMs),
                         rows[id]!.map?.label ?? tr.common.unknownMap,
                       ].join(' · '),
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: Sp.withinGroup,
-                        vertical: 4,
+                        vertical: context.density.padV,
                       ),
                       child: _MatchLine(m: rows[id]!),
                     ),
@@ -532,7 +527,10 @@ class _VersusTable extends StatelessWidget {
       children: [
         for (final w in cells)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+            padding: const EdgeInsets.symmetric(
+              vertical: Sp.iconGap,
+              horizontal: Sp.withinGroup,
+            ),
             child: w,
           ),
       ],
@@ -615,9 +613,9 @@ class _GroupList extends StatelessWidget {
             children: [
               for (final g in groups)
                 Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: Sp.withinGroup,
-                    vertical: 4,
+                    vertical: context.density.padV,
                   ),
                   child: Row(
                     children: [
@@ -664,10 +662,7 @@ class _MatchLine extends StatelessWidget {
         const SizedBox(width: Sp.withinGroup),
         SizedBox(
           width: 52,
-          child: Text(
-            fmtDateTime(m.startedAtMs).substring(6),
-            style: Ty.num(Ty.body),
-          ),
+          child: Text(fmtTimeOfDay(m.startedAtMs), style: Ty.num(Ty.body)),
         ),
         NetImage(
           app.catalog.heroIcon(m.hero),

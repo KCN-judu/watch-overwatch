@@ -260,9 +260,8 @@ class _Headline extends StatelessWidget {
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
                 colors: [
-                  c.raised.withValues(alpha: 0.96),
-                  c.raised.withValues(alpha: 0.80),
-                  c.raised.withValues(alpha: 0.30),
+                  for (final a in AppColors.headlineScrim)
+                    c.raised.withValues(alpha: a),
                 ],
               ),
             ),
@@ -333,7 +332,7 @@ class _Figure extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
-          const SizedBox(height: 2),
+          const SizedBox(height: Sp.hairline),
           Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -345,7 +344,7 @@ class _Figure extends StatelessWidget {
               if (trailing != null) ...[
                 const SizedBox(width: Sp.betweenGroups),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.only(bottom: Sp.iconGap),
                   child: trailing!,
                 ),
               ],
@@ -423,12 +422,7 @@ class _Form extends StatelessWidget {
                         color: c.outcome(f.outcome.id),
                         child: Text(
                           f.outcome.label,
-                          style: Ty.meta.copyWith(
-                            fontSize: 10,
-                            height: 1.1,
-                            color: c.onAccent,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Ty.micro.copyWith(color: c.onAccent),
                         ),
                       ),
                     ],

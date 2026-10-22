@@ -61,7 +61,7 @@ class _StrengthPageState extends State<StrengthPage> {
     final result = load.value;
 
     return ListView(
-      padding: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.only(right: Sp.betweenGroups),
       children: [
         Row(
           children: [
@@ -205,7 +205,7 @@ class _StrengthPageState extends State<StrengthPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     RoleIcon(role, size: 16, tooltip: false),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: Sp.iconGap),
                     Text(
                       '${perRole[role]}/$n',
                       style: Ty.num(Ty.body).copyWith(
@@ -214,7 +214,7 @@ class _StrengthPageState extends State<StrengthPage> {
                       ),
                     ),
                     if (perRole[role]! < n) ...[
-                      const SizedBox(width: 3),
+                      const SizedBox(width: Sp.withinControl),
                       Icon(
                         Icons.warning_amber_rounded,
                         size: 14,
@@ -232,7 +232,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.bolt, size: 15, color: c.textSecondary),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: Sp.withinControl),
                   Text(
                     tr.analysis.cacheHits(r.dataset.coverage.cacheHits),
                     style: Ty.num(Ty.body).copyWith(color: c.textSecondary),
@@ -250,7 +250,7 @@ class _StrengthPageState extends State<StrengthPage> {
                   size: 15,
                   color: c.textSecondary,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: Sp.withinControl),
                 Text(
                   '$ratedPlayers / $totalPlayers',
                   style: Ty.num(Ty.body).copyWith(color: c.textSecondary),
@@ -365,7 +365,7 @@ class _StrengthPageState extends State<StrengthPage> {
               ? Row(
                   children: [
                     const Icon(Icons.groups_2_outlined, size: 18),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Sp.withinGroup),
                     Text(
                       tr.analysis.all,
                       style: const TextStyle(fontWeight: FontWeight.w600),
@@ -399,14 +399,15 @@ class _StrengthPageState extends State<StrengthPage> {
           tooltip: tr.analysis.diffTip,
           cell: (_, g) {
             final d = g.diff.slot(g.subjectRole);
+            // The sign says the direction; ▲ means "best in the team" elsewhere.
+            final c = context.c;
             return Text(
-              d == null
-                  ? missing
-                  : '${d > 0
-                        ? '▲'
-                        : d < 0
-                        ? '▼'
-                        : ''} ${_signed(d)}',
+              d == null ? missing : _signed(d),
+              style: Ty.num(Ty.body).copyWith(
+                color: d == null || d == 0
+                    ? null
+                    : (d > 0 ? c.positive : c.negative),
+              ),
             );
           },
         ),
@@ -454,7 +455,7 @@ class _StrengthPageState extends State<StrengthPage> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _slotIcon(s, size: 14),
-        const SizedBox(width: 3),
+        const SizedBox(width: Sp.withinControl),
         Text(
           team,
           style: Theme.of(context).textTheme.labelMedium!.copyWith(
@@ -475,8 +476,8 @@ class _StrengthPageState extends State<StrengthPage> {
           final s = byId[m.matchId];
           return Row(
             children: [
-              MapThumb(app.catalog.mapImage(s?.map), width: 46, height: 28),
-              const SizedBox(width: 8),
+              MapThumb(app.catalog.mapImage(s?.map)),
+              const SizedBox(width: Sp.withinGroup),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -631,7 +632,7 @@ class _Controls extends StatelessWidget {
               tr.analysis.scope,
               style: Ty.body.copyWith(color: context.c.textSecondary),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.withinGroup),
             SegmentedBar<Role?>(
               semanticLabel: tr.analysis.scopeSemantic,
               value: ws.scopeFor(mode),
@@ -655,7 +656,7 @@ class _Controls extends StatelessWidget {
               tr.analysis.recentPrefix(eachRole: ws.scopeFor(mode) == null),
               style: Ty.body,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.withinGroup),
             SegmentedBar<int>(
               semanticLabel: tr.analysis.countSemantic,
               value: n,
@@ -800,7 +801,7 @@ class _Running extends StatelessWidget {
           ? c.accent
           : c.textSecondary;
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: Sp.iconGap),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -818,7 +819,7 @@ class _Running extends StatelessWidget {
                           color: color,
                         ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: Sp.withinGroup),
                 Text(
                   label,
                   style: current
@@ -836,7 +837,7 @@ class _Running extends StatelessWidget {
                 else ...[
                   if (eta != null)
                     Padding(
-                      padding: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.only(right: Sp.betweenItems),
                       child: Text(
                         tr.analysis.remaining(_clock(eta)),
                         style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
@@ -850,14 +851,17 @@ class _Running extends StatelessWidget {
               ],
             ),
             if (current || done) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: Sp.iconGap),
               Padding(
                 padding: const EdgeInsets.only(left: 30),
                 child: ProgressLine(value: fraction, color: color),
               ),
               if (current && (here?.note ?? '').isNotEmpty && index != 0)
                 Padding(
-                  padding: const EdgeInsets.only(left: 30, top: 4),
+                  padding: const EdgeInsets.only(
+                    left: 30,
+                    top: Sp.withinControl,
+                  ),
                   child: Text(
                     index == 1
                         ? tr.analysis.readingNow(here!.note)
@@ -868,7 +872,7 @@ class _Running extends StatelessWidget {
                 ),
             ] else
               Padding(
-                padding: const EdgeInsets.only(left: 30, top: 2),
+                padding: const EdgeInsets.only(left: 30, top: Sp.hairline),
                 child: Text(
                   hint,
                   style: Ty.meta.copyWith(color: c.textSecondary),
@@ -892,7 +896,7 @@ class _Running extends StatelessWidget {
             Row(
               children: [
                 Text(tr.analysis.analysing, style: Ty.section),
-                const SizedBox(width: 10),
+                const SizedBox(width: Sp.withinGroup),
                 Text(
                   tr.analysis.eachRoleRecent(n),
                   style: Ty.body.copyWith(color: c.textSecondary),
@@ -908,7 +912,7 @@ class _Running extends StatelessWidget {
             const SizedBox(height: Sp.withinGroup),
             if ((workspace.strengthStatus[mode] ?? '').isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.only(bottom: Sp.withinControl),
                 child: Text(
                   workspace.strengthStatus[mode]!,
                   style: Ty.body.copyWith(color: c.accent),
@@ -931,13 +935,13 @@ class _Running extends StatelessWidget {
                     style: Ty.meta.copyWith(color: c.textSecondary),
                   ),
                   if (p.failures > 0) ...[
-                    const SizedBox(width: 12),
+                    const SizedBox(width: Sp.betweenItems),
                     Icon(
                       Icons.warning_amber_rounded,
                       size: 14,
                       color: c.warning,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: Sp.withinControl),
                     Text(
                       tr.analysis.failures(p.failures),
                       style: Ty.meta.copyWith(color: c.warning),
@@ -993,9 +997,7 @@ class _ChartSection extends StatelessWidget {
     final name = role == null
         ? tr.analysis.chartAllRoles
         : tr.analysis.chartRole(role.label);
-    final days = {
-      for (final m in shown) fmtDateTime(m.startedAtMs).substring(0, 5),
-    };
+    final days = {for (final m in shown) fmtDate(m.startedAtMs)};
     final sameDay = days.length == 1;
     String axisFmt(double v) => tiers
         ? (ratingLabel(v, stadium: AppScope.of(context).mode == Mode.stadium) ??
@@ -1042,7 +1044,7 @@ class _ChartSection extends StatelessWidget {
             InfoTip(tr.analysis.chartInfo, doc: MetricDoc.strength),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: Sp.withinControl),
         Text(summary, style: Ty.body),
         const SizedBox(height: Sp.withinGroup),
         Panel(
@@ -1077,9 +1079,7 @@ class _ChartSection extends StatelessWidget {
             // When every match is on one day the date says nothing, so show the time instead.
             xLabels: [
               for (final m in shown)
-                sameDay
-                    ? fmtDateTime(m.startedAtMs).substring(6)
-                    : fmtDateTime(m.startedAtMs).substring(0, 5),
+                sameDay ? fmtTimeOfDay(m.startedAtMs) : fmtDate(m.startedAtMs),
             ],
             pointNotes: [
               for (final m in shown)

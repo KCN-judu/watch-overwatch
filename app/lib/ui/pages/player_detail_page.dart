@@ -109,7 +109,7 @@ class PlayerDetailPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name, style: Ty.page, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
+                const SizedBox(height: Sp.withinControl),
                 Wrap(
                   spacing: 14,
                   runSpacing: 4,
@@ -205,7 +205,7 @@ class PlayerDetailPage extends StatelessWidget {
         ];
         final stadium = player.stadium;
         return ListView(
-          padding: const EdgeInsets.only(right: 12),
+          padding: const EdgeInsets.only(right: Sp.betweenItems),
           children: [
             header(),
             const SizedBox(height: Sp.betweenSections),

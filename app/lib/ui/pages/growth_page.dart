@@ -206,7 +206,7 @@ class _GrowthPageState extends State<GrowthPage> {
     ];
 
     return ListView(
-      padding: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.only(right: Sp.betweenGroups),
       children: [
         Wrap(
           spacing: Sp.betweenGroups,
@@ -341,7 +341,7 @@ class _TrendCard extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon, size: 32, color: color),
-          const SizedBox(width: 12),
+          const SizedBox(width: Sp.betweenItems),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -352,7 +352,7 @@ class _TrendCard extends StatelessWidget {
                   style: Ty.bodyStrong.copyWith(color: color),
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: Sp.hairline),
                 Text(p, style: Ty.body.copyWith(color: c.textSecondary)),
               ],
             ),
