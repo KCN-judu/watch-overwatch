@@ -276,3 +276,13 @@ class HeroStats {
     return mean * 600 / secs;
   }
 }
+
+/// A provider hero stat as text: times as m:ss, hit rates (fractions of one) as
+/// percentages, large figures without decimals.
+String fmtHeroStat(String name, double v) {
+  if (name.contains('游戏时间')) return fmtClock(v);
+  if (name.endsWith('率') && v.abs() <= 1.0001) {
+    return fmtPct(v * 100, digits: 0);
+  }
+  return v.abs() >= 100 ? fmtInt(v) : fmtOne(v);
+}

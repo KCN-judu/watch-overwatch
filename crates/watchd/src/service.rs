@@ -314,13 +314,45 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
         );
         return Ok(view);
     }
-    let (metric, value, cached) = cached_request(
+    let (metric, mut value, cached) = cached_request(
         &s.client,
         &player.cache,
         RequestSpec::new(endpoint, payload),
         input.fresh,
     )
     .await?;
+    // The unnumbered "current season" career is sometimes empty while the same season
+    // asked for by number is not (seen 2026-10-23 in competitive): ask again by number.
+    if input.view == "profile"
+        && input.season.is_none()
+        && !collect::career_has_matches(&normalize::career(
+            normalize::payload(&value),
+            mode,
+            None,
+            &s.catalog,
+        ))
+    {
+        let current = s.catalog.current_season.get();
+        if let Ok((_, numbered, _)) = cached_request(
+            &s.client,
+            &player.cache,
+            RequestSpec::new(
+                mode.career(),
+                collect::career_payload(token, mode, Some(current)),
+            ),
+            input.fresh,
+        )
+        .await
+            && collect::career_has_matches(&normalize::career(
+                normalize::payload(&numbered),
+                mode,
+                Some(current),
+                &s.catalog,
+            ))
+        {
+            value = numbered;
+        }
+    }
     let raw = normalize::payload(&value);
     let cat = &s.catalog;
     view.matches = normalize::match_list(raw, mode, cat);

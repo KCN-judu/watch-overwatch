@@ -9,6 +9,7 @@ import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
+import '../../state/match_view.dart';
 
 /// Two heroes side by side: matches, win rate (with its range), KDA and play time, then
 /// every stat both can produce, per 10 minutes, with the difference left minus right.
@@ -117,11 +118,29 @@ class _Picker extends StatelessWidget {
           runSpacing: Sp.withinGroup,
           children: [
             for (final h in others)
-              AppButton(
-                '${h.hero.label}  ${tr.common.matchCount(h.matches ?? 0)}',
-                quiet: true,
-                onPressed: () =>
-                    workspace.compareHero(PlayerWorkspace.heroKey(h)),
+              Pressable(
+                onTap: () => workspace.compareHero(PlayerWorkspace.heroKey(h)),
+                semanticLabel:
+                    '${h.hero.label} ${tr.common.matchCount(h.matches ?? 0)}',
+                outlineAtRest: true,
+                padding: const EdgeInsets.fromLTRB(6, 6, 12, 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    NetImage(
+                      cat.heroIcon(h.hero),
+                      size: 28,
+                      fallback: h.hero.label,
+                    ),
+                    const SizedBox(width: Sp.withinGroup),
+                    Text(h.hero.label, style: Ty.bodyStrong),
+                    const SizedBox(width: 6),
+                    Text(
+                      tr.common.matchCount(h.matches ?? 0),
+                      style: Ty.meta.copyWith(color: context.c.textSecondary),
+                    ),
+                  ],
+                ),
               ),
           ],
         ),
@@ -145,6 +164,10 @@ class _Comparison extends StatelessWidget {
     for (final m in recent)
       if (m.hero?.guid == h.hero.guid) m,
   ];
+
+  /// The season KDA, or the recent matches' when the provider gives none (as the hero
+  /// page does).
+  double? _kda(HeroUsage h) => h.kda ?? Agg(_of(h)).kda;
 
   static String _rateNote(HeroUsage h) {
     final n = h.matches ?? 0, w = h.wins ?? 0;
@@ -251,7 +274,7 @@ class _Comparison extends StatelessWidget {
                                   fmtPct(h.winRatePct, digits: 0),
                                   note: _rateNote(h),
                                 ),
-                                KpiTile(tr.compare.kda, fmtTwo(h.kda)),
+                                KpiTile(tr.compare.kda, fmtTwo(_kda(h))),
                                 KpiTile(
                                   tr.compare.playTime,
                                   fmtPlayTime(h.playTimeS),
@@ -288,9 +311,9 @@ class _Comparison extends StatelessWidget {
               ),
               row(
                 tr.compare.kda,
-                fmtTwo(a.kda),
-                fmtTwo(b.kda),
-                _diff(a.kda, b.kda, fmtTwo),
+                fmtTwo(_kda(a)),
+                fmtTwo(_kda(b)),
+                _diff(_kda(a), _kda(b), fmtTwo),
               ),
               for (final name in shared)
                 () {
@@ -298,11 +321,12 @@ class _Comparison extends StatelessWidget {
                   final per10 = x.per10 != null && y.per10 != null;
                   final vx = per10 ? x.per10 : x.perMatch;
                   final vy = per10 ? y.per10 : y.perMatch;
+                  String f(double v) => fmtHeroStat(name, v);
                   return row(
                     name,
-                    fmtOne(vx),
-                    fmtOne(vy),
-                    _diff(vx, vy, fmtOne),
+                    vx == null ? tr.compare.onlyOne : f(vx),
+                    vy == null ? tr.compare.onlyOne : f(vy),
+                    _diff(vx, vy, f),
                   );
                 }(),
             ],

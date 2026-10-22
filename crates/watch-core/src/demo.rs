@@ -15,7 +15,10 @@ use std::sync::OnceLock;
 pub const DEMO_NAME: &str = "示例玩家#0000";
 /// Stands in for a `customerToken`; never sent anywhere.
 pub const DEMO_TOKEN: &str = "demo-sample-token";
-const SUBJECT: &str = "demo-0";
+/// The sample player's id. Its number is the generator's version: matches made by an
+/// earlier version, already stored on a machine, then stay under the old id and never
+/// mix with these.
+const SUBJECT: &str = "demo-2";
 /// Competitive and quick play matches in the list.
 const MATCHES: usize = 160;
 const PAGE: usize = 20;
@@ -230,13 +233,27 @@ fn build(today: i64) -> World {
         }
     }
     let wanted = ["攻击/护送", "运载目标", "占领要点", "机动推进", "闪点作战"];
-    let mut maps: Vec<String> = cat
+    // A pool of ten real maps (with a picture, one per name), so that a few dozen matches
+    // per map make the map findings visible, as a regular player's would.
+    let mut pool: Vec<(&String, &str)> = cat
         .maps
         .iter()
         .filter(|(_, m)| m["mode"].as_str().is_some_and(|t| wanted.contains(&t)))
-        .map(|(g, _)| g.clone())
+        .filter(|(_, m)| {
+            m["icon"]
+                .as_str()
+                .is_some_and(|i| i.starts_with("https://"))
+        })
+        .filter_map(|(g, m)| Some((g, m["name"].as_str()?)))
         .collect();
-    maps.sort();
+    pool.sort();
+    let mut names = std::collections::HashSet::new();
+    let maps: Vec<String> = pool
+        .into_iter()
+        .filter(|(_, n)| !n.contains(" - ") && names.insert(*n))
+        .map(|(g, _)| g.clone())
+        .take(10)
+        .collect();
     let mut stats: std::collections::HashMap<String, Vec<(String, String)>> = Default::default();
     for s in &cat.statistics {
         if let (Some(h), Some(g), Some(n)) = (
@@ -281,6 +298,7 @@ impl World {
         let total = if competitive { MATCHES } else { MATCHES / 2 };
         let mut out = Vec::new();
         let mut sr = [2450i64, 2280, 2610];
+        let now = crate::now_ms() as i64;
         let strong_map = self.maps.get(3).cloned().unwrap_or_default();
         let weak_map = self.maps.get(7).cloned().unwrap_or_default();
         // Oldest first while generating, then reversed.
@@ -294,7 +312,8 @@ impl World {
             // Evening, UTC+8: 19:00 to 22:00 local.
             let mut at = day * DAY_MS + (11 + (r.next() % 3) as i64) * 3_600_000;
             for k in 0..sitting {
-                if out.len() >= total {
+                // Nothing later than now: today's evening may not have come yet.
+                if out.len() >= total || at > now {
                     break;
                 }
                 let role = match r.next() % 10 {
@@ -321,10 +340,10 @@ impl World {
                 } else {
                     (r.next() % 160) as i64 - 80
                 };
-                let mut p = 0.52 + if map == strong_map { 0.22 } else { 0.0 }
-                    - if map == weak_map { 0.2 } else { 0.0 }
+                let mut p = 0.52 + if map == strong_map { 0.3 } else { 0.0 }
+                    - if map == weak_map { 0.28 } else { 0.0 }
                     + if party.is_empty() { 0.0 } else { 0.06 }
-                    - if k >= 3 { 0.12 } else { 0.0 }
+                    - if k >= 3 { 0.25 } else { 0.0 }
                     - edge as f64 / 1000.0;
                 p = p.clamp(0.1, 0.9);
                 let win = r.f() < p;
@@ -340,7 +359,7 @@ impl World {
                 let lift = if win { 1.12 } else { 0.9 };
                 out.push(Match {
                     id: format!(
-                        "demo-{}-{:04}",
+                        "demo-2-{}-{:04}",
                         if competitive { "sport" } else { "leisure" },
                         out.len()
                     ),
@@ -378,7 +397,7 @@ impl World {
         let n = out.len();
         for (i, m) in out.iter_mut().enumerate() {
             m.id = format!(
-                "demo-{}-{:04}",
+                "demo-2-{}-{:04}",
                 if competitive { "sport" } else { "leisure" },
                 n - 1 - i
             );
@@ -511,12 +530,27 @@ impl Match {
             ("demo-p2202", "青柠#示例2202"),
         ];
         let my_slot = slots.iter().position(|s| *s == self.role).unwrap_or(0);
-        let player = |id: String, name: String, role: usize, sr: i64, me: bool, r: &mut Rng| {
+        // A hero plays once per team: `taken` holds the team's heroes so far.
+        let player = |id: String,
+                      name: String,
+                      role: usize,
+                      sr: i64,
+                      me: bool,
+                      r: &mut Rng,
+                      taken: &mut Vec<String>| {
             let hero = if me {
                 self.hero.clone()
             } else {
-                r.pick(&w.heroes[role]).clone()
+                let mut h = r.pick(&w.heroes[role]).clone();
+                for _ in 0..32 {
+                    if !taken.contains(&h) {
+                        break;
+                    }
+                    h = r.pick(&w.heroes[role]).clone();
+                }
+                h
             };
+            taken.push(hero.clone());
             let (k, d, a, dmg, heal, mit) = if me {
                 (
                     self.kills,
@@ -554,6 +588,7 @@ impl Match {
             p
         };
         let mut allies = Vec::new();
+        let mut ally_heroes = vec![self.hero.clone()];
         let mut used = 0;
         for (i, role) in slots.iter().enumerate() {
             let (id, name, me) = if i == my_slot {
@@ -568,7 +603,7 @@ impl Match {
                 (format!("demo-p{tag}"), format!("{n}{TAG}{tag}"), false)
             };
             let sr = self.sr + (r.next() % 200) as i64 - 100;
-            allies.push(player(id, name, *role, sr, me, &mut r));
+            allies.push(player(id, name, *role, sr, me, &mut r, &mut ally_heroes));
         }
         // Who queued with whom.
         let group: Vec<String> = allies
@@ -586,6 +621,7 @@ impl Match {
                 }
             }
         }
+        let mut enemy_heroes = Vec::new();
         let enemies: Vec<Value> = slots
             .iter()
             .map(|role| {
@@ -599,6 +635,7 @@ impl Match {
                     sr,
                     false,
                     &mut r,
+                    &mut enemy_heroes,
                 )
             })
             .collect();
@@ -670,6 +707,14 @@ mod tests {
             &cat,
         );
         assert_eq!((d.allies.len(), d.enemies.len()), (5, 5));
+        for team in [&d.allies, &d.enemies] {
+            let heroes: std::collections::HashSet<_> = team
+                .iter()
+                .filter_map(|p| p.hero.as_ref())
+                .map(|h| &h.guid)
+                .collect();
+            assert_eq!(heroes.len(), 5, "a hero twice in one team");
+        }
         assert!(d.subject().is_some());
         assert_eq!(d.outcome, rows[0].outcome);
 
@@ -686,5 +731,45 @@ mod tests {
         );
         assert_eq!(c.roles.len(), 3);
         assert!(!c.heroes.is_empty());
+    }
+
+    #[test]
+    fn the_sample_player_has_something_worth_noticing() {
+        let cat = Catalog::bundled();
+        let mut rows = Vec::new();
+        for page in 1.. {
+            let v = respond(
+                Endpoint::MatchList,
+                &json!({"token": DEMO_TOKEN, "gameMode": "sport", "page": page}),
+            )
+            .unwrap();
+            let got =
+                normalize::match_list(normalize::payload(&v), crate::ir::Mode::Competitive, &cat);
+            if got.is_empty() {
+                break;
+            }
+            rows.extend(got);
+        }
+        let clock = crate::analysis::Clock::now(crate::analysis::REPORT_UTC_OFFSET_MINUTES);
+        let o = crate::analysis::overview(
+            &rows,
+            clock,
+            crate::analysis::AnalysisOptions::default().session_gap_ms,
+            &crate::insights::Context::default(),
+        );
+        assert!(
+            !o.insights.is_empty(),
+            "no findings over {} matches",
+            rows.len()
+        );
+        let maps: std::collections::HashSet<&str> = rows
+            .iter()
+            .filter_map(|m| m.map.as_ref()?.name.as_deref())
+            .collect();
+        assert!(maps.len() <= 10);
+        assert!(
+            rows.iter()
+                .all(|m| m.started_at_ms <= Some(crate::now_ms() as i64))
+        );
     }
 }
