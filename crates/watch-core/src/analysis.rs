@@ -655,34 +655,7 @@ pub struct FormPoint {
     pub map: Option<EntityRef>,
 }
 
-/// What a finding is about; the app words it (each kind is one sentence in its table).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum InsightKind {
-    /// `value` matches won (positive) or lost (negative) in a row, up to now.
-    Streak,
-    /// The recent win rate (`value`) against the one before (`other`), over `n` matches.
-    RecentForm,
-    /// A map (`subject`) clearly better or worse than the player's rate (`other`): its
-    /// whole plausible range is on one side. `value` is its rate over `n` matches.
-    Map,
-    /// The same for a hero.
-    Hero,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Insight {
-    pub kind: InsightKind,
-    /// Good news (true), bad news (false).
-    pub positive: bool,
-    pub subject: Option<String>,
-    pub value: f64,
-    pub other: Option<f64>,
-    pub n: usize,
-    /// For drill-down: the group's key (a hero or map stable id).
-    pub key: Option<String>,
-}
-
+pub use crate::insights::{Insight, InsightItem, InsightKind};
 /// Everything the overview page shows, from a player's stored match list alone.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Overview {
@@ -711,29 +684,14 @@ fn weekday(clock: Clock, at_ms: i64) -> usize {
     (((at_ms + clock.offset_ms()).div_euclid(DAY_MS) + 3).rem_euclid(7)) as usize
 }
 
-/// Groups whose whole plausible range lies above or below `rate` (both with enough
-/// matches), best evidence first.
-fn clear_outliers(groups: &[Group], rate: f64) -> Vec<(&Group, bool)> {
-    let mut found: Vec<(&Group, bool, f64)> = groups
-        .iter()
-        .filter(|g| g.aggregate.record.enough && g.key != "unknown")
-        .filter_map(|g| {
-            let r = &g.aggregate.record;
-            let (lo, hi) = (r.win_rate_low_pct?, r.win_rate_high_pct?);
-            if lo > rate {
-                Some((g, true, lo - rate))
-            } else if hi < rate {
-                Some((g, false, rate - hi))
-            } else {
-                None
-            }
-        })
-        .collect();
-    found.sort_by(|a, b| b.2.total_cmp(&a.2));
-    found.into_iter().map(|(g, up, _)| (g, up)).collect()
-}
-
-pub fn overview(rows: &[MatchSummary], clock: Clock, session_gap_ms: i64) -> Overview {
+/// `context` adds what the stored list alone cannot say (lobby strength, peer benchmarks)
+/// to the findings; [`crate::insights::Context::default`] leaves it out.
+pub fn overview(
+    rows: &[MatchSummary],
+    clock: Clock,
+    session_gap_ms: i64,
+    context: &crate::insights::Context<'_>,
+) -> Overview {
     let mut newest: Vec<&MatchSummary> = rows.iter().collect();
     newest.sort_by_key(|m| std::cmp::Reverse(m.started_at_ms.unwrap_or(i64::MIN)));
     let recent: Vec<&MatchSummary> = newest.iter().take(RECENT_MATCHES).copied().collect();
@@ -769,53 +727,19 @@ pub fn overview(rows: &[MatchSummary], clock: Clock, session_gap_ms: i64) -> Ove
     let by_hero = breakdown(rows, Dimension::Hero);
     let by_map = breakdown(rows, Dimension::Map);
 
-    let mut insights = Vec::new();
-    let streak = overall.streaks.current;
-    if streak.abs() >= 3 {
-        insights.push(Insight {
-            kind: InsightKind::Streak,
-            positive: streak > 0,
-            subject: None,
-            value: streak.unsigned_abs() as f64,
-            other: None,
-            n: streak.unsigned_abs() as usize,
-            key: None,
-        });
-    }
-    if let (Some(now), Some(then)) = (
-        recent_agg.record.win_rate_pct,
-        before_agg.record.win_rate_pct,
-    ) {
-        let n = recent_agg.record.wins + recent_agg.record.losses;
-        let m = before_agg.record.wins + before_agg.record.losses;
-        if n >= 10 && m >= 10 && (now - then).abs() >= 15.0 {
-            insights.push(Insight {
-                kind: InsightKind::RecentForm,
-                positive: now > then,
-                subject: None,
-                value: now,
-                other: Some(then),
-                n,
-                key: None,
-            });
-        }
-    }
-    if let Some(rate) = overall.record.win_rate_pct {
-        for (kind, groups) in [(InsightKind::Map, &by_map), (InsightKind::Hero, &by_hero)] {
-            if let Some((g, up)) = clear_outliers(groups, rate).first() {
-                insights.push(Insight {
-                    kind,
-                    positive: *up,
-                    subject: g.label.clone(),
-                    value: g.aggregate.record.win_rate_pct.unwrap_or_default(),
-                    other: Some(rate),
-                    n: g.aggregate.record.matches,
-                    key: Some(g.key.clone()),
-                });
-            }
-        }
-    }
-    insights.truncate(4);
+    let all_sessions = sessions(rows, session_gap_ms);
+    let insights = crate::insights::find(&crate::insights::Facts {
+        overall: &overall,
+        recent: &recent,
+        before: &before,
+        recent_agg: &recent_agg,
+        before_agg: &before_agg,
+        by_map: &by_map,
+        by_hero: &by_hero,
+        sessions: &all_sessions,
+        rows,
+        context,
+    });
 
     Overview {
         windows: [Window::Today, Window::Yesterday, Window::Week]
@@ -832,7 +756,7 @@ pub fn overview(rows: &[MatchSummary], clock: Clock, session_gap_ms: i64) -> Ove
         by_hero,
         by_map,
         heat,
-        sessions: sessions(rows, session_gap_ms).into_iter().take(3).collect(),
+        sessions: all_sessions.into_iter().take(3).collect(),
         form: recent
             .iter()
             .rev()
@@ -1362,7 +1286,7 @@ mod tests {
                 )
             })
             .collect();
-        let o = overview(&rows, clock, 5 * HOUR);
+        let o = overview(&rows, clock, 5 * HOUR, &crate::insights::Context::default());
         assert_eq!(o.overall.record.matches, 45);
         assert_eq!(o.recent.record.matches, RECENT_MATCHES);
         assert_eq!(o.before.record.matches, RECENT_MATCHES);
@@ -1401,7 +1325,7 @@ mod tests {
         add(&mut rows, "1", 18, 2);
         add(&mut rows, "2", 3, 2);
         add(&mut rows, "3", 10, 25);
-        let o = overview(&rows, clock, HOUR / 2);
+        let o = overview(&rows, clock, HOUR / 2, &crate::insights::Context::default());
         let maps: Vec<_> = o
             .insights
             .iter()
@@ -1422,7 +1346,7 @@ mod tests {
         let rows: Vec<MatchSummary> = (0..4)
             .map(|i| timed(&format!("m{i}"), i * HOUR, Outcome::Loss))
             .collect();
-        let o = overview(&rows, clock, HOUR);
+        let o = overview(&rows, clock, HOUR, &crate::insights::Context::default());
         let s = o
             .insights
             .iter()

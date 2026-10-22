@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/benchmark.dart';
 import '../../core/models.dart';
 import '../../core/overview.dart';
 import '../../core/support.dart';
@@ -424,17 +425,45 @@ class _Insights extends StatelessWidget {
   final Mode mode;
   final Overview o;
 
+  static String _metric(BenchMetric m) => switch (m) {
+    BenchMetric.damage => tr.heroes.metricDamage,
+    BenchMetric.healing => tr.heroes.metricHealing,
+    BenchMetric.mitigation => tr.heroes.metricMitigation,
+    BenchMetric.eliminations => tr.heroes.metricEliminations,
+    BenchMetric.finalBlows => tr.heroes.metricFinalBlows,
+    BenchMetric.deaths => tr.heroes.metricDeaths,
+    BenchMetric.unknown => '',
+  };
+
   String _text(Insight i) {
     final overall = fmtPct(i.other, digits: 0);
     final rate = fmtPct(i.value, digits: 0);
     final s = i.subject ?? '';
+    String signed(int d) =>
+        '${d > 0
+            ? '+'
+            : d < 0
+            ? '−'
+            : ''}${d.abs()}';
+    final items = tr.common.list([
+      for (final it in i.items)
+        tr.overview.driverItem(it.label, signed(it.delta)),
+    ]);
     return switch (i.kind) {
       InsightKind.streak =>
         i.positive ? tr.overview.streakWin(i.n) : tr.overview.streakLoss(i.n),
+      InsightKind.streakStrength => tr.overview.streakStrength(
+        i.value.round(),
+        i.n,
+      ),
       InsightKind.recentForm =>
         i.positive
             ? tr.overview.recentUp(rate, overall)
             : tr.overview.recentDown(rate, overall),
+      InsightKind.drivers =>
+        i.positive
+            ? tr.overview.driversUp(items)
+            : tr.overview.driversDown(items),
       InsightKind.map =>
         i.positive
             ? tr.overview.mapUp(s, rate, i.n, overall)
@@ -443,42 +472,155 @@ class _Insights extends StatelessWidget {
         i.positive
             ? tr.overview.heroUp(s, rate, i.n, overall)
             : tr.overview.heroDown(s, rate, i.n, overall),
+      InsightKind.fatigue => tr.overview.fatigue(rate, overall),
+      InsightKind.heroMetric =>
+        i.positive
+            ? tr.overview.heroMetricUp(s, _metric(i.metric), i.value.round())
+            : tr.overview.heroMetricDown(s, _metric(i.metric), i.value.round()),
       InsightKind.unknown => '',
     };
+  }
+
+  static IconData _icon(Insight i) => switch (i.kind) {
+    InsightKind.streak =>
+      i.positive
+          ? Icons.local_fire_department_outlined
+          : Icons.self_improvement,
+    InsightKind.streakStrength => Icons.balance,
+    InsightKind.map => Icons.map_outlined,
+    InsightKind.hero || InsightKind.heroMetric => Icons.person_outline,
+    InsightKind.fatigue => Icons.bedtime_outlined,
+    _ => i.positive ? Icons.trending_up : Icons.trending_down,
+  };
+
+  /// Opens the match list filtered to a finding's map or hero.
+  void _drill(AppState app, String kind, String key) {
+    for (final m in workspace.matchesFor(mode).value?.matches ?? const []) {
+      final e = kind == 'map' ? m.map : m.hero;
+      if (e == null || _Groups._stable(e) != key) continue;
+      final f = workspace.filtersFor(mode)..clear();
+      if (kind == 'map') {
+        f.mapGuid = e.guid;
+      } else {
+        f.heroGuid = e.guid;
+      }
+      workspace.touch();
+      app.setTab('matches');
+      return;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final shown = o.insights.where((i) => i.kind != InsightKind.unknown);
+    final app = AppScope.of(context);
+    final muted = app.mutedInsights;
+    final shown = o.insights
+        .where(
+          (i) => i.kind != InsightKind.unknown && !muted.contains(i.kind.id),
+        )
+        .toList();
+    final hidden = o.insights.length - shown.length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(tr.overview.insightsTitle, info: tr.overview.insightsTip),
+        SectionHeader(
+          tr.overview.insightsTitle,
+          info: tr.overview.insightsTip,
+          trailing: muted.isEmpty
+              ? null
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      tr.overview.muted(muted.length),
+                      style: Ty.meta.copyWith(color: c.textSecondary),
+                    ),
+                    const SizedBox(width: Sp.withinGroup),
+                    AppButton(
+                      tr.overview.unmute,
+                      quiet: true,
+                      onPressed: app.unmuteInsights,
+                    ),
+                  ],
+                ),
+        ),
         const SizedBox(height: SectionHeader.below),
         if (shown.isEmpty)
           Text(
-            tr.overview.insightsNone,
+            hidden > 0
+                ? tr.overview.muted(muted.length)
+                : tr.overview.insightsNone,
             style: Ty.body.copyWith(color: c.textSecondary),
           )
         else
-          CardGrid([
-            for (final i in shown)
-              InfoCard(
-                name: _text(i),
-                glyph: switch (i.kind) {
-                  InsightKind.streak =>
-                    i.positive
-                        ? Icons.local_fire_department_outlined
-                        : Icons.self_improvement,
-                  InsightKind.map => Icons.map_outlined,
-                  InsightKind.hero => Icons.person_outline,
-                  _ => i.positive ? Icons.trending_up : Icons.trending_down,
-                },
-                accent: i.positive ? c.positive : c.negative,
-              ),
-          ]),
+          Column(
+            children: [
+              for (final i in shown) ...[
+                _card(context, app, i),
+                const SizedBox(height: Sp.withinGroup),
+              ],
+            ],
+          ),
       ],
+    );
+  }
+
+  Widget _card(BuildContext context, AppState app, Insight i) {
+    final c = context.c;
+    final accent = i.positive ? c.positive : c.negative;
+    final drill = switch (i.kind) {
+      InsightKind.map => i.key == null ? null : ('map', i.key!),
+      InsightKind.hero ||
+      InsightKind.heroMetric => i.key == null ? null : ('hero', i.key!),
+      _ => null,
+    };
+    return IntrinsicHeight(
+      child: CardSurface(
+        accent: accent,
+        child: Row(
+          children: [
+            Icon(_icon(i), size: 28, color: accent),
+            const SizedBox(width: Sp.betweenGroups),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_text(i), style: Ty.bodyStrong),
+                  if (i.items.isNotEmpty) ...[
+                    const SizedBox(height: Sp.withinControl),
+                    Wrap(
+                      spacing: Sp.withinGroup,
+                      children: [
+                        for (final it in i.items)
+                          AppButton(
+                            it.label,
+                            quiet: true,
+                            icon: it.kind == 'map'
+                                ? Icons.map_outlined
+                                : Icons.person_outline,
+                            onPressed: () => _drill(app, it.kind, it.key),
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (drill != null)
+              IconAction(
+                icon: Icons.filter_alt_outlined,
+                label: tr.overview.openMatches,
+                onPressed: () => _drill(app, drill.$1, drill.$2),
+              ),
+            IconAction(
+              icon: Icons.notifications_off_outlined,
+              label: tr.overview.mute,
+              onPressed: () => app.muteInsight(i.kind.id),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

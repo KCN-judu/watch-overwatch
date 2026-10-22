@@ -8,6 +8,7 @@ pub mod dashen;
 mod domain;
 mod export;
 pub mod growth;
+pub mod insights;
 pub mod ir;
 pub mod progress;
 mod report;

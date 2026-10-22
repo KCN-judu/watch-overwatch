@@ -923,6 +923,21 @@ class AppState extends ChangeNotifier {
     await ensureTabData();
   }
 
+  /// Kinds of overview findings not to show again (kept with the layout).
+  Set<String> get mutedInsights => ui.mutedInsights;
+
+  void muteInsight(String kind) {
+    ui.mutedInsights.add(kind);
+    ui.save();
+    notifyListeners();
+  }
+
+  void unmuteInsights() {
+    ui.mutedInsights.clear();
+    ui.save();
+    notifyListeners();
+  }
+
   Future<void> setTab(String id) async {
     if (!tabIds.contains(id)) return;
     tab = id;
