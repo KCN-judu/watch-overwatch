@@ -8,11 +8,13 @@ import '../../design/cards.dart';
 import '../../design/chart_kit.dart';
 import '../../design/icons.dart';
 import '../../design/net_pic.dart';
+import '../../design/share.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
 import 'player_compare.dart';
+import 'recap.dart';
 
 /// One screen about one player, answer first (docs/ui-design.md §11, the skill's
 /// visual-direction.md): a headline band over their most-played hero's banner with the
@@ -101,16 +103,23 @@ class OverviewPage extends StatelessWidget {
           },
         ),
         const SizedBox(height: Sp.betweenSections),
-        SectionHeader(tr.overview.heatTitle),
-        const SizedBox(height: SectionHeader.below),
-        Panel(
-          child: HourHeatmap(
-            metric: tr.overview.heatMetric,
-            format: (v) => fmtPct(v, digits: 0),
-            cells: [
-              for (final day in o.heat)
-                [for (final r in day) HeatCell(r.winRatePct, r.decided)],
-            ],
+        Shareable(
+          title: tr.overview.heatTitle,
+          caption: tr.recap.caption(
+            app.maskName(ws.name),
+            mode.label,
+            result.listed,
+          ),
+          fileName: tr.overview.heatTitle,
+          child: Panel(
+            child: HourHeatmap(
+              metric: tr.overview.heatMetric,
+              format: (v) => fmtPct(v, digits: 0),
+              cells: [
+                for (final day in o.heat)
+                  [for (final r in day) HeatCell(r.winRatePct, r.decided)],
+              ],
+            ),
           ),
         ),
         const SizedBox(height: Sp.betweenSections),
@@ -263,6 +272,19 @@ class _Headline extends StatelessWidget {
                       style: Ty.meta.copyWith(color: c.textSecondary),
                     ),
                     InfoTip(tr.overview.coverageTip),
+                    const Spacer(),
+                    AppButton(
+                      tr.recap.open,
+                      icon: Icons.auto_stories_outlined,
+                      tooltip: tr.recap.openTip,
+                      onPressed: () => showRecap(
+                        context,
+                        workspace: workspace,
+                        mode: mode,
+                        overview: o,
+                        listed: listed,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: Sp.betweenGroups),
@@ -666,53 +688,58 @@ class _Groups extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(
-          heroes ? tr.overview.heroesTitle : tr.overview.mapsTitle,
+        Shareable(
+          title: heroes ? tr.overview.heroesTitle : tr.overview.mapsTitle,
           info: tr.overview.groupTip,
-        ),
-        const SizedBox(height: SectionHeader.below),
-        Panel(
-          child: IntervalBars(
-            format: (v) => fmtPct(v, digits: 0),
-            reference: overall,
-            referenceMeaning: overall == null
-                ? null
-                : tr.overview.overallRate(fmtPct(overall, digits: 0)),
-            labelWidth: heroes ? 150 : 170,
-            rows: [
-              for (final g in groups)
-                () {
-                  final r = g.aggregate.record;
-                  final e = _entity(g.key);
-                  return IntervalRow(
-                    label: g.label ?? e?.label ?? g.key,
-                    value: r.winRatePct ?? 0,
-                    low: r.lowPct,
-                    high: r.highPct,
-                    n: r.decided,
-                    enough: r.enough,
-                    leading: heroes
-                        ? NetImage(
-                            app.catalog.heroIcon(e),
-                            size: 24,
-                            fallback: g.label ?? '',
-                          )
-                        : null,
-                    onTap: e == null
-                        ? null
-                        : () {
-                            final f = workspace.filtersFor(mode)..clear();
-                            if (heroes) {
-                              f.heroGuid = e.guid;
-                            } else {
-                              f.mapGuid = e.guid;
-                            }
-                            workspace.touch();
-                            app.setTab('matches');
-                          },
-                  );
-                }(),
-            ],
+          caption: tr.recap.caption(
+            app.maskName(workspace.name),
+            mode.label,
+            o.overall.record.matches,
+          ),
+          fileName: heroes ? tr.overview.heroesTitle : tr.overview.mapsTitle,
+          child: Panel(
+            child: IntervalBars(
+              format: (v) => fmtPct(v, digits: 0),
+              reference: overall,
+              referenceMeaning: overall == null
+                  ? null
+                  : tr.overview.overallRate(fmtPct(overall, digits: 0)),
+              labelWidth: heroes ? 150 : 170,
+              rows: [
+                for (final g in groups)
+                  () {
+                    final r = g.aggregate.record;
+                    final e = _entity(g.key);
+                    return IntervalRow(
+                      label: g.label ?? e?.label ?? g.key,
+                      value: r.winRatePct ?? 0,
+                      low: r.lowPct,
+                      high: r.highPct,
+                      n: r.decided,
+                      enough: r.enough,
+                      leading: heroes
+                          ? NetImage(
+                              app.catalog.heroIcon(e),
+                              size: 24,
+                              fallback: g.label ?? '',
+                            )
+                          : null,
+                      onTap: e == null
+                          ? null
+                          : () {
+                              final f = workspace.filtersFor(mode)..clear();
+                              if (heroes) {
+                                f.heroGuid = e.guid;
+                              } else {
+                                f.mapGuid = e.guid;
+                              }
+                              workspace.touch();
+                              app.setTab('matches');
+                            },
+                    );
+                  }(),
+              ],
+            ),
           ),
         ),
       ],

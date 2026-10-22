@@ -285,6 +285,22 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               _row(
+                tr.recap.maskNames,
+                SegmentedBar<bool>(
+                  semanticLabel: tr.recap.maskNames,
+                  value: app.maskNames,
+                  onChanged: app.setMaskNames,
+                  segments: [
+                    Segment(false, tr.recap.namesShown),
+                    Segment(
+                      true,
+                      tr.recap.namesHidden,
+                      hint: tr.recap.maskNamesTip,
+                    ),
+                  ],
+                ),
+              ),
+              _row(
                 tr.shell.layout,
                 AppButton(
                   tr.shell.resetLayout,

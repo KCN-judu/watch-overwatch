@@ -25,6 +25,7 @@ import 'maps.dart';
 import 'matches.dart';
 import 'overview.dart';
 import 'people.dart';
+import 'recap.dart';
 import 'shell.dart';
 
 export 'analysis.dart';
@@ -36,6 +37,7 @@ export 'maps.dart';
 export 'matches.dart';
 export 'overview.dart';
 export 'people.dart';
+export 'recap.dart';
 export 'shell.dart';
 
 class Strings {
@@ -58,6 +60,9 @@ class Strings {
 
   /// Comparisons of two heroes, two stretches of time, two players.
   CompareStrings get compare => const CompareStrings();
+
+  /// The recap and share pictures.
+  RecapStrings get recap => const RecapStrings();
 
   /// The frequent players page.
   PeopleStrings get people => const PeopleStrings();

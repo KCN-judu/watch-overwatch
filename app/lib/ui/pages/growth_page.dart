@@ -6,6 +6,7 @@ import '../../core/support.dart';
 import '../../design/cards.dart';
 import '../../design/charts.dart';
 import '../../design/icons.dart';
+import '../../design/share.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../l10n/strings.dart';
@@ -268,12 +269,20 @@ class _GrowthPageState extends State<GrowthPage> {
         ),
         for (final m in shown) ...[
           const SizedBox(height: Sp.betweenSections),
-          SectionHeader(m.title, accent: c.accent, info: m.info),
-          const SizedBox(height: Sp.withinGroup + 2),
-          if (_compare)
-            _CompareChart(m, points, sync: _cursor)
-          else
-            _MeasureChart(m, points, sync: _cursor),
+          Shareable(
+            title: m.title,
+            accent: c.accent,
+            info: m.info,
+            caption: tr.recap.caption(
+              app.maskName(ws.name),
+              mode.label,
+              points.length,
+            ),
+            fileName: m.title,
+            child: _compare
+                ? _CompareChart(m, points, sync: _cursor)
+                : _MeasureChart(m, points, sync: _cursor),
+          ),
         ],
         const SizedBox(height: Sp.betweenSections),
       ],

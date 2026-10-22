@@ -247,6 +247,9 @@ class UiState {
   /// Kinds of overview findings the user asked not to be shown again.
   Set<String> mutedInsights = {};
 
+  /// Share pictures say "玩家" instead of player names.
+  bool shareMaskNames = false;
+
   static File _file() {
     final base =
         Platform.environment['LOCALAPPDATA'] ?? Directory.systemTemp.path;
@@ -276,6 +279,7 @@ class UiState {
         s.lastPlayer = j['lastPlayer'] is String ? j['lastPlayer'] : null;
         s.tab = j['tab'] is String ? j['tab'] : s.tab;
         s.mode = j['mode'] is String ? j['mode'] : s.mode;
+        s.shareMaskNames = j['shareMaskNames'] == true;
         s.mutedInsights = {
           for (final k in (j['mutedInsights'] as List?) ?? const [])
             if (k is String) k,
@@ -304,6 +308,7 @@ class UiState {
           'tab': tab,
           'mode': mode,
           'mutedInsights': mutedInsights.toList(),
+          'shareMaskNames': shareMaskNames,
         }),
       );
       part.renameSync(f.path);
