@@ -1112,7 +1112,7 @@ pub(crate) async fn player_stadium(
         let details: Vec<MatchDetail> = store
             .all_details()
             .into_iter()
-            .filter(|d| d.mode == Mode::Stadium)
+            .filter(|d| d.mode == Mode::Stadium && same_world(d, &subject))
             .collect();
         let view = watch_core::stadium::stadium(&details, &subject, input.scope);
         json!({"enabled": true, "stadium": view})
@@ -1176,6 +1176,12 @@ pub(crate) async fn player_ranks(
         Ok(v) => Json(v).into_response(),
         Err(_) => fail(error("internal", "段位轨迹计算失败。 ")).into_response(),
     }
+}
+
+/// The sample player's matches (`watch_core::demo`) are stored like any others, but are
+/// only ever compared with each other: invented players never become a real player's peers.
+fn same_world(detail: &MatchDetail, subject: &str) -> bool {
+    detail.id.starts_with("demo-") == subject.starts_with("demo-")
 }
 
 /// The player's stored details of `mode`.
@@ -1264,7 +1270,7 @@ impl PeerInputs {
         let details: Vec<MatchDetail> = store
             .all_details()
             .into_iter()
-            .filter(|d| d.mode == mode)
+            .filter(|d| d.mode == mode && same_world(d, subject))
             .collect();
         let ids: std::collections::BTreeSet<String> = details
             .iter()
@@ -1474,5 +1480,86 @@ mod tests {
         assert_eq!(client.metrics().await.len(), 1);
         assert!(!cached_request(&client, &cache, spec, true).await.unwrap().2);
         assert_eq!(client.metrics().await.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn the_sample_player_works_without_an_account_or_the_network() {
+        use watch_core::{Policy, SecretsFile};
+        let dir = std::env::temp_dir().join(format!("watchd-demo-{}", uuid::Uuid::new_v4()));
+        let store = crate::store::LocalStore::open(&dir).ok().map(Arc::new);
+        assert!(store.is_some());
+        // Nothing listens on port 9: any request that went upstream would fail.
+        let client = WatchClient::with_base(
+            SecretsFile { accounts: vec![] },
+            "http://127.0.0.1:9",
+            Policy::default(),
+        )
+        .unwrap();
+        let s = AppState {
+            client: Arc::new(client),
+            sessions: Arc::new(Mutex::new(HashMap::new())),
+            settings_lock: Arc::new(Mutex::new(())),
+            catalog: Arc::new(watch_core::Catalog::bundled()),
+            progress: Arc::new(std::sync::Mutex::new(HashMap::new())),
+            store,
+            season_checked: Arc::default(),
+        };
+        async fn body(r: Response) -> Value {
+            let b = axum::body::to_bytes(r.into_body(), usize::MAX)
+                .await
+                .unwrap();
+            serde_json::from_slice(&b).unwrap()
+        }
+        let found = body(
+            search_player(
+                State(s.clone()),
+                Json(SearchInput {
+                    name: watch_core::demo::DEMO_NAME.into(),
+                }),
+            )
+            .await,
+        )
+        .await;
+        let session = found["session"].as_str().expect("a session").to_string();
+        let ds = body(
+            player_dataset(
+                State(s.clone()),
+                Json(serde_json::from_value(json!({"session": session})).unwrap()),
+            )
+            .await,
+        )
+        .await;
+        let matches = ds["dataset"]["matches"].as_array().expect("matches");
+        assert!(matches.len() >= 20, "{}", ds);
+        let id = matches[0]["id"].as_str().unwrap().to_string();
+        let view = |v: Value| serde_json::from_value::<ViewInput>(v).unwrap();
+        let detail = body(
+            player_view(
+                State(s.clone()),
+                Json(view(
+                    json!({"session": session, "view": "detail", "match_id": id}),
+                )),
+            )
+            .await,
+        )
+        .await;
+        assert_eq!(
+            detail["ir"]["allies"].as_array().map(Vec::len),
+            Some(5),
+            "{}",
+            detail
+        );
+        let overview = body(
+            player_overview(
+                State(s.clone()),
+                Json(serde_json::from_value(json!({"session": session})).unwrap()),
+            )
+            .await,
+        )
+        .await;
+        assert_eq!(overview["enabled"], true);
+        assert!(overview["listed"].as_u64().unwrap() >= 20);
+        assert!(s.client.metrics().await.iter().all(|m| m.status == "demo"));
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

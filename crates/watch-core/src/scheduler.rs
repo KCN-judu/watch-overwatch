@@ -272,6 +272,11 @@ impl WatchClient {
             attempts: 0,
             at_ms: now_ms(),
         };
+        // The sample player is answered here and never goes upstream (see `demo`).
+        if let Some(value) = crate::demo::respond(endpoint, &spec.payload) {
+            metric.status = "demo".into();
+            return Ok((metric, value));
+        }
         let result = match self.admission.clone().try_acquire_owned() {
             Err(_) => Err(failure("busy", "请求队列已满，稍后重试。")),
             Ok(_admission) => match tokio::time::timeout(

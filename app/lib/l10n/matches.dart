@@ -69,7 +69,7 @@ class MatchStrings {
   String allSavedTip(int total) => '本地已保存全部对局（$total 场）。每次打开只读取比已保存的最新一场更新的对局。';
   String get allRead => '已读完';
   String allReadWithNew(int n) => '已读完，新增 $n 场';
-  String get readingOlder => '正在读取更早的对局…';
+  String readingOlder(int n) => n == 0 ? '正在读取对局列表…' : '正在读取更早的对局…已读 $n 场';
   String get olderUnreadTip => '还有更早的对局没有读取';
   String get notAllRead => '未读完';
   String get continueReading => '继续读取';

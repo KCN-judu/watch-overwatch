@@ -696,7 +696,10 @@ class _ScopeLine extends StatelessWidget {
               children: [
                 Spinner(color: c.accent),
                 const SizedBox(width: 6),
-                Text(tr.matches.readingOlder, style: secondary),
+                Text(
+                  tr.matches.readingOlder(load.value?.matches.length ?? 0),
+                  style: secondary,
+                ),
               ],
             )
           else

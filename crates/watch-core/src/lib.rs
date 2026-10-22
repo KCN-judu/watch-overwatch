@@ -5,6 +5,7 @@ mod catalog;
 pub mod collect;
 mod credentials;
 pub mod dashen;
+pub mod demo;
 mod domain;
 mod export;
 pub mod growth;

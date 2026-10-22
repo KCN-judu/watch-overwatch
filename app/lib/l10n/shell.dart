@@ -25,6 +25,25 @@ class ShellStrings {
   String get findFirstPlayerBody => '输入完整的战网昵称（例如 Player#12345）。';
   String get choosePlayerBody => '从左侧玩家库选择，或输入新的战网昵称。';
   String get findPlayer => '查找玩家';
+  String get metricDocHint => '点击查看口径说明';
+
+  // First run: three steps, or the sample player.
+  String get welcomeTitle => '欢迎使用 Watch Overwatch';
+  String get welcomeBody => '三步看到自己的数据；也可以先用示例数据看看每个页面。';
+  String get stepAccount => '添加大神账号';
+  String get stepAccountBody =>
+      '在设置里粘贴大神 App 的 role_id 和 token（获取方法见使用指引的“凭据”一节），点“测试连接”确认可用。凭据只保存在本机。';
+  String get stepAccountDone => '已添加账号';
+  String get stepFind => '输入战网昵称';
+  String get stepFindBody => '在左上角的搜索框输入完整的战网昵称，例如 Player#12345。';
+  String get stepRead => '读取对局';
+  String get stepReadBody => '第一次会从最新一场往回读对局列表，页面顶部显示读到第几页；之后打开就有，只补新的对局。';
+  String get trySample => '先看示例数据';
+  String get trySampleBody => '示例玩家的对局都是生成的（玩家名带“示例”），不需要账号，也不会向上游发请求。';
+  String get openSample => '打开示例玩家';
+
+  /// The made-up player the service answers itself (`watch_core::demo::DEMO_NAME`).
+  String get sampleName => '示例玩家#0000';
   String get backendConnected => '本地服务已连接';
   String get backendStarting => '正在启动本地服务';
   String get backendDisconnected => '本地服务未连接';
