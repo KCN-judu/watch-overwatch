@@ -244,6 +244,10 @@ class HeroStrings {
   /// Under a per-match average: the provider's server-wide figure.
   String serverAverage(String v) => '全服平均 $v';
 
+  // Hero boards (hero detail).
+  String heroBoard(String province, int rank) => '英雄榜：$province第 $rank 名';
+  String heroBoardTip(int n, String rate) => '上榜依据 $n 场，胜率 $rate（大神英雄榜，只看本人）';
+
   // Stadium builds (hero detail, Stadium mode).
   String get buildsTitle => '构筑';
   String get buildsTip =>
