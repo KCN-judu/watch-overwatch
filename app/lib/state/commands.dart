@@ -127,6 +127,8 @@ List<Cmd> buildCommands() {
           LogicalKeyboardKey.digit5,
           LogicalKeyboardKey.digit6,
           LogicalKeyboardKey.digit7,
+          LogicalKeyboardKey.digit8,
+          LogicalKeyboardKey.digit9,
         ][i],
         '${i + 1}',
       ),
