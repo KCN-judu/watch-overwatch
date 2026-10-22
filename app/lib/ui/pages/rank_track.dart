@@ -155,9 +155,7 @@ class _RankTrackSectionState extends State<RankTrackSection> {
                 values: [for (final p in t.points) p.skillRating.toDouble()],
               ),
             ],
-            xLabels: [
-              for (final p in t.points) fmtDateTime(p.atMs).substring(0, 5),
-            ],
+            xLabels: [for (final p in t.points) fmtDate(p.atMs)],
             pointNotes: [
               for (final p in t.points)
                 [
@@ -219,8 +217,8 @@ class _RankTrackSectionState extends State<RankTrackSection> {
                     Text(
                       tr.analysis.drop(
                         d.role.label,
-                        fmtDateTime(d.fromMs).substring(0, 5),
-                        fmtDateTime(d.toMs).substring(0, 5),
+                        fmtDate(d.fromMs),
+                        fmtDate(d.toMs),
                         d.fromRating - d.toRating,
                         d.matches,
                         d.wins,
@@ -228,7 +226,7 @@ class _RankTrackSectionState extends State<RankTrackSection> {
                       ),
                       style: Ty.bodyStrong,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: Sp.hairline),
                     Text(
                       edgeText == null
                           ? tr.analysis.dropNoEdge

@@ -193,9 +193,9 @@ class _List extends StatelessWidget {
                       m.name ?? tr.people.anonymous,
                       tr.people.shared(m.shared),
                     ].join(' · '),
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: Sp.withinGroup,
-                      vertical: 6,
+                      vertical: context.density.padV,
                     ),
                     child: _MateRow(mate: m),
                   ),
@@ -246,10 +246,7 @@ class _MateRow extends StatelessWidget {
           children: [
             Text(tr.people.shared(m.shared), style: Ty.num(Ty.body)),
             if (m.lastMs != null)
-              Text(
-                tr.people.lastSeen(fmtDateTime(m.lastMs).substring(0, 5)),
-                style: meta,
-              ),
+              Text(tr.people.lastSeen(fmtDate(m.lastMs)), style: meta),
           ],
         ),
       ],
@@ -312,9 +309,9 @@ class _Duo extends StatelessWidget {
                       m.map?.label ?? tr.common.unknownMap,
                       m.sameSide ? tr.people.sameSide : tr.people.otherSide,
                     ].join(' · '),
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: Sp.withinGroup,
-                      vertical: 6,
+                      vertical: context.density.padV,
                     ),
                     child: _SharedRow(m: m),
                   ),
@@ -357,7 +354,7 @@ class _SharedRow extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         NetImage(catalog.heroIcon(hero), size: 24, fallback: hero?.label ?? ''),
-        const SizedBox(width: 6),
+        const SizedBox(width: Sp.iconGap),
         Text(kda(s), style: Ty.num(Ty.body)),
       ],
     );

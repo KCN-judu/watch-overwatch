@@ -7,11 +7,60 @@ import '../l10n/strings.dart';
 /// Spacing scale. Names say where the space goes, not how big it is.
 class Sp {
   static const double touching = 0;
+
+  /// Between two lines of one label (a value and its note).
+  static const double hairline = 2;
   static const double withinControl = 4;
+
+  /// Between an icon and the text it belongs to.
+  static const double iconGap = 6;
   static const double withinGroup = 8;
+
+  /// Between related items of a list or row.
+  static const double betweenItems = 12;
   static const double betweenGroups = 16;
   static const double betweenSections = 24;
   static const double page = 32;
+}
+
+/// The coloured bar down the left of a card, table row or tile (its meaning is its
+/// colour: an accent, a result, a severity). Content lines up past it.
+const double accentBar = 3;
+
+/// [fg] moved toward white or black (whichever [bg] is not) just far enough to reach
+/// [ratio] against [bg]: a hero's colour stays itself but stays readable. 4.5 for text,
+/// 3 for icons and bars.
+Color legibleOn(Color fg, Color bg, {double ratio = 4.5}) {
+  if (contrastRatio(fg, bg) >= ratio) return fg;
+  final toward = bg.computeLuminance() < 0.5
+      ? const Color(0xFFFFFFFF)
+      : const Color(0xFF000000);
+  for (var t = 0.05; t <= 1.0; t += 0.05) {
+    final c = Color.lerp(fg, toward, t)!;
+    if (contrastRatio(c, bg) >= ratio) return c;
+  }
+  return toward;
+}
+
+/// Opacity steps for marks drawn over data: a fill behind it, a greyed-out mark, a thin
+/// line (whiskers, dividers), a near-solid mark.
+class Alpha {
+  static const double faint = 0.14;
+  static const double muted = 0.5;
+  static const double line = 0.7;
+  static const double strong = 0.9;
+}
+
+/// Control heights: three steps, nothing in between.
+class Ctl {
+  /// Chips, segments, filter tags, info dots, the menu bar.
+  static const double small = 28;
+
+  /// Buttons, icon actions, facet menus.
+  static const double regular = 32;
+
+  /// Navigation tabs.
+  static const double large = 36;
 }
 
 class Radii {
@@ -201,6 +250,11 @@ class AppColors extends ThemeExtension<AppColors> {
 
   /// Opacity of the `raised` scrim over a row's picture, left / middle / right: dense
   /// behind the text, thin where the picture shows.
+  /// The `raised` scrim behind a page's banner (overview headline, hero poster), dense
+  /// where the text is and open where the picture shows: start, middle, end.
+  static const headlineScrim = [0.96, 0.80, 0.30];
+  static const posterScrim = [0.96, 0.78, 0.0];
+
   static List<double> artScrim(bool light) =>
       light ? const [0.88, 0.50, 0.08] : const [0.94, 0.70, 0.25];
 
@@ -413,6 +467,30 @@ class Ty {
     fontWeight: FontWeight.w600,
     leadingDistribution: _even,
   );
+
+  /// The smallest text: a word inside a chip or a face strip, a marker beside a number.
+  static const micro = TextStyle(
+    fontSize: 10,
+    height: 1.1,
+    fontWeight: FontWeight.w600,
+    leadingDistribution: _even,
+  );
+
+  /// A hero's poster: the name, and the figures under it. The only 700-weight type.
+  static const posterName = TextStyle(
+    fontFamily: family,
+    fontFamilyFallback: fallback,
+    fontSize: 68,
+    height: 1.12,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -1,
+  );
+  static const posterFigure = TextStyle(
+    fontSize: 34,
+    height: 1.1,
+    fontWeight: FontWeight.w700,
+    leadingDistribution: _even,
+  );
   static TextStyle num(TextStyle s) => s.copyWith(fontFeatures: _tab);
 }
 
@@ -532,6 +610,56 @@ ThemeData buildTheme(Brightness b) {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(Radii.control),
         borderSide: BorderSide(color: c.accent, width: 2),
+      ),
+    ),
+    // Native controls drawn the app's way: accent fill, the app's type, no tint.
+    checkboxTheme: CheckboxThemeData(
+      fillColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? c.accent : null,
+      ),
+      checkColor: WidgetStatePropertyAll(c.onAccent),
+      side: BorderSide(color: c.textSecondary),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
+    ),
+    listTileTheme: ListTileThemeData(
+      dense: true,
+      titleTextStyle: f(Ty.body),
+      subtitleTextStyle: f(Ty.meta).copyWith(color: c.textSecondary),
+      contentPadding: const EdgeInsets.symmetric(horizontal: Sp.withinGroup),
+      minVerticalPadding: Sp.withinControl,
+    ),
+    expansionTileTheme: ExpansionTileThemeData(
+      backgroundColor: Colors.transparent,
+      collapsedBackgroundColor: Colors.transparent,
+      iconColor: c.textSecondary,
+      collapsedIconColor: c.textSecondary,
+      textColor: c.textPrimary,
+      collapsedTextColor: c.textPrimary,
+      shape: const Border(),
+      collapsedShape: const Border(),
+      tilePadding: const EdgeInsets.symmetric(horizontal: Sp.withinGroup),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(
+        minimumSize: const WidgetStatePropertyAll(Size(0, Ctl.regular)),
+        textStyle: WidgetStatePropertyAll(f(Ty.bodyStrong)),
+        foregroundColor: WidgetStatePropertyAll(c.textPrimary),
+        side: WidgetStatePropertyAll(BorderSide(color: c.border)),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Radii.control),
+          ),
+        ),
+      ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: c.header,
+      contentTextStyle: f(Ty.body),
+      actionTextColor: c.accent,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.container),
+        side: BorderSide(color: c.border),
       ),
     ),
     textSelectionTheme: TextSelectionThemeData(

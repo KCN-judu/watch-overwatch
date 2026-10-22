@@ -1,3 +1,4 @@
+import 'dart:ui' show Color;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:watch_overwatch/design/tokens.dart';
 
@@ -36,4 +37,18 @@ void main() {
       },
     );
   }
+
+  test('a hero colour too close to the page is moved just far enough', () {
+    const page = Color(0xFF12141A);
+    const dim = Color(0xFF2A3550);
+    final text = legibleOn(dim, page);
+    expect(contrastRatio(text, page), greaterThanOrEqualTo(4.5));
+    // Already readable: unchanged.
+    const bright = Color(0xFFF0C040);
+    expect(legibleOn(bright, page), bright);
+    expect(
+      contrastRatio(legibleOn(dim, page, ratio: 3), page),
+      greaterThanOrEqualTo(3),
+    );
+  });
 }

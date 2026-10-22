@@ -381,7 +381,7 @@ class _LineChartState extends State<LineChart> {
               },
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: Sp.withinControl),
           Wrap(
             spacing: 16,
             runSpacing: 2,
@@ -606,7 +606,7 @@ class _LinePainter extends CustomPainter {
       if (m.index <= 0 || m.index >= xLabels.length) continue;
       final x = (g.x(m.index - 1) + g.x(m.index)) / 2;
       final line = Paint()
-        ..color = colors.textSecondary.withValues(alpha: 0.6)
+        ..color = colors.textSecondary.withValues(alpha: Alpha.line)
         ..strokeWidth = 1;
       for (var yy = _Geom.top; yy < _Geom.top + g.h; yy += 6) {
         canvas.drawLine(
@@ -629,7 +629,7 @@ class _LinePainter extends CustomPainter {
         final right = math.min(_Geom.left + g.w, g.x(i) + half);
         canvas.drawRect(
           Rect.fromLTRB(left, _Geom.top, right, _Geom.top + g.h),
-          Paint()..color = series.first.color.withValues(alpha: 0.14),
+          Paint()..color = series.first.color.withValues(alpha: Alpha.faint),
         );
       }
     }
@@ -637,7 +637,7 @@ class _LinePainter extends CustomPainter {
     final b = band;
     if (b != null) {
       final fill = Paint()
-        ..color = colors.textSecondary.withValues(alpha: 0.14);
+        ..color = colors.textSecondary.withValues(alpha: Alpha.faint);
       final n = math.min(b.lows.length, b.highs.length);
       var i = 0;
       while (i < n) {
@@ -683,11 +683,14 @@ class _LinePainter extends CustomPainter {
           g.x(i) + half,
           math.max(bottom, top + 2),
         );
-        canvas.drawRect(bar, Paint()..color = s.color.withValues(alpha: 0.30));
+        canvas.drawRect(
+          bar,
+          Paint()..color = s.color.withValues(alpha: Alpha.faint * 2),
+        );
         canvas.drawRect(
           bar,
           Paint()
-            ..color = s.color.withValues(alpha: 0.9)
+            ..color = s.color.withValues(alpha: Alpha.strong)
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1,
         );
@@ -942,14 +945,14 @@ class _LinePainter extends CustomPainter {
     canvas.clipPath(path);
     final r = path.getBounds();
     final stroke = Paint()
-      ..color = color.withValues(alpha: 0.6)
+      ..color = color.withValues(alpha: Alpha.line)
       ..strokeWidth = 1;
     for (var x = r.left - r.height; x < r.right; x += 5) {
       canvas.drawLine(Offset(x, r.bottom), Offset(x + r.height, r.top), stroke);
     }
     canvas.restore();
     final edge = Paint()
-      ..color = color.withValues(alpha: 0.5)
+      ..color = color.withValues(alpha: Alpha.muted)
       ..strokeWidth = 1;
     canvas.drawLine(a.translate(0, -half), b.translate(0, -half), edge);
     canvas.drawLine(a.translate(0, half), b.translate(0, half), edge);

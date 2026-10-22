@@ -107,7 +107,7 @@ class PlayerHeader extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             icon,
-            const SizedBox(width: 4),
+            const SizedBox(width: Sp.withinControl),
             Text(
               value,
               style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
@@ -191,7 +191,7 @@ class PlayerHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: Sp.hairline),
                   facts.isEmpty
                       ? Text(
                           tr.shell.loadingProfile,
@@ -208,7 +208,7 @@ class PlayerHeader extends StatelessWidget {
                         ),
                   if (profile?.suspended == true)
                     Padding(
-                      padding: const EdgeInsets.only(top: 4),
+                      padding: const EdgeInsets.only(top: Sp.withinControl),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -217,7 +217,7 @@ class PlayerHeader extends StatelessWidget {
                             size: 14,
                             color: c.warning,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: Sp.withinControl),
                           Text(
                             profile!.suspensionExpiresMs == null
                                 ? tr.shell.accountSuspended
@@ -332,7 +332,7 @@ class _RankLine extends StatelessWidget {
                 size: 14,
                 color: c.textSecondary,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: Sp.withinControl),
               Text(tr.shell.competitive, style: label),
             ],
           ),
@@ -365,7 +365,7 @@ class _RankLine extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       RoleIcon(r, size: 16, tooltip: false),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: Sp.iconGap),
                       rc?.current == null
                           ? Text(tr.common.unranked, style: label)
                           : RankBadge(
@@ -503,8 +503,8 @@ class _TabState extends State<_Tab> {
             behavior: HitTestBehavior.opaque,
             onTap: onTap,
             child: Container(
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              height: Ctl.large,
+              padding: const EdgeInsets.symmetric(horizontal: Sp.betweenItems),
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 border: Border(
@@ -526,7 +526,7 @@ class _TabState extends State<_Tab> {
                     size: 16,
                     color: selected ? c.accent : c.textSecondary,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: Sp.iconGap),
                   Text(
                     label,
                     style: Ty.body.copyWith(
@@ -589,7 +589,7 @@ class LoadStatusBar extends StatelessWidget {
                 size: 14,
                 color: stale ? c.warning : c.textSecondary,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: Sp.withinControl),
               Text(
                 text,
                 style: Ty.num(
@@ -624,12 +624,12 @@ class LoadStatusBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.error_outline, size: 14, color: c.error),
-              const SizedBox(width: 4),
+              const SizedBox(width: Sp.withinControl),
               Text(
                 tr.shell.refreshFailedShowingOld('$error'),
                 style: Ty.meta.copyWith(color: c.error),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: Sp.withinControl),
               AppButton(tr.common.retry, quiet: true, onPressed: onRetry),
             ],
           ),

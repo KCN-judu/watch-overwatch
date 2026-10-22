@@ -216,7 +216,10 @@ class _AppTableState<T> extends State<AppTable<T>> {
                 final focused = _headFocus.hasFocus && keyboardModality;
                 return Container(
                   height: rowH,
-                  padding: const EdgeInsets.only(left: 3, right: gutter),
+                  padding: const EdgeInsets.only(
+                    left: accentBar,
+                    right: gutter,
+                  ),
                   decoration: BoxDecoration(
                     color: c.header,
                     border: Border(bottom: BorderSide(color: c.border)),
@@ -403,7 +406,7 @@ class _HeaderCellState<T> extends State<_HeaderCell<T>> {
     Widget child = Container(
       width: width,
       height: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.withinGroup),
       decoration: BoxDecoration(
         color: c.itemFill(hovered: _hovered && onTap != null),
         border: c.itemOutline(focused: focused),
@@ -415,11 +418,11 @@ class _HeaderCellState<T> extends State<_HeaderCell<T>> {
         children: [
           if (col.numeric && arrow != null) ...[
             arrow,
-            const SizedBox(width: 2),
+            const SizedBox(width: Sp.hairline),
           ],
           Flexible(child: label),
           if (!col.numeric && arrow != null) ...[
-            const SizedBox(width: 2),
+            const SizedBox(width: Sp.hairline),
             arrow,
           ],
         ],
@@ -496,7 +499,9 @@ class _BodyRow<T> extends StatelessWidget {
               decoration: BoxDecoration(
                 color: fill,
                 border: Border(
-                  bottom: BorderSide(color: c.border.withValues(alpha: 0.5)),
+                  bottom: BorderSide(
+                    color: c.border.withValues(alpha: Alpha.muted),
+                  ),
                 ),
               ),
               foregroundDecoration: outline == null
@@ -505,7 +510,10 @@ class _BodyRow<T> extends StatelessWidget {
               child: Row(
                 children: [
                   // Data only (e.g. the result); selection is the fill and outline.
-                  Container(width: 3, color: marker ?? Colors.transparent),
+                  Container(
+                    width: accentBar,
+                    color: marker ?? Colors.transparent,
+                  ),
                   for (var i = 0; i < columns.length; i++)
                     SizedBox(
                       width: widths[i],
@@ -520,7 +528,7 @@ class _BodyRow<T> extends StatelessWidget {
                             )
                           : Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
+                                horizontal: Sp.withinGroup,
                               ),
                               child: Align(
                                 alignment: columns[i].numeric
@@ -571,14 +579,14 @@ class _SkeletonRows extends StatelessWidget {
                 height: rowH,
                 child: Row(
                   children: [
-                    const SizedBox(width: 3),
+                    const SizedBox(width: accentBar),
                     for (final w in widths)
                       SizedBox(
                         width: w,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 10,
+                            horizontal: Sp.withinGroup,
+                            vertical: Sp.withinGroup,
                           ),
                           child: const Skeleton(radius: 3),
                         ),

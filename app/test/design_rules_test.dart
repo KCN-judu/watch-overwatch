@@ -99,6 +99,25 @@ void main() {
     expect(found, isEmpty);
   });
 
+  test('spacing comes from the Sp scale', () {
+    // A gap between things is a step of the scale; sizes of things (a card, a column)
+    // are not spacing and may be any number.
+    final found = offenders(
+      RegExp(
+        r'SizedBox\((?:width|height): (?:[1-9]|[12][0-9]|3[0-2])(?:\.0)?\)',
+      ),
+      {'lib/design/tokens.dart'},
+    );
+    expect(found, isEmpty);
+  });
+
+  test('type sizes come from Ty', () {
+    final found = offenders(RegExp(r'fontSize: \d'), {
+      'lib/design/tokens.dart',
+    });
+    expect(found, isEmpty);
+  });
+
   test('spinners and progress bars are the shared ones', () {
     final found = offenders(
       RegExp(r'CircularProgressIndicator|LinearProgressIndicator'),

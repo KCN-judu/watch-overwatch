@@ -51,7 +51,7 @@ class ProfilePage extends StatelessWidget {
         context.density.rowHeight * scale * (math.max(roleCount, 1) + 1) + 4;
 
     return ListView(
-      padding: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.only(right: Sp.betweenGroups),
       children: [
         LoadStatusBar(
           at: load.at,
@@ -82,7 +82,7 @@ class ProfilePage extends StatelessWidget {
               tr.heroes.totalPlayTime,
               p.playTimeHours == null
                   ? missing
-                  : tr.heroes.hours(fmtOne(p.playTimeHours)),
+                  : fmtPlayTime(p.playTimeHours! * 3600),
             ),
             (tr.heroes.totalMatches, fmtInt(p.totalMatches)),
             (
@@ -199,7 +199,7 @@ class ProfilePage extends StatelessWidget {
         ),
         if (mode != Mode.competitive)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: Sp.withinControl),
             child: Text(
               tr.heroes.noRanksInMode(mode.label),
               style: Ty.meta.copyWith(color: c.textSecondary),
@@ -280,7 +280,7 @@ class _FactCard extends StatelessWidget {
                         f.$1,
                         style: Ty.meta.copyWith(color: c.textSecondary),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: Sp.hairline),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -291,7 +291,7 @@ class _FactCard extends StatelessWidget {
                               height: 22,
                               error: const SizedBox.shrink(),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: Sp.iconGap),
                           ],
                           Flexible(
                             child: SelectableText(

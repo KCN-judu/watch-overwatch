@@ -71,7 +71,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
           onPressed: ws.closeMatch,
         ),
         Text('›', style: Ty.body.copyWith(color: c.textSecondary)),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.withinGroup),
         Expanded(
           child: onPlayerPage
               ? Row(
@@ -85,7 +85,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                       ),
                     ),
                     Text('›', style: Ty.body.copyWith(color: c.textSecondary)),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Sp.withinGroup),
                     Flexible(
                       child: Text(
                         player.name ?? tr.common.unknownPlayer,
@@ -235,7 +235,7 @@ class _Body extends StatelessWidget {
     final outcomeColor = c.outcome(detail.outcome.id);
     return ListView(
       // Room for the scrollbar, so it does not sit on the tables.
-      padding: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.only(right: Sp.betweenItems),
       children: [
         // Result line
         Padding(
@@ -245,12 +245,7 @@ class _Body extends StatelessWidget {
             runSpacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              MapThumb(
-                app.catalog.mapImage(detail.map),
-                width: 88,
-                height: 48,
-                radius: 6,
-              ),
+              MapThumb.large(app.catalog.mapImage(detail.map)),
               Semantics(
                 header: true,
                 child: Text(
@@ -342,17 +337,17 @@ class _Bans extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         TeamTag(ally: ally),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.withinGroup),
         Text(tr.matches.bans, style: Ty.meta.copyWith(color: c.textSecondary)),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.withinGroup),
         if (heroes.isEmpty)
           Text(missing)
         else
           for (final h in heroes) ...[
             NetImage(catalog.heroIcon(h), size: 22, fallback: h.label),
-            const SizedBox(width: 4),
+            const SizedBox(width: Sp.withinControl),
             Text(h.label, style: Ty.body),
-            const SizedBox(width: 10),
+            const SizedBox(width: Sp.withinGroup),
           ],
       ],
     );
@@ -391,9 +386,9 @@ class _SubjectHeroes extends StatelessWidget {
                       size: 26,
                       fallback: s.hero.label,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: Sp.withinGroup),
                     Text(s.hero.label, style: Ty.bodyStrong),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: Sp.betweenItems),
                     Text(
                       s.share == null
                           ? tr.matches.heroPlayTime(fmtClock(s.playTimeS))
@@ -405,7 +400,7 @@ class _SubjectHeroes extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: Sp.iconGap),
                 Builder(
                   builder: (context) {
                     final named = s.stats
@@ -494,7 +489,7 @@ class _Rounds extends StatelessWidget {
         const SizedBox(height: SectionHeader.below),
         for (final (i, r) in rounds.indexed)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: Sp.withinControl),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -532,7 +527,7 @@ class _Rounds extends StatelessWidget {
                                 size: 20,
                                 fallback: '',
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: Sp.withinControl),
                               Text(
                                 catalog.stadiumUpgrade(e)?.name ?? e.label,
                                 style: Ty.body,

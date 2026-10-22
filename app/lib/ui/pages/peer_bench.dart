@@ -132,9 +132,9 @@ class _PeerBenchSectionState extends State<PeerBenchSection> {
     final p = m.percentile.round().clamp(0, 100);
     final color = switch (m.band) {
       Band.poor => c.negative,
-      Band.subpar => c.negative.withValues(alpha: 0.6),
+      Band.subpar => c.negative.withValues(alpha: Alpha.line),
       Band.average => c.textSecondary,
-      Band.good => c.positive.withValues(alpha: 0.7),
+      Band.good => c.positive.withValues(alpha: Alpha.line),
       Band.great => c.positive,
     };
     final name = _metric(m.metric);

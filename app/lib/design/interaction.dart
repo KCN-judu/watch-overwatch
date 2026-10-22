@@ -50,7 +50,9 @@ extension ItemState on AppColors {
 
   Border? itemOutline({bool selected = false, bool focused = false}) {
     if (focused) return Border.all(color: accent, width: 2);
-    if (selected) return Border.all(color: accent.withValues(alpha: 0.7));
+    if (selected) {
+      return Border.all(color: accent.withValues(alpha: Alpha.line));
+    }
     return null;
   }
 }

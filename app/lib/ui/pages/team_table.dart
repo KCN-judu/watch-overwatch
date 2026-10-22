@@ -86,7 +86,7 @@ class TeamTable extends StatelessWidget {
             Tooltip(
               message: tr.matches.partialTotalTip(n, players.length),
               child: Padding(
-                padding: const EdgeInsets.only(right: 4),
+                padding: const EdgeInsets.only(right: Sp.withinControl),
                 child: Icon(
                   Icons.info_outline,
                   size: 13,
@@ -113,7 +113,7 @@ class TeamTable extends StatelessWidget {
         return Align(
           alignment: Alignment.centerRight,
           child: Padding(
-            padding: const EdgeInsets.only(right: 14),
+            padding: const EdgeInsets.only(right: Sp.betweenItems),
             child: total(f),
           ),
         );
@@ -129,8 +129,8 @@ class TeamTable extends StatelessWidget {
           children: [
             if (isBest)
               const Padding(
-                padding: EdgeInsets.only(right: 3),
-                child: Text('▲', style: TextStyle(fontSize: 9)),
+                padding: EdgeInsets.only(right: Sp.withinControl),
+                child: Text('▲', style: Ty.micro),
               ),
             Text(
               fmtInt(v),
@@ -155,7 +155,7 @@ class TeamTable extends StatelessWidget {
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: Sp.iconGap),
         Text(
           text,
           style: Theme.of(
@@ -201,7 +201,7 @@ class TeamTable extends StatelessWidget {
                 fallback: p.hero?.label ?? '?',
                 radius: 5,
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: Sp.withinGroup),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -217,8 +217,8 @@ class TeamTable extends StatelessWidget {
                                   text: name,
                                   style: TextStyle(
                                     fontWeight: p.isSubject
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
                                   ),
                                 ),
                                 TextSpan(
@@ -234,14 +234,14 @@ class TeamTable extends StatelessWidget {
                           ),
                         ),
                         if (p.isSubject) ...[
-                          const SizedBox(width: 6),
+                          const SizedBox(width: Sp.iconGap),
                           Text(
                             tr.matches.subject,
                             style: Ty.meta.copyWith(color: c.accent),
                           ),
                         ],
                         if (p.suspended) ...[
-                          const SizedBox(width: 4),
+                          const SizedBox(width: Sp.withinControl),
                           Tooltip(
                             message: tr.matches.suspendedTip,
                             child: Icon(
@@ -253,11 +253,11 @@ class TeamTable extends StatelessWidget {
                         ],
                       ],
                     ),
-                    const SizedBox(height: 1),
+                    const SizedBox(height: Sp.hairline),
                     Row(
                       children: [
                         RoleIcon(role, size: 13, color: c.textSecondary),
-                        const SizedBox(width: 5),
+                        const SizedBox(width: Sp.withinControl),
                         Flexible(
                           child: Text(
                             p.hero?.label ?? missing,

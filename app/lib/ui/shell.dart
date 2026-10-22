@@ -305,7 +305,7 @@ class _MenuBarRow extends StatelessWidget {
       byCat.putIfAbsent(cmd.category, () => []).add(cmd);
     }
     return Container(
-      height: 30,
+      height: Ctl.small,
       decoration: BoxDecoration(
         color: c.nav,
         border: Border(bottom: BorderSide(color: c.border)),
@@ -321,10 +321,14 @@ class _MenuBarRow extends StatelessWidget {
                 elevation: const WidgetStatePropertyAll(0),
                 shadowColor: const WidgetStatePropertyAll(Colors.transparent),
                 padding: const WidgetStatePropertyAll(
-                  EdgeInsets.symmetric(horizontal: 4),
+                  EdgeInsets.symmetric(horizontal: Sp.withinControl),
                 ),
-                minimumSize: const WidgetStatePropertyAll(Size.fromHeight(30)),
-                maximumSize: const WidgetStatePropertyAll(Size.fromHeight(30)),
+                minimumSize: const WidgetStatePropertyAll(
+                  Size.fromHeight(Ctl.small),
+                ),
+                maximumSize: const WidgetStatePropertyAll(
+                  Size.fromHeight(Ctl.small),
+                ),
               ),
               children: [
                 for (final cat in order)
@@ -332,9 +336,11 @@ class _MenuBarRow extends StatelessWidget {
                     SubmenuButton(
                       style: ButtonStyle(
                         padding: const WidgetStatePropertyAll(
-                          EdgeInsets.symmetric(horizontal: 10),
+                          EdgeInsets.symmetric(horizontal: Sp.withinGroup),
                         ),
-                        minimumSize: const WidgetStatePropertyAll(Size(0, 30)),
+                        minimumSize: const WidgetStatePropertyAll(
+                          Size(0, Ctl.small),
+                        ),
                       ),
                       menuChildren: [
                         for (final cmd in byCat[cat]!) _item(context, cmd),
@@ -345,7 +351,7 @@ class _MenuBarRow extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: Sp.withinGroup),
             child: AppButton(
               tr.shell.commandPalette,
               quiet: true,
@@ -368,7 +374,7 @@ class _MenuBarRow extends StatelessWidget {
       trailingIcon: cmd.shortcutLabel == null
           ? null
           : Padding(
-              padding: const EdgeInsets.only(left: 24),
+              padding: const EdgeInsets.only(left: Sp.betweenSections),
               child: Text(
                 cmd.shortcutLabel!,
                 style: Ty.meta.copyWith(color: c.textSecondary),
@@ -530,7 +536,7 @@ class FirstRun extends StatelessWidget {
                   done ? tr.shell.stepAccountDone : title,
                   style: Ty.bodyStrong,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: Sp.hairline),
                 Text(body, style: Ty.body.copyWith(color: c.textSecondary)),
                 if (action != null) ...[
                   const SizedBox(height: Sp.withinGroup),
@@ -595,7 +601,7 @@ class FirstRun extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(tr.shell.trySample, style: Ty.bodyStrong),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: Sp.hairline),
                     Text(
                       tr.shell.trySampleBody,
                       style: Ty.body.copyWith(color: c.textSecondary),
@@ -645,7 +651,7 @@ class _StatusBar extends StatelessWidget {
     final style = Ty.meta.copyWith(color: c.textSecondary);
     return Container(
       height: 26,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.betweenItems),
       decoration: BoxDecoration(
         color: c.nav,
         border: Border(top: BorderSide(color: c.border)),
@@ -659,24 +665,24 @@ class _StatusBar extends StatelessWidget {
                 ? c.error
                 : c.textSecondary,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: Sp.withinControl),
           Text(text, style: style),
           if (app.server != null) ...[
-            const SizedBox(width: 12),
+            const SizedBox(width: Sp.betweenItems),
             Text(
               tr.shell.accountsReady(ready, app.accounts.length),
               style: style,
             ),
           ],
-          const SizedBox(width: 12),
+          const SizedBox(width: Sp.betweenItems),
           if (app.currentSeason case final season?)
             Text(tr.common.season(season), style: style),
           const Spacer(),
           const ImageProgress(),
-          const SizedBox(width: 12),
+          const SizedBox(width: Sp.betweenItems),
           if (app.exporting) ...[
             RefreshingChip(label: app.exportStatus ?? tr.shell.exporting),
-            const SizedBox(width: 8),
+            const SizedBox(width: Sp.withinGroup),
             AppButton(
               tr.shell.cancelExport,
               quiet: true,

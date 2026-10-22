@@ -44,7 +44,7 @@ class HeroComparePage extends StatelessWidget {
           onPressed: workspace.closeHeroCompare,
         ),
         Text('›', style: Ty.body.copyWith(color: c.textSecondary)),
-        const SizedBox(width: 8),
+        const SizedBox(width: Sp.withinGroup),
         Expanded(
           child: Text(
             other == null
@@ -69,7 +69,7 @@ class HeroComparePage extends StatelessWidget {
         const SizedBox(height: Sp.withinGroup),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.only(right: 16, bottom: 28),
+            padding: const EdgeInsets.only(right: Sp.betweenGroups, bottom: 28),
             children: [
               if (other == null)
                 _Picker(workspace: workspace, a: a, all: all)
@@ -123,7 +123,12 @@ class _Picker extends StatelessWidget {
                 semanticLabel:
                     '${h.hero.label} ${tr.common.matchCount(h.matches ?? 0)}',
                 outlineAtRest: true,
-                padding: const EdgeInsets.fromLTRB(6, 6, 12, 6),
+                padding: const EdgeInsets.fromLTRB(
+                  Sp.iconGap,
+                  Sp.iconGap,
+                  Sp.betweenItems,
+                  Sp.iconGap,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -134,7 +139,7 @@ class _Picker extends StatelessWidget {
                     ),
                     const SizedBox(width: Sp.withinGroup),
                     Text(h.hero.label, style: Ty.bodyStrong),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: Sp.iconGap),
                     Text(
                       tr.common.matchCount(h.matches ?? 0),
                       style: Ty.meta.copyWith(color: context.c.textSecondary),
@@ -228,7 +233,10 @@ class _Comparison extends StatelessWidget {
       children: [
         for (final (i, t) in [label, x, y, d].indexed)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+            padding: const EdgeInsets.symmetric(
+              vertical: Sp.iconGap,
+              horizontal: Sp.withinGroup,
+            ),
             child: Text(
               t,
               textAlign: i == 0 ? TextAlign.left : TextAlign.right,

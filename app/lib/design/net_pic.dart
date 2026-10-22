@@ -190,7 +190,7 @@ class _ImageProgressState extends State<ImageProgress> {
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(width: 96, child: ProgressLine(value: s.fraction)),
-              const SizedBox(width: 8),
+              const SizedBox(width: Sp.withinGroup),
               Text(
                 tr.shell.loadingImages(s.done, s.total),
                 style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),

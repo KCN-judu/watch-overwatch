@@ -173,7 +173,9 @@ class IntervalBars extends StatelessWidget {
 
   Widget _row(BuildContext context, IntervalRow r) {
     final c = context.c;
-    final color = r.enough ? c.accent : c.textSecondary.withValues(alpha: 0.5);
+    final color = r.enough
+        ? c.accent
+        : c.textSecondary.withValues(alpha: Alpha.muted);
     final range = r.low != null && r.high != null
         ? '${format(r.low!)}–${format(r.high!)}'
         : null;
@@ -218,7 +220,7 @@ class IntervalBars extends StatelessWidget {
                         width: math.max(1, x(r.high!) - x(r.low!)),
                         child: Container(
                           height: 2,
-                          color: c.textPrimary.withValues(alpha: 0.7),
+                          color: c.textPrimary.withValues(alpha: Alpha.line),
                         ),
                       ),
                     if (reference != null)
@@ -265,7 +267,7 @@ class IntervalBars extends StatelessWidget {
       semanticLabel: spoken,
       selected: r.selected,
       radius: 0,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.withinControl),
       child: body,
     );
   }
@@ -323,7 +325,7 @@ class HourHeatmap extends StatelessWidget {
           children: [
             for (var d = 0; d < 7 && d < cells.length; d++)
               Padding(
-                padding: const EdgeInsets.only(bottom: 2),
+                padding: const EdgeInsets.only(bottom: Sp.hairline),
                 child: Row(
                   children: [
                     SizedBox(
@@ -335,7 +337,7 @@ class HourHeatmap extends StatelessWidget {
                     ),
                     for (var h = 0; h < 24 && h < cells[d].length; h++)
                       Padding(
-                        padding: const EdgeInsets.only(right: 2),
+                        padding: const EdgeInsets.only(right: Sp.hairline),
                         child: Tooltip(
                           message:
                               cells[d][h].n < minN || cells[d][h].value == null
