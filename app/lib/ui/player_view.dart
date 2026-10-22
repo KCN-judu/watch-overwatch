@@ -49,14 +49,19 @@ class PlayerView extends StatelessWidget {
                   Sp.betweenGroups,
                   Sp.betweenGroups,
                 ),
-                child: switch (app.tab) {
-                  'heroes' => HeroesPage(workspace: workspace),
-                  'strength' => StrengthPage(workspace: workspace),
-                  'growth' => GrowthPage(workspace: workspace),
-                  'trend' => TrendPage(workspace: workspace),
-                  'profile' => ProfilePage(workspace: workspace),
-                  _ => MatchesPage(workspace: workspace),
-                },
+                // A new tab or player is new content: fade through. Switching the mode keeps
+                // the page (and its sort, scope and other local choices).
+                child: FadeThrough(
+                  childKey: (app.tab, workspace.name),
+                  child: switch (app.tab) {
+                    'heroes' => HeroesPage(workspace: workspace),
+                    'strength' => StrengthPage(workspace: workspace),
+                    'growth' => GrowthPage(workspace: workspace),
+                    'trend' => TrendPage(workspace: workspace),
+                    'profile' => ProfilePage(workspace: workspace),
+                    _ => MatchesPage(workspace: workspace),
+                  },
+                ),
               ),
             ),
           ],
