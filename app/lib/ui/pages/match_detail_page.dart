@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../core/models.dart';
+import '../../core/stadium.dart';
 import '../../core/support.dart';
 import '../../design/cards.dart';
 import '../../design/icons.dart';
@@ -322,7 +323,7 @@ class _Body extends StatelessWidget {
         ],
         if (detail.rounds.isNotEmpty) ...[
           const SizedBox(height: Sp.betweenSections),
-          _Rounds(rounds: detail.rounds),
+          _Rounds(rounds: detail.rounds, steps: detail.stadiumTimeline),
         ],
         const SizedBox(height: Sp.betweenSections),
       ],
@@ -451,31 +452,103 @@ class _SubjectHeroes extends StatelessWidget {
 }
 
 class _Rounds extends StatelessWidget {
-  const _Rounds({required this.rounds});
+  const _Rounds({required this.rounds, this.steps = const []});
   final List<Round> rounds;
+
+  /// Stadium: what the player took each round and how the round went.
+  final List<RoundStep> steps;
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final catalog = AppScope.of(context).catalog;
+    String line(Round r) => tr.matches.round(
+      r.index + 1,
+      fmtScore(r.scoreTeam, r.scoreOpponent),
+      fmtClock(r.durationS),
+    );
+    if (steps.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeader(tr.matches.rounds),
+          const SizedBox(height: Sp.withinGroup),
+          Wrap(
+            spacing: Sp.betweenGroups,
+            runSpacing: 4,
+            children: [
+              for (final r in rounds)
+                Text(
+                  line(r),
+                  style: Ty.num(Ty.body).copyWith(color: c.textPrimary),
+                ),
+            ],
+          ),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(tr.matches.rounds),
-        const SizedBox(height: Sp.withinGroup),
-        Wrap(
-          spacing: Sp.betweenGroups,
-          runSpacing: 4,
-          children: [
-            for (final r in rounds)
-              Text(
-                tr.matches.round(
-                  r.index + 1,
-                  fmtScore(r.scoreTeam, r.scoreOpponent),
-                  fmtClock(r.durationS),
+        SectionHeader(tr.matches.rounds, info: tr.matches.timelineTip),
+        const SizedBox(height: SectionHeader.below),
+        for (final (i, r) in rounds.indexed)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 24,
+                  child: switch (i < steps.length ? steps[i].won : null) {
+                    true => const OutcomeMark(Outcome.win),
+                    false => const OutcomeMark(Outcome.loss),
+                    null => const SizedBox.shrink(),
+                  },
                 ),
-                style: Ty.num(Ty.body).copyWith(color: c.textPrimary),
-              ),
-          ],
-        ),
+                SizedBox(
+                  width: 220,
+                  child: Text(
+                    line(r),
+                    style: Ty.num(Ty.body).copyWith(color: c.textPrimary),
+                  ),
+                ),
+                Expanded(
+                  child: Wrap(
+                    spacing: Sp.withinGroup,
+                    runSpacing: 4,
+                    children: [
+                      if (i < steps.length)
+                        for (final (e, kind) in [
+                          for (final e in steps[i].powers)
+                            (e, tr.matches.power),
+                          for (final e in steps[i].items) (e, tr.matches.item),
+                        ])
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              NetImage(
+                                catalog.stadiumUpgrade(e)?.icon,
+                                size: 20,
+                                fallback: '',
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                catalog.stadiumUpgrade(e)?.name ?? e.label,
+                                style: Ty.body,
+                              ),
+                              Text(
+                                ' $kind',
+                                style: Ty.meta.copyWith(color: c.textSecondary),
+                              ),
+                            ],
+                          ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
