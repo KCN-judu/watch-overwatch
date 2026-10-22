@@ -916,6 +916,29 @@ enum Trend {
       Trend.values.firstWhere((t) => t.name == v, orElse: () => flat);
 }
 
+/// How firmly a finding may be worded (`watch_core::stats::Confidence`).
+enum Confidence {
+  firm,
+  hint,
+  none,
+  tooFew;
+
+  static Confidence parse(String? v) => switch (v) {
+    'firm' => firm,
+    'hint' => hint,
+    'too_few' => tooFew,
+    _ => none,
+  };
+
+  /// 较可信 / 有迹象 / 看不出变化 / 样本不足.
+  String get label => switch (this) {
+    firm => tr.analysis.confidenceFirm,
+    hint => tr.analysis.confidenceHint,
+    none => tr.analysis.confidenceNone,
+    tooFew => tr.analysis.confidenceTooFew,
+  };
+}
+
 /// Whether a measure is going up: older half against newer half, and the trend test.
 class Growth {
   Growth(Json j)
@@ -926,10 +949,14 @@ class Growth {
       changePct = _d(j['change_pct']) ?? 0,
       slopePerMatch = _d(j['slope_per_match']) ?? 0,
       p = _d(j['p']) ?? 1,
-      trend = Trend.parse(_s(j['trend']));
+      trend = Trend.parse(_s(j['trend'])),
+      confidence = Confidence.parse(_s(j['confidence']));
   final int matches;
   final double olderMean, newerMean, change, changePct, slopePerMatch, p;
   final Trend trend;
+
+  /// How firmly the change may be worded; decided by the service from the p value.
+  final Confidence confidence;
   static Growth? opt(Object? v) => v is Map<String, dynamic> ? Growth(v) : null;
 }
 

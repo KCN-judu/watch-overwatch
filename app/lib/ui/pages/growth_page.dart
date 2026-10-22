@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models.dart';
+import '../../core/stats.dart';
 import '../../core/support.dart';
 import '../../design/cards.dart';
 import '../../design/charts.dart';
@@ -247,6 +248,10 @@ class _GrowthPageState extends State<GrowthPage> {
         ]),
         const SizedBox(height: Sp.withinGroup),
         Text(
+          tr.analysis.confidenceMeaning,
+          style: Ty.meta.copyWith(color: c.textSecondary),
+        ),
+        Text(
           tr.analysis.pValueNote,
           style: Ty.meta.copyWith(color: c.textSecondary),
         ),
@@ -286,11 +291,18 @@ class _TrendCard extends StatelessWidget {
         c.textSecondary,
       ),
     };
-    final p = g == null
-        ? tr.analysis.trendNeedsEight
+    final pText = g == null
+        ? null
         : g.p < 0.001
         ? 'p < 0.001'
         : 'p = ${g.p.toStringAsFixed(3)}';
+    final changePct = g == null
+        ? ''
+        : '${g.changePct < 0 ? '−' : '+'}${fmtInt(g.changePct.abs())}';
+    // What the card says under its headline: how big the change is, and how sure.
+    final p = g == null
+        ? tr.analysis.trendNeedsEight
+        : tr.analysis.trendEffect(changePct, g.confidence.label);
     final card = CardSurface(
       accent: color,
       child: Row(
@@ -325,6 +337,7 @@ class _TrendCard extends StatelessWidget {
               changePct:
                   '${g.changePct < 0 ? '−' : '+'}${fmtInt(g.changePct.abs())}',
               matches: g.matches,
+              p: pText!,
             ),
             child: card,
           );
@@ -371,6 +384,14 @@ class _MeasureChart extends StatelessWidget {
       padding: PanelPadding.chart,
       child: LineChart(
         sync: sync,
+        band: () {
+          final b = baselineBand(values);
+          return ChartBand(
+            lows: b.lows,
+            highs: b.highs,
+            meaning: tr.analysis.baselineMeaning,
+          );
+        }(),
         height: 260,
         yMin: 0,
         series: [

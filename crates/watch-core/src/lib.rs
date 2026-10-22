@@ -11,6 +11,7 @@ pub mod ir;
 pub mod progress;
 mod report;
 mod scheduler;
+pub mod stats;
 pub mod strength;
 pub use cache::{CachedDetail, ListKey, MemoryCache, RATINGS_TTL, StoredList, StrengthCache};
 pub use catalog::*;

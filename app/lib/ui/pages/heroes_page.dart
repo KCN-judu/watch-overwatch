@@ -7,13 +7,11 @@ import '../../design/card_list.dart';
 import '../../design/icons.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
+import '../../core/stats.dart';
 import '../../state/app_state.dart';
 import '../player_view.dart';
 import 'hero_detail_page.dart';
 import '../../l10n/strings.dart';
-
-/// Win rates over fewer matches than this carry an annotation, not a colour.
-const _minSample = 5;
 
 const _rowExtent = 84.0;
 
@@ -79,7 +77,9 @@ class _HeroesPageState extends State<HeroesPage> {
 
   double? _valueOf(HeroUsage h, String sort) => switch (sort) {
     'matches' => h.matches?.toDouble(),
-    'win' => h.winRatePct,
+    // Ordered by what the record says the rate is at least (Wilson lower bound), so 2 of
+    // 2 does not outrank 30 of 50; the row still shows the rate itself.
+    'win' => wilsonPct(h.wins ?? 0, h.matches ?? 0)?.$1,
     'time' => h.playTimeS,
     'level' => h.heroLevel?.toDouble(),
     'kills' => _kills(h),
@@ -328,7 +328,7 @@ class _HeroCard extends StatelessWidget {
     final subName = subKey == null
         ? null
         : subroleNames[subKey]!.split(' ').first;
-    final enough = (h.matches ?? 0) >= _minSample;
+    final enough = (h.matches ?? 0) >= AppScope.of(context).minGroupMatches;
     final bar = h.winRatePct == null || !enough
         ? c.textSecondary.withValues(alpha: 0.5)
         : (h.winRatePct! >= 50 ? c.win : c.loss);
@@ -433,7 +433,7 @@ class _HeroCard extends StatelessWidget {
             fmtPct(h.winRatePct),
             width: 96,
             color: enough ? null : c.textSecondary,
-            tip: enough ? null : tr.heroes.smallSample(h.matches ?? 0),
+            tip: enough ? _rangeTip(h) : tr.heroes.smallSample(h.matches ?? 0),
           ),
           metric(tr.heroes.playTimeLabel, _time(h.playTimeS), width: 108),
           if (extraSort)
@@ -449,4 +449,17 @@ class _HeroCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The plausible range of a hero's win rate, for the figure's tooltip.
+String? _rangeTip(HeroUsage h) {
+  final r = wilsonPct(h.wins ?? 0, h.matches ?? 0);
+  return r == null
+      ? null
+      : tr.heroes.winRateRange(
+          fmtPct(r.$1),
+          fmtPct(r.$2),
+          h.wins ?? 0,
+          h.matches!,
+        );
 }

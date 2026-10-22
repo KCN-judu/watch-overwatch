@@ -16,6 +16,15 @@ pub struct Record {
     pub draws: usize,
     pub unknown: usize,
     pub win_rate_pct: Option<f64>,
+    /// The plausible range of the win rate (Wilson, 95 %; see [`crate::stats`]). Rank by
+    /// `win_rate_low_pct`, not by the bare rate.
+    #[serde(default)]
+    pub win_rate_low_pct: Option<f64>,
+    #[serde(default)]
+    pub win_rate_high_pct: Option<f64>,
+    /// Enough decided matches to compare ([`crate::stats::MIN_GROUP_MATCHES`]).
+    #[serde(default)]
+    pub enough: bool,
 }
 
 impl Record {
@@ -29,6 +38,10 @@ impl Record {
         }
         let decided = self.wins + self.losses;
         self.win_rate_pct = (decided > 0).then(|| 100.0 * self.wins as f64 / decided as f64);
+        let range = crate::stats::wilson_pct(self.wins, decided);
+        self.win_rate_low_pct = range.map(|r| r.0);
+        self.win_rate_high_pct = range.map(|r| r.1);
+        self.enough = decided >= crate::stats::MIN_GROUP_MATCHES;
     }
 }
 

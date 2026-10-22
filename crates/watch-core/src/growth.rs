@@ -111,6 +111,8 @@ pub struct Growth {
     /// Two-sided p value of the Mann-Kendall test.
     pub p: f64,
     pub trend: Trend,
+    /// How firmly the change may be worded (from `p`); see [`crate::stats::Confidence`].
+    pub confidence: crate::stats::Confidence,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -272,6 +274,7 @@ fn trend(v: &[f64]) -> Option<Growth> {
         slope_per_match: sxy / sxx,
         p,
         trend: direction,
+        confidence: crate::stats::Confidence::of(Some(p), n, MIN_FOR_GROWTH),
     })
 }
 
