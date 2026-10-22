@@ -20,6 +20,7 @@ import 'analysis.dart';
 import 'common.dart';
 import 'core.dart';
 import 'heroes.dart';
+import 'maps.dart';
 import 'matches.dart';
 import 'overview.dart';
 import 'shell.dart';
@@ -28,6 +29,7 @@ export 'analysis.dart';
 export 'common.dart';
 export 'core.dart';
 export 'heroes.dart';
+export 'maps.dart';
 export 'matches.dart';
 export 'overview.dart';
 export 'shell.dart';
@@ -49,6 +51,9 @@ class Strings {
 
   /// Heroes list, hero detail and profile pages.
   HeroStrings get heroes => const HeroStrings();
+
+  /// The maps page.
+  MapStrings get maps => const MapStrings();
 
   /// The overview page.
   OverviewStrings get overview => const OverviewStrings();

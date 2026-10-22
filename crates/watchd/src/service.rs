@@ -1024,6 +1024,56 @@ pub(crate) async fn player_overview(
     }
 }
 
+/// Maps by mode type (see [`watch_core::maps`]), from the stored match list and the
+/// stored details for match lengths: no upstream request.
+pub(crate) async fn player_maps(
+    State(s): State<AppState>,
+    Json(input): Json<GrowthInput>,
+) -> Response {
+    let Some(mode) = Mode::parse(&input.mode) else {
+        return fail(error("validation", "无效的模式。 ")).into_response();
+    };
+    let player = match session(&s, &input.session, "玩家会话已过期，请重新查找玩家。 ").await
+    {
+        Ok(p) => p,
+        Err(e) => return fail(e).into_response(),
+    };
+    let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
+        return Json(json!({"enabled":false})).into_response();
+    };
+    let rows = store
+        .match_list(ListKey {
+            subject: &subject,
+            mode,
+            season: None,
+        })
+        .rows;
+    let catalog = s.catalog.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        let ids: std::collections::HashSet<&str> = rows.iter().map(|m| m.id.as_str()).collect();
+        let durations: HashMap<String, f64> = store
+            .all_details()
+            .into_iter()
+            .filter(|d| ids.contains(d.id.as_str()))
+            .filter_map(|d| Some((d.id, d.duration_s?)))
+            .collect();
+        let view = watch_core::maps::maps(&rows, &durations, |e| {
+            catalog
+                .maps
+                .get(&e.guid)
+                .and_then(|m| m["mode"].as_str())
+                .filter(|s| !s.is_empty())
+                .map(String::from)
+        });
+        json!({"enabled": true, "listed": rows.len(), "maps": view})
+    })
+    .await;
+    match result {
+        Ok(v) => Json(v).into_response(),
+        Err(_) => fail(error("internal", "地图统计失败。 ")).into_response(),
+    }
+}
+
 /// What the peer benchmarks and the overview's findings are worked out from: every stored
 /// detail of `mode`, the stored ranks of everyone in them, and the subject's own details.
 struct PeerInputs {
