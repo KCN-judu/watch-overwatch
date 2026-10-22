@@ -18,7 +18,7 @@ pub const DEMO_TOKEN: &str = "demo-sample-token";
 /// The sample player's id. Its number is the generator's version: matches made by an
 /// earlier version, already stored on a machine, then stay under the old id and never
 /// mix with these.
-const SUBJECT: &str = "demo-2";
+const SUBJECT: &str = "demo-3";
 /// Competitive and quick play matches in the list.
 const MATCHES: usize = 160;
 const PAGE: usize = 20;
@@ -359,7 +359,7 @@ impl World {
                 let lift = if win { 1.12 } else { 0.9 };
                 out.push(Match {
                     id: format!(
-                        "demo-2-{}-{:04}",
+                        "demo-3-{}-{:04}",
                         if competitive { "sport" } else { "leisure" },
                         out.len()
                     ),
@@ -397,7 +397,7 @@ impl World {
         let n = out.len();
         for (i, m) in out.iter_mut().enumerate() {
             m.id = format!(
-                "demo-2-{}-{:04}",
+                "demo-3-{}-{:04}",
                 if competitive { "sport" } else { "leisure" },
                 n - 1 - i
             );
@@ -513,6 +513,9 @@ impl Match {
             "kill": self.kills, "death": self.deaths, "assist": self.assists,
             "heroDamage": self.damage, "cure": self.healing, "resistDamage": self.mitigation,
             "beginTs": self.at_ms, "gameMode": self.game_mode(),
+            // Top of the lobby on a strong night.
+            "killMax": self.kills >= 22.0, "heroDamageMax": self.damage >= 11_500.0,
+            "cureMax": self.healing >= 10_500.0, "resistDamageMax": self.mitigation >= 10_500.0,
         });
         if self.competitive {
             row["rankInfo"] = rank_info(self.sr, self.at_ms);

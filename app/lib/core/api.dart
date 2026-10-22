@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../l10n/strings.dart';
 import 'benchmark.dart';
+import 'daily.dart';
 import 'maps.dart';
 import 'people.dart';
 import 'ranks.dart';
@@ -330,6 +331,16 @@ class Api {
           'session': session,
           'mode': mode.id,
           'other': other,
+        }),
+      );
+
+  /// A day's summary and the days with matches; [day] is `YYYY-MM-DD` (newest when null).
+  Future<DailyResult> daily(String session, Mode mode, String? day) async =>
+      DailyResult(
+        await post('/api/player/daily', {
+          'session': session,
+          'mode': mode.id,
+          'day': ?day,
         }),
       );
 

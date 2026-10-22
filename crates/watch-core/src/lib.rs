@@ -4,6 +4,7 @@ mod cache;
 mod catalog;
 pub mod collect;
 mod credentials;
+pub mod daily;
 pub mod dashen;
 pub mod demo;
 mod domain;

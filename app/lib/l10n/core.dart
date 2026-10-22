@@ -80,6 +80,7 @@ class CoreStrings {
   String get tabMatches => '对局';
   String get tabHeroes => '英雄';
   String get tabMaps => '地图';
+  String get tabDaily => '每日总结';
   String get tabPeople => '常遇玩家';
   String get tabStrength => '对局强度';
   String get tabGrowth => '成长';

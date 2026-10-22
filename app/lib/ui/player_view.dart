@@ -9,6 +9,7 @@ import '../design/widgets.dart';
 import '../l10n/strings.dart';
 import '../state/app_state.dart';
 import 'pages/heroes_page.dart';
+import 'pages/daily_page.dart';
 import 'pages/maps_page.dart';
 import 'pages/people_page.dart';
 import 'pages/matches_page.dart';
@@ -22,6 +23,7 @@ import '../design/net_pic.dart';
 
 const tabIcons = {
   'overview': Icons.dashboard_outlined,
+  'daily': Icons.today_outlined,
   'matches': Icons.sports_esports_outlined,
   'heroes': Icons.groups_2_outlined,
   'maps': Icons.map_outlined,
@@ -61,6 +63,7 @@ class PlayerView extends StatelessWidget {
                   childKey: (app.tab, workspace.name),
                   child: switch (app.tab) {
                     'overview' => OverviewPage(workspace: workspace),
+                    'daily' => DailyPage(workspace: workspace),
                     'heroes' => HeroesPage(workspace: workspace),
                     'maps' => MapsPage(workspace: workspace),
                     'people' => PeoplePage(workspace: workspace),

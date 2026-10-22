@@ -1289,6 +1289,57 @@ pub(crate) async fn player_duo(State(s): State<AppState>, Json(input): Json<DuoI
     }
 }
 
+#[derive(Deserialize)]
+pub(crate) struct DailyInput {
+    session: String,
+    #[serde(default = "sport")]
+    mode: String,
+    /// `YYYY-MM-DD`; the newest day with matches when absent.
+    day: Option<String>,
+}
+
+/// A day's summary (see [`watch_core::daily`]) and the days with matches, from the stored
+/// list and details: no upstream request.
+pub(crate) async fn player_daily(
+    State(s): State<AppState>,
+    Json(input): Json<DailyInput>,
+) -> Response {
+    let Some(mode) = Mode::parse(&input.mode) else {
+        return fail(error("validation", "无效的模式。 ")).into_response();
+    };
+    let player = match session(&s, &input.session, "玩家会话已过期，请重新查找玩家。 ").await
+    {
+        Ok(p) => p,
+        Err(e) => return fail(e).into_response(),
+    };
+    let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
+        return Json(json!({"enabled":false})).into_response();
+    };
+    let rows = store
+        .match_list(ListKey {
+            subject: &subject,
+            mode,
+            season: None,
+        })
+        .rows;
+    let result = tokio::task::spawn_blocking(move || {
+        let details = watch_core::daily::by_id(own_details(&store, &subject, mode));
+        let view = watch_core::daily::daily(
+            &rows,
+            &details,
+            input.day.as_deref(),
+            analysis::REPORT_UTC_OFFSET_MINUTES,
+            AnalysisOptions::default().session_gap_ms,
+        );
+        json!({"enabled": true, "listed": rows.len(), "daily": view})
+    })
+    .await;
+    match result {
+        Ok(v) => Json(v).into_response(),
+        Err(_) => fail(error("internal", "每日总结计算失败。 ")).into_response(),
+    }
+}
+
 /// What the peer benchmarks and the overview's findings are worked out from: every stored
 /// detail of `mode`, the stored ranks of everyone in them, and the subject's own details.
 struct PeerInputs {
