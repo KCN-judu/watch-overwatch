@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/metric_doc.dart';
 import '../../core/models.dart';
 import '../../core/ranks.dart';
 import '../../core/support.dart';
@@ -92,7 +93,11 @@ class _RankTrackSectionState extends State<RankTrackSection> {
               const SizedBox(height: Sp.betweenGroups),
             ],
           if (r.drops.isNotEmpty) ...[
-            SectionHeader(tr.analysis.dropsTitle, info: tr.analysis.dropsTip),
+            SectionHeader(
+              tr.analysis.dropsTitle,
+              info: tr.analysis.dropsTip,
+              infoDoc: MetricDoc.strength,
+            ),
             const SizedBox(height: SectionHeader.below),
             for (final d in r.drops) _drop(context, d),
           ],
@@ -102,7 +107,11 @@ class _RankTrackSectionState extends State<RankTrackSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionHeader(tr.analysis.tracksTitle, info: tr.analysis.tracksTip),
+        SectionHeader(
+          tr.analysis.tracksTitle,
+          info: tr.analysis.tracksTip,
+          infoDoc: MetricDoc.rating,
+        ),
         const SizedBox(height: SectionHeader.below),
         body,
       ],

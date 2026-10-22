@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
+import '../core/metric_doc.dart';
 import '../core/share_image.dart';
 import '../l10n/strings.dart';
 import '../state/app_state.dart';
@@ -19,11 +20,13 @@ class Shareable extends StatefulWidget {
     required this.fileName,
     required this.child,
     this.info,
+    this.infoDoc,
     this.accent,
     this.trailing,
   });
   final String title;
   final String? info;
+  final MetricDoc? infoDoc;
   final Color? accent;
 
   /// Shown before the share actions in the heading row.
@@ -109,6 +112,7 @@ class _ShareableState extends State<Shareable> {
             SectionHeader(
               widget.title,
               info: _capturing ? null : widget.info,
+              infoDoc: widget.infoDoc,
               accent: widget.accent,
               trailing: _capturing ? null : actions,
             ),

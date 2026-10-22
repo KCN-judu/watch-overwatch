@@ -26,6 +26,7 @@ class ShellStrings {
   String get choosePlayerBody => '从左侧玩家库选择，或输入新的战网昵称。';
   String get findPlayer => '查找玩家';
   String get metricDocHint => '点击查看口径说明';
+  String get searchFailed => '查找失败';
 
   // First run: three steps, or the sample player.
   String get welcomeTitle => '欢迎使用 Watch Overwatch';

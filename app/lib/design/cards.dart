@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/metric_doc.dart';
 import '../l10n/strings.dart';
 import 'icons.dart';
 import 'net_pic.dart';
@@ -16,11 +17,15 @@ class SectionHeader extends StatelessWidget {
     super.key,
     this.accent,
     this.info,
+    this.infoDoc,
     this.trailing,
   });
   final String text;
   final Color? accent;
   final String? info;
+
+  /// The metrics-page section [info] is about, when it explains a figure.
+  final MetricDoc? infoDoc;
   final Widget? trailing;
 
   /// Space between a heading and its section; sections are [Sp.betweenSections] apart.
@@ -35,7 +40,7 @@ class SectionHeader extends StatelessWidget {
         Flexible(
           child: Semantics(header: true, child: Text(text, style: Ty.section)),
         ),
-        if (info != null) InfoTip(info!),
+        if (info != null) InfoTip(info!, doc: infoDoc),
         if (trailing != null) ...[const Spacer(), trailing!],
       ],
     );

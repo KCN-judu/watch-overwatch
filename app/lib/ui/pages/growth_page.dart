@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/metric_doc.dart';
 import '../../core/models.dart';
 import '../../core/stats.dart';
 import '../../core/support.dart';
@@ -47,6 +48,14 @@ class _Measure {
     this.shieldMeaning,
   });
   final GrowthMetric metric;
+
+  /// Its section of the metrics page.
+  MetricDoc get doc => switch (metric) {
+    GrowthMetric.life => MetricDoc.life,
+    GrowthMetric.fleta => MetricDoc.fleta,
+    GrowthMetric.kda => MetricDoc.kda,
+    GrowthMetric.healing || GrowthMetric.mitigation => MetricDoc.per10,
+  };
   final String title, info;
   final double? Function(GrowthPoint) value;
 
@@ -236,7 +245,7 @@ class _GrowthPageState extends State<GrowthPage> {
               error: load.error?.message,
               onRetry: () => ws.loadGrowth(mode),
             ),
-            InfoTip(tr.analysis.growthInfo),
+            InfoTip(tr.analysis.growthInfo, doc: MetricDoc.confidence),
           ],
         ),
         if (data.stored < data.listed || data.skipped > 0) ...[
@@ -273,6 +282,7 @@ class _GrowthPageState extends State<GrowthPage> {
             title: m.title,
             accent: c.accent,
             info: m.info,
+            infoDoc: m.doc,
             caption: tr.recap.caption(
               app.maskName(ws.name),
               mode.label,

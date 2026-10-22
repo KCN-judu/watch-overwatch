@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/metric_doc.dart';
 import '../../core/models.dart';
 import '../../core/overview.dart';
 import '../../core/people.dart';
@@ -67,9 +68,12 @@ class _PeoplePageState extends State<PeoplePage> {
     final picked =
         r.mates.where((m) => m.key == _picked).firstOrNull ??
         r.mates.firstOrNull;
-    if (picked != null && _picked == null) {
+    // The first player opens by itself; read their shared matches once, not on every
+    // rebuild (each answer rebuilds the page).
+    final first = picked == null ? null : ws.duoFor(mode, picked.key);
+    if (first != null && !first.has && !first.loading && first.error == null) {
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => ws.loadDuo(mode, picked.key),
+        (_) => ws.loadDuo(mode, picked!.key),
       );
     }
     final list = _List(
@@ -157,7 +161,11 @@ class _List extends StatelessWidget {
           ],
         ),
         const SizedBox(height: Sp.betweenGroups),
-        SectionHeader(tr.people.partyTitle, info: tr.people.partyTip),
+        SectionHeader(
+          tr.people.partyTitle,
+          info: tr.people.partyTip,
+          infoDoc: MetricDoc.winRateRange,
+        ),
         const SizedBox(height: SectionHeader.below),
         Wrap(
           spacing: Sp.withinGroup,

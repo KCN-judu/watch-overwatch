@@ -25,7 +25,14 @@ ButtonStyle buttonStyle(
   return ButtonStyle(
     minimumSize: const WidgetStatePropertyAll(Size(0, 32)),
     padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 12)),
-    textStyle: WidgetStatePropertyAll(Ty.bodyStrong),
+    // The button's own style replaces the inherited one: name the app's font, or button
+    // labels fall back to the platform's default face.
+    textStyle: WidgetStatePropertyAll(
+      Ty.bodyStrong.copyWith(
+        fontFamily: Ty.family,
+        fontFamilyFallback: Ty.fallback,
+      ),
+    ),
     shape: WidgetStatePropertyAll(
       RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(Radii.control),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/metric_doc.dart';
 import '../../core/benchmark.dart';
 import '../../core/models.dart';
 import '../../core/support.dart';
@@ -115,6 +116,7 @@ class _PeerBenchSectionState extends State<PeerBenchSection> {
           tr.heroes.peerTitle,
           accent: widget.accent,
           info: tr.heroes.peerInfo,
+          infoDoc: MetricDoc.percentile,
         ),
         const SizedBox(height: SectionHeader.below),
         body,
