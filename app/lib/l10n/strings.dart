@@ -20,6 +20,7 @@ import 'analysis.dart';
 import 'common.dart';
 import 'compare.dart';
 import 'core.dart';
+import 'daily.dart';
 import 'heroes.dart';
 import 'maps.dart';
 import 'matches.dart';
@@ -32,6 +33,7 @@ export 'analysis.dart';
 export 'common.dart';
 export 'compare.dart';
 export 'core.dart';
+export 'daily.dart';
 export 'heroes.dart';
 export 'maps.dart';
 export 'matches.dart';
@@ -63,6 +65,9 @@ class Strings {
 
   /// The recap and share pictures.
   RecapStrings get recap => const RecapStrings();
+
+  /// The daily summary.
+  DailyStrings get daily => const DailyStrings();
 
   /// The frequent players page.
   PeopleStrings get people => const PeopleStrings();

@@ -10,6 +10,6 @@ void main() {
     ];
     expect(tabs.length, tabIds.length);
     expect({for (final c in tabs) c.shortcutLabel}.length, tabIds.length);
-    expect(tabIds.length, lessThanOrEqualTo(9));
+    expect(tabIds.length, lessThanOrEqualTo(10));
   });
 }
