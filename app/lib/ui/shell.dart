@@ -455,7 +455,7 @@ class _WorkArea extends StatelessWidget {
           ),
         Expanded(
           child: ws == null
-              ? _FirstRun(hasAccount: !app.noAccount)
+              ? FirstRun(hasAccount: !app.noAccount)
               : PlayerView(key: ValueKey(ws.name), workspace: ws),
         ),
       ],
@@ -463,35 +463,150 @@ class _WorkArea extends StatelessWidget {
   }
 }
 
-class _FirstRun extends StatelessWidget {
-  const _FirstRun({required this.hasAccount});
+/// The work area before any player is open: the three steps to see one's own data, and
+/// the sample player to look around with first.
+class FirstRun extends StatelessWidget {
+  const FirstRun({super.key, required this.hasAccount});
   final bool hasAccount;
+
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     final scope = ShellScope.of(context);
-    return EmptyState(
-      icon: Icons.person_search_outlined,
-      title: app.players.isEmpty
-          ? tr.shell.findFirstPlayer
-          : tr.shell.choosePlayer,
-      body: app.players.isEmpty
-          ? tr.shell.findFirstPlayerBody
-          : tr.shell.choosePlayerBody,
-      actions: [
-        AppButton(
-          tr.shell.findPlayer,
-          primary: true,
-          icon: Icons.search,
-          onPressed: scope.actions.focusSearch,
-          tooltip: 'Ctrl+L',
-        ),
-        if (!hasAccount)
+    final c = context.c;
+    if (app.players.isNotEmpty) {
+      return EmptyState(
+        icon: Icons.person_search_outlined,
+        title: tr.shell.choosePlayer,
+        body: tr.shell.choosePlayerBody,
+        actions: [
           AppButton(
-            tr.shell.addAccount,
-            onPressed: () => app.showSettings(true),
+            tr.shell.findPlayer,
+            primary: true,
+            icon: Icons.search,
+            onPressed: scope.actions.focusSearch,
+            tooltip: 'Ctrl+L',
           ),
-      ],
+        ],
+      );
+    }
+    Widget step(
+      int n,
+      String title,
+      String body,
+      Widget? action, {
+      bool done = false,
+    }) => Padding(
+      padding: const EdgeInsets.only(bottom: Sp.betweenGroups),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: done ? c.positive : c.accent,
+              shape: BoxShape.circle,
+            ),
+            child: done
+                ? Icon(Icons.check, size: 16, color: c.onAccent)
+                : Text('$n', style: Ty.bodyStrong.copyWith(color: c.onAccent)),
+          ),
+          const SizedBox(width: Sp.betweenGroups),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  done ? tr.shell.stepAccountDone : title,
+                  style: Ty.bodyStrong,
+                ),
+                const SizedBox(height: 2),
+                Text(body, style: Ty.body.copyWith(color: c.textSecondary)),
+                if (action != null) ...[
+                  const SizedBox(height: Sp.withinGroup),
+                  action,
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(Sp.page),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(tr.shell.welcomeTitle, style: Ty.title),
+              const SizedBox(height: Sp.withinControl),
+              Text(
+                tr.shell.welcomeBody,
+                style: Ty.body.copyWith(color: c.textSecondary),
+              ),
+              const SizedBox(height: Sp.betweenSections),
+              step(
+                1,
+                tr.shell.stepAccount,
+                tr.shell.stepAccountBody,
+                hasAccount
+                    ? null
+                    : AppButton(
+                        tr.shell.addAccount,
+                        primary: true,
+                        onPressed: () => app.showSettings(true),
+                      ),
+                done: hasAccount,
+              ),
+              step(
+                2,
+                tr.shell.stepFind,
+                tr.shell.stepFindBody,
+                AppButton(
+                  tr.shell.findPlayer,
+                  primary: hasAccount,
+                  icon: Icons.search,
+                  onPressed: scope.actions.focusSearch,
+                  tooltip: 'Ctrl+L',
+                ),
+              ),
+              step(3, tr.shell.stepRead, tr.shell.stepReadBody, null),
+              const SizedBox(height: Sp.withinGroup),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(Sp.betweenGroups),
+                decoration: BoxDecoration(
+                  color: c.raised,
+                  border: Border.all(color: c.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(tr.shell.trySample, style: Ty.bodyStrong),
+                    const SizedBox(height: 2),
+                    Text(
+                      tr.shell.trySampleBody,
+                      style: Ty.body.copyWith(color: c.textSecondary),
+                    ),
+                    const SizedBox(height: Sp.withinGroup),
+                    AppButton(
+                      tr.shell.openSample,
+                      icon: Icons.science_outlined,
+                      onPressed: app.searching
+                          ? null
+                          : () => app.openPlayer(tr.shell.sampleName),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
