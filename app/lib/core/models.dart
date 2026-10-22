@@ -321,9 +321,11 @@ class MatchSummary {
 class StatValue {
   StatValue(Json j)
     : stat = EntityRef.fromJson(_o(j['stat']) ?? const {}),
-      value = _d(j['value']) ?? 0;
+      value = _d(j['value']);
   final EntityRef stat;
-  final double value;
+
+  /// Null when the provider sent something that is not a number: missing, never 0.
+  final double? value;
 }
 
 class PerkPick {
@@ -511,7 +513,8 @@ class HeroUsage {
   /// Average length of one match on this hero, in seconds.
   double? get avgMatchSeconds {
     for (final v in perMatch) {
-      if (v.stat.name == '累计游戏时间' && v.value > 0) return v.value;
+      final value = v.value;
+      if (v.stat.name == '累计游戏时间' && value != null && value > 0) return value;
     }
     final t = playTimeS, n = matches;
     return t != null && n != null && n > 0 ? t / n : null;
@@ -530,14 +533,20 @@ class HeroUsage {
   ({double value, bool derived})? per10For(StatValue perMatchValue) {
     for (final v in per10min) {
       if (v.stat.guid == perMatchValue.stat.guid) {
-        return (value: v.value, derived: false);
+        final value = v.value;
+        return value == null ? null : (value: value, derived: false);
       }
     }
     final name = perMatchValue.stat.name, secs = avgMatchSeconds;
-    if (name == null || secs == null || secs <= 0 || !scalesPer10(name)) {
+    final value = perMatchValue.value;
+    if (name == null ||
+        value == null ||
+        secs == null ||
+        secs <= 0 ||
+        !scalesPer10(name)) {
       return null;
     }
-    return (value: perMatchValue.value * 600 / secs, derived: true);
+    return (value: value * 600 / secs, derived: true);
   }
 
   /// Per-10-minute value by stat name (provider's, else derived), for table columns.

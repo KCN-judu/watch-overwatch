@@ -18,6 +18,10 @@ class HeroStrings {
   /// N 胜 M 负.
   String winLoss(int wins, int losses) => '$wins 胜 $losses 负';
 
+  /// The provider's season record for a hero: wins out of all matches. It gives no
+  /// losses, and its win rate counts draws in the matches, so losses cannot be worked out.
+  String winsOfMatches(int wins, int matches) => '$wins 胜 / $matches 场';
+
   /// N 小时 (one decimal, already formatted).
   String hours(String h) => '$h 小时';
 
@@ -40,7 +44,8 @@ class HeroStrings {
   String get clearSearch => '清除搜索';
 
   /// 第 N 赛季累计.
-  String seasonTotal(int season) => '第 $season 赛季累计';
+  String seasonTotal(int? season) =>
+      season == null ? '本赛季累计' : '第 $season 赛季累计';
   String get listInfo =>
       '整个赛季的累计，来自大神，不是“对局”页读取的最近对局。点一个英雄看详情。消灭、伤害、治疗、阻挡为每 10 分钟；— 表示这个英雄无法产出。';
   String get sortBy => '排序';
@@ -60,7 +65,8 @@ class HeroStrings {
     String winRate,
     String playTime,
   ) => '$hero，$role，$matches 场，胜率$winRate，使用$playTime';
-  String noHeroesTitle(int season, String mode) => '第 $season 赛季没有$mode的英雄记录';
+  String noHeroesTitle(int? season, String mode) =>
+      season == null ? '本赛季没有$mode的英雄记录' : '第 $season 赛季没有$mode的英雄记录';
   String get noHeroesBody => '该赛季没有打过这个模式，或资料为私密。可换个模式，或到“赛季走势”看往期。';
   String switchTo(String mode) => '切换到$mode';
   String noSearchMatchTitle(String query) => '没有名称包含“$query”的英雄';
@@ -149,7 +155,8 @@ class HeroStrings {
   String get accountNormal => '正常';
 
   /// 竞技比赛生涯 · 第 N 赛季.
-  String careerHeading(String mode, int season) => '$mode生涯 · 第 $season 赛季';
+  String careerHeading(String mode, int? season) =>
+      season == null ? '$mode生涯' : '$mode生涯 · 第 $season 赛季';
   String careerTableLabel(String mode) => '$mode各职责生涯';
   String get colRole => '职责';
   String get colCurrentRank => '当前段位';

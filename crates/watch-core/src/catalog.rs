@@ -2,13 +2,61 @@ use crate::data_dir;
 use crate::ir::{EntityKind, EntityRef, Role, official_id};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::{collections::HashMap, path::Path, sync::OnceLock};
+use std::{
+    collections::HashMap,
+    path::Path,
+    sync::{
+        OnceLock,
+        atomic::{AtomicU32, Ordering},
+    },
+};
+
+/// The season the provider is in now. It starts as the newest season the catalog knows,
+/// and moves forward while running when the provider is seen to have started a new one
+/// before the catalog was updated (see [`crate::collect::same_season_data`]); it never
+/// moves back. Serialised as the plain number.
+#[derive(Default)]
+pub struct CurrentSeason(AtomicU32);
+
+impl CurrentSeason {
+    pub fn new(season: u32) -> Self {
+        Self(AtomicU32::new(season))
+    }
+    pub fn get(&self) -> u32 {
+        self.0.load(Ordering::Relaxed)
+    }
+    /// Moves to `season` if that is later; returns whether it moved.
+    pub fn advance_to(&self, season: u32) -> bool {
+        self.0.fetch_max(season, Ordering::Relaxed) < season
+    }
+}
+
+impl Clone for CurrentSeason {
+    fn clone(&self) -> Self {
+        Self::new(self.get())
+    }
+}
+
+impl Serialize for CurrentSeason {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_u32(self.get())
+    }
+}
+
+impl<'de> Deserialize<'de> for CurrentSeason {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        u32::deserialize(d).map(Self::new)
+    }
+}
+
+/// When the catalog names no season at all.
+const FALLBACK_SEASON: u32 = 25;
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct Catalog {
     pub heroes: HashMap<String, Value>,
     pub maps: HashMap<String, Value>,
-    pub current_season: u32,
+    pub current_season: CurrentSeason,
     #[serde(default)]
     pub statistics: Vec<Value>,
     #[serde(default)]
@@ -155,7 +203,7 @@ impl Catalog {
     }
     pub fn from_legacy(raw: &Value) -> Self {
         let mut result = Self {
-            current_season: 25,
+            current_season: CurrentSeason::new(FALLBACK_SEASON),
             ..Self::default()
         };
         if let Some(heroes) = raw.get("heroList").and_then(Value::as_array) {
@@ -186,7 +234,7 @@ impl Catalog {
                             .or_else(|| s.as_str().and_then(|s| s.parse().ok()))
                             && n <= 100
                         {
-                            result.current_season = result.current_season.max(n as u32);
+                            result.current_season.advance_to(n as u32);
                         }
                     }
                 }
@@ -201,7 +249,7 @@ impl Catalog {
         if let Some(seasons) = raw["seasonList"].as_object() {
             for key in seasons.keys() {
                 if let Ok(n) = key.parse::<u32>() {
-                    result.current_season = result.current_season.max(n);
+                    result.current_season.advance_to(n);
                 }
             }
         }
@@ -219,7 +267,7 @@ impl Catalog {
         serde_json::from_str::<Value>(include_str!("../data/query_tool.min.json"))
             .map(|raw| Self::from_legacy(&raw))
             .unwrap_or(Self {
-                current_season: 25,
+                current_season: CurrentSeason::new(FALLBACK_SEASON),
                 ..Self::default()
             })
     }

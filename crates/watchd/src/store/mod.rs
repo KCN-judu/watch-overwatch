@@ -76,6 +76,24 @@ pub struct LocalStore {
     ratings_ttl_ms: i64,
 }
 
+/// A detail fetched less than this long after its match ended may not be complete yet:
+/// the provider could still be filling it in.
+const SETTLING_MS: i64 = 60 * 60 * 1000;
+/// Such a detail is fetched again once it is this old, until one fetched after the match
+/// has settled replaces it.
+const RECHECK_MS: i64 = 10 * 60 * 1000;
+
+/// Whether a stored detail should be fetched again rather than used: it was read soon after
+/// its match ended (see [`SETTLING_MS`]) and that was a while ago. A detail without a start
+/// time cannot be judged and is used as it is.
+fn provisional(detail: &MatchDetail, fetched_ms: i64, now_ms: i64) -> bool {
+    let Some(start) = detail.started_at_ms else {
+        return false;
+    };
+    let end = start + detail.duration_s.map_or(0, |s| (s * 1000.0) as i64);
+    fetched_ms - end < SETTLING_MS && now_ms - fetched_ms > RECHECK_MS
+}
+
 /// The season column: 0 stands for the current season.
 fn season_key(season: Option<u32>) -> i64 {
     season.map_or(0, i64::from)
@@ -177,6 +195,22 @@ impl LocalStore {
             .flatten()
     }
 
+    /// The provider's answer for a player's career in a finished season, if read before.
+    pub fn past_career(&self, subject: &str, mode: Mode, season: u32) -> Option<String> {
+        self.matches
+            .read("read a past season", |c| {
+                matches::past_career(c, subject, mode.provider_value(), i64::from(season))
+            })
+            .flatten()
+    }
+
+    /// Keeps a finished season's career; it is never read from the provider again.
+    pub fn put_past_career(&self, subject: &str, mode: Mode, season: u32, data: &str) {
+        self.matches.write("store a past season", |tx| {
+            matches::put_past_career(tx, subject, mode.provider_value(), i64::from(season), data)
+        });
+    }
+
     /// Forgets everything, in both databases.
     pub fn clear(&self) {
         self.matches.write("clear matches", matches::delete_all);
@@ -220,11 +254,14 @@ impl StrengthCache for LocalStore {
     }
 
     fn detail(&self, mode: Mode, match_id: &str, subject: &str) -> Option<CachedDetail> {
-        self.matches
+        let (kept, fetched_ms) = self
+            .matches
             .read("read a match detail", |c| {
                 matches::detail(c, mode.provider_value(), match_id, subject)
             })
-            .flatten()
+            .flatten()?;
+        // Not yet final: read it again (and store the new one) instead.
+        (!provisional(&kept.detail, fetched_ms, self.clock.now_ms())).then_some(kept)
     }
 
     fn put_detail(&self, subject: &str, detail: &MatchDetail, unreachable: &[String]) {
@@ -267,7 +304,7 @@ mod tests {
     use watch_core::{
         Catalog,
         dashen::normalize,
-        ir::{Rank, Role},
+        ir::{Bans, Outcome, OutcomeSource, Rank, Role, Score},
     };
 
     /// A clock the test moves by hand.
@@ -339,6 +376,29 @@ mod tests {
                     .unwrap_or_else(|e| panic!("does not prepare: {sql}\n{e}"));
             }
         }
+    }
+
+    #[test]
+    fn a_finished_season_is_kept_per_player_and_mode_and_forgotten_on_clear() {
+        let dir = temp_dir("past-career");
+        let store = LocalStore::open(&dir).unwrap();
+        assert_eq!(store.past_career("1", Mode::Competitive, 24), None);
+        store.put_past_career("1", Mode::Competitive, 24, r#"{"a":1}"#);
+        assert_eq!(
+            store.past_career("1", Mode::Competitive, 24).as_deref(),
+            Some(r#"{"a":1}"#)
+        );
+        // Another mode, season or player is another row.
+        assert_eq!(store.past_career("1", Mode::Quick, 24), None);
+        assert_eq!(store.past_career("1", Mode::Competitive, 23), None);
+        assert_eq!(store.past_career("2", Mode::Competitive, 24), None);
+        // Kept across a restart.
+        drop(store);
+        let store = LocalStore::open(&dir).unwrap();
+        assert!(store.past_career("1", Mode::Competitive, 24).is_some());
+        store.clear();
+        assert_eq!(store.past_career("1", Mode::Competitive, 24), None);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
@@ -546,6 +606,54 @@ mod tests {
             .filter(|p| p.bnet_id.is_some())
             .count();
         assert_eq!(store.stats().participants > 0, people > 0);
+        drop(store);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_detail_read_just_after_its_match_is_read_again_until_it_has_settled() {
+        let clock = ManualClock::new();
+        let dir = temp_dir("settling");
+        let store = LocalStore::open_with(&dir, clock.clone(), RATINGS_TTL).unwrap();
+        let now = clock.now_ms();
+        let detail = |at: i64| MatchDetail {
+            id: "m".into(),
+            mode: Mode::Quick,
+            map: None,
+            outcome: Outcome::Win,
+            outcome_source: OutcomeSource::Provider,
+            started_at_ms: Some(at),
+            duration_s: Some(600.0),
+            score: Score::default(),
+            bans: Bans::default(),
+            subject_heroes: Vec::new(),
+            allies: Vec::new(),
+            enemies: Vec::new(),
+            rounds: Vec::new(),
+        };
+        // Started 20 minutes ago, ended 10 minutes ago: fetched before it settled.
+        store.put_detail("1", &detail(now - 20 * 60_000), &[]);
+        assert!(
+            store.detail(Mode::Quick, "m", "1").is_some(),
+            "fresh, use it"
+        );
+        clock.advance(Duration::from_secs(11 * 60));
+        assert!(
+            store.detail(Mode::Quick, "m", "1").is_none(),
+            "read it again"
+        );
+        // Read again an hour and a half after the match ended: final from now on.
+        clock.advance(Duration::from_secs(80 * 60));
+        store.put_detail("1", &detail(now - 20 * 60_000), &[]);
+        clock.advance(10 * DAY);
+        assert!(store.detail(Mode::Quick, "m", "1").is_some());
+        // A detail without a start time cannot be judged and is used as it is.
+        let mut untimed = detail(0);
+        untimed.id = "u".into();
+        untimed.started_at_ms = None;
+        store.put_detail("1", &untimed, &[]);
+        clock.advance(DAY);
+        assert!(store.detail(Mode::Quick, "u", "1").is_some());
         drop(store);
         let _ = std::fs::remove_dir_all(&dir);
     }

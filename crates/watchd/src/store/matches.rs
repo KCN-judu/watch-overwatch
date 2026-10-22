@@ -99,24 +99,28 @@ pub fn delete_list(tx: &Transaction<'_>, id: ListId<'_>) -> rusqlite::Result<()>
 
 // ---- details and participants --------------------------------------------------------------------
 
-/// The detail of a match as `subject` saw it. One that no longer parses is a miss.
+/// The detail of a match as `subject` saw it, and when it was fetched. One that no longer
+/// parses is a miss.
 pub fn detail(
     conn: &Connection,
     mode: &str,
     match_id: &str,
     subject: &str,
-) -> rusqlite::Result<Option<CachedDetail>> {
-    let row: Option<(String, String)> = conn
+) -> rusqlite::Result<Option<(CachedDetail, i64)>> {
+    let row: Option<(String, String, i64)> = conn
         .prepare_cached(&SQL.detail.select)?
         .query_row(params![mode, match_id, subject], |r| {
-            Ok((r.get(0)?, r.get(1)?))
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?))
         })
         .optional()?;
-    Ok(row.and_then(|(data, unreachable)| {
-        Some(CachedDetail {
-            detail: serde_json::from_str(&data).ok()?,
-            unreachable: serde_json::from_str(&unreachable).unwrap_or_default(),
-        })
+    Ok(row.and_then(|(data, unreachable, fetched_ms)| {
+        Some((
+            CachedDetail {
+                detail: serde_json::from_str(&data).ok()?,
+                unreachable: serde_json::from_str(&unreachable).unwrap_or_default(),
+            },
+            fetched_ms,
+        ))
     }))
 }
 
@@ -224,6 +228,30 @@ pub fn known_profile(conn: &Connection, bnet_id: &str) -> rusqlite::Result<Optio
         .optional()
 }
 
+/// A stored career of a finished season (the provider's answer as JSON), if any.
+pub fn past_career(
+    conn: &Connection,
+    subject: &str,
+    mode: &str,
+    season: i64,
+) -> rusqlite::Result<Option<String>> {
+    conn.prepare_cached(&SQL.career.select)?
+        .query_row(params![subject, mode, season], |r| r.get(0))
+        .optional()
+}
+
+pub fn put_past_career(
+    tx: &Transaction<'_>,
+    subject: &str,
+    mode: &str,
+    season: i64,
+    data: &str,
+) -> rusqlite::Result<()> {
+    tx.prepare_cached(&SQL.career.upsert)?
+        .execute(params![subject, mode, season, data])?;
+    Ok(())
+}
+
 // ---- upkeep ----------------------------------------------------------------------------------------
 
 /// Drops details fetched before `cutoff_ms` and the participants left without a match.
@@ -251,6 +279,7 @@ pub fn delete_all(tx: &Transaction<'_>) -> rusqlite::Result<()> {
         &SQL.state.delete_all,
         &SQL.player.name_delete_all,
         &SQL.player.profile_delete_all,
+        &SQL.career.delete_all,
     ] {
         tx.execute(sql, [])?;
     }

@@ -546,7 +546,8 @@ class _StatusBar extends StatelessWidget {
             ),
           ],
           const SizedBox(width: 12),
-          Text(tr.common.season(app.currentSeason), style: style),
+          if (app.currentSeason case final season?)
+            Text(tr.common.season(season), style: style),
           const Spacer(),
           const ImageProgress(),
           const SizedBox(width: 12),

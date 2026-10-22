@@ -165,7 +165,6 @@ class _Poster extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final losses = (hero.matches ?? 0) - (hero.wins ?? 0);
     final name = hero.hero.label;
     final ink = c.textPrimary;
 
@@ -331,7 +330,10 @@ class _Poster extends StatelessWidget {
                         fmtPct(hero.winRatePct),
                         note: hero.matches == null
                             ? null
-                            : tr.heroes.winLoss(hero.wins ?? 0, losses),
+                            : tr.heroes.winsOfMatches(
+                                hero.wins ?? 0,
+                                hero.matches!,
+                              ),
                         color: winColor,
                       ),
                       stat(

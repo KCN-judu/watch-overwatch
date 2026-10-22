@@ -280,7 +280,10 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
         "heroes" => (Endpoint::PlayerHeroBoard, json!({"token":token})),
         "summary" => return summary_view(s, &fetcher, token, mode, input, view).await,
         "sameplay" => return sameplay_view(s, &fetcher, token, mode, input, view).await,
-        "history" => return history_view(s, token, mode, input, view).await,
+        "history" => {
+            let subject = subject_id(&player.identity);
+            return history_view(s, token, subject.as_deref(), mode, input, view).await;
+        }
         _ => return Err(error("validation", "未知的玩家视图。 ")),
     };
     // A finished match never changes: one kept locally is not asked for again. The detail
@@ -296,7 +299,7 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
         )
         && let Some(kept) = store.detail(mode, id, &subject)
     {
-        let current = s.catalog.current_season;
+        let current = s.catalog.current_season.get();
         let rate = mode != Mode::Stadium;
         let mut detail = kept.detail;
         if rate {
@@ -322,7 +325,13 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
     let cat = &s.catalog;
     view.matches = normalize::match_list(raw, mode, cat);
     view.ir = match input.view.as_str() {
-        "profile" => json!(normalize::career(raw, mode, input.season, cat)),
+        "profile" => {
+            let career = normalize::career(raw, mode, input.season, cat);
+            if input.season.is_none() {
+                follow_season(s, token, mode, &career).await;
+            }
+            json!(career)
+        }
         "detail" => {
             let subject = subject_id(&player.identity);
             let detail = normalize::match_detail(
@@ -343,7 +352,7 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
                     .unwrap_or_default();
                 cache.put_detail(subject, &detail, &unreachable);
                 if mode != Mode::Stadium {
-                    let current = s.catalog.current_season;
+                    let current = s.catalog.current_season.get();
                     collect::attach_career_ranks(&mut shown, cache.as_ref(), current);
                     view.extra.insert(
                         "ratings_pending".into(),
@@ -367,6 +376,43 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
     view.extra.insert("metric".into(), json!(metric));
     view.extra.insert("cached".into(), json!(cached));
     Ok(view)
+}
+
+/// Notices that the provider has started a new season the catalog does not know yet, from
+/// a career just read for "the current season" (see `collect::same_season_data`): once
+/// per run, and only with a career that has matches, it asks for the next season by
+/// number. Ranks are then filed under the right season, and the season trend reaches it.
+async fn follow_season(
+    s: &AppState,
+    token: &str,
+    mode: Mode,
+    current: &watch_core::ir::CareerSnapshot,
+) {
+    let played = current
+        .roles
+        .iter()
+        .any(|r| r.matches.is_some_and(|m| m > 0));
+    if !played
+        || s.season_checked
+            .swap(true, std::sync::atomic::Ordering::Relaxed)
+    {
+        return;
+    }
+    let next = s.catalog.current_season.get() + 1;
+    let spec = RequestSpec::new(
+        mode.career(),
+        collect::career_payload(token, mode, Some(next)),
+    );
+    let Ok((_, value)) = s.client.request(spec).await else {
+        // A failed check is tried again with the next career read.
+        s.season_checked
+            .store(false, std::sync::atomic::Ordering::Relaxed);
+        return;
+    };
+    let numbered = normalize::career(normalize::payload(&value), mode, Some(next), &s.catalog);
+    if collect::same_season_data(current, &numbered) && s.catalog.current_season.advance_to(next) {
+        tracing::info!("the provider is in season {next}, after the catalog's newest");
+    }
 }
 
 async fn summary_view(
@@ -444,19 +490,32 @@ async fn sameplay_view(
 async fn history_view(
     s: &AppState,
     token: &str,
+    subject: Option<&str>,
     mode: Mode,
     input: &ViewInput,
     mut view: ViewResult,
 ) -> Result<ViewResult, Failure> {
-    let end = input.season.unwrap_or(s.catalog.current_season);
+    let end = input.season.unwrap_or(s.catalog.current_season.get());
     let start = input.start_season.unwrap_or(end.saturating_sub(4).max(1));
     if start == 0 || start > end || end - start > 10 {
         return Err(error("validation", "一次查询最多 11 个赛季。 "));
     }
-    // Sequential bounded history; every missing season has an explicit error.
+    // Sequential bounded history; every missing season has an explicit error. A finished
+    // season never changes: once read it is kept locally and not asked for again.
+    let current = s.catalog.current_season.get();
+    let keep = |season: u32| s.store.as_ref().zip(subject).filter(|_| season < current);
     let mut seasons = Vec::new();
     let mut careers = Vec::new();
     for season in start..=end {
+        if let Some((store, subject)) = keep(season)
+            && let Some(data) = store
+                .past_career(subject, mode, season)
+                .and_then(|d| serde_json::from_str::<Value>(&d).ok())
+        {
+            careers.push(normalize::career(&data, mode, Some(season), &s.catalog));
+            seasons.push(json!({"season":season,"data":data,"metric":null,"cached":true}));
+            continue;
+        }
         let result = s
             .client
             .request(RequestSpec::new(
@@ -466,13 +525,12 @@ async fn history_view(
             .await;
         match result {
             Ok((metric, value)) => {
-                careers.push(normalize::career(
-                    normalize::payload(&value),
-                    mode,
-                    Some(season),
-                    &s.catalog,
-                ));
-                seasons.push(json!({"season":season,"data":redact(normalize::payload(&value).clone()),"metric":metric}));
+                let data = redact(normalize::payload(&value).clone());
+                careers.push(normalize::career(&data, mode, Some(season), &s.catalog));
+                if let Some((store, subject)) = keep(season) {
+                    store.put_past_career(subject, mode, season, &data.to_string());
+                }
+                seasons.push(json!({"season":season,"data":data,"metric":metric}));
             }
             Err(e) => seasons.push(json!({"season":season,"error":e})),
         }
@@ -521,7 +579,7 @@ fn subject_id(identity: &Value) -> Option<String> {
 }
 
 async fn build_export(s: &AppState, input: ViewInput) -> Result<Value, Failure> {
-    let query = json!({"view":input.view,"mode":input.mode,"season":input.season.unwrap_or(s.catalog.current_season),"page":input.page,"scope":input.scope,"timezone":analysis::REPORT_TIMEZONE});
+    let query = json!({"view":input.view,"mode":input.mode,"season":input.season.unwrap_or(s.catalog.current_season.get()),"page":input.page,"scope":input.scope,"timezone":analysis::REPORT_TIMEZONE});
     let view = tokio::time::timeout(Duration::from_secs(45), load_view(s, &input))
         .await
         .map_err(|_| error("timeout", "完整查询超过 45 秒，请缩小赛季范围后重试。 "))??;
@@ -815,7 +873,7 @@ pub(crate) async fn player_prepare(
     let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
         return Json(json!({"prepared":0,"remaining":0,"enabled":false})).into_response();
     };
-    let current = s.catalog.current_season;
+    let current = s.catalog.current_season.get();
     let key = ListKey {
         subject: &subject,
         mode,
