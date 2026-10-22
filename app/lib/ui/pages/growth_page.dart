@@ -134,6 +134,16 @@ class _GrowthPageState extends State<GrowthPage> {
   /// The role the page is about; null for all of them together.
   Role? _role;
 
+  /// The match pointed at in any chart: every chart shows the same one, as they all run
+  /// over the same matches.
+  final _cursor = ValueNotifier<int?>(null);
+
+  @override
+  void dispose() {
+    _cursor.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
@@ -244,7 +254,7 @@ class _GrowthPageState extends State<GrowthPage> {
           const SizedBox(height: Sp.betweenSections),
           SectionHeader(m.title, accent: c.accent, info: m.info),
           const SizedBox(height: Sp.withinGroup + 2),
-          _MeasureChart(m, points),
+          _MeasureChart(m, points, sync: _cursor),
         ],
         const SizedBox(height: Sp.betweenSections),
       ],
@@ -334,7 +344,8 @@ List<double?> _moving(List<double?> v) => [
 ];
 
 class _MeasureChart extends StatelessWidget {
-  const _MeasureChart(this.m, this.points);
+  const _MeasureChart(this.m, this.points, {required this.sync});
+  final ValueNotifier<int?> sync;
   final _Measure m;
   final List<GrowthPoint> points;
 
@@ -359,6 +370,7 @@ class _MeasureChart extends StatelessWidget {
     return Panel(
       padding: PanelPadding.chart,
       child: LineChart(
+        sync: sync,
         height: 260,
         yMin: 0,
         series: [
