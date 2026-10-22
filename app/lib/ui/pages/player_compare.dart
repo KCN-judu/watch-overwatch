@@ -30,20 +30,29 @@ class PlayerCompareSection extends StatefulWidget {
 class _PlayerCompareSectionState extends State<PlayerCompareSection> {
   String? _other;
 
-  void _pick(PlayerWorkspace other) {
-    setState(() => _other = other.name);
-    other.loadOverview(widget.mode);
+  void _pick(AppState app, String name) {
+    setState(() => _other = name);
+    app.workspaceFor(name).loadOverview(widget.mode);
   }
 
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     final c = context.c;
-    final others = [
-      for (final w in app.workspaces.values.toSet())
-        if (w.name.toLowerCase() != widget.workspace.name.toLowerCase()) w,
-    ];
-    final other = others.where((w) => w.name == _other).firstOrNull;
+    // Everyone in the library and everyone looked up this run, but this player.
+    final me = widget.workspace.name.toLowerCase();
+    final names = <String>{};
+    for (final n in [
+      ...app.players,
+      for (final w in app.workspaces.values) w.name,
+    ]) {
+      if (n.toLowerCase() != me &&
+          !names.any((x) => x.toLowerCase() == n.toLowerCase())) {
+        names.add(n);
+      }
+    }
+    final others = names.toList();
+    final other = _other == null ? null : app.workspaceFor(_other!);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -59,12 +68,12 @@ class _PlayerCompareSectionState extends State<PlayerCompareSection> {
             spacing: Sp.withinGroup,
             runSpacing: Sp.withinGroup,
             children: [
-              for (final w in others)
+              for (final n in others)
                 AppButton(
-                  w.name,
-                  quiet: w.name != _other,
-                  primary: w.name == _other,
-                  onPressed: () => _pick(w),
+                  n,
+                  quiet: n != _other,
+                  primary: n == _other,
+                  onPressed: () => _pick(app, n),
                 ),
             ],
           ),

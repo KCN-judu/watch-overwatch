@@ -486,12 +486,7 @@ _Group _groupOf(String n) {
   return _Group.hero;
 }
 
-String _fmtStat(String name, double v) {
-  if (name.contains('游戏时间')) return fmtClock(v);
-  // Hit rates arrive as fractions of one.
-  if (name.endsWith('率') && v <= 1.0001) return fmtPct(v * 100, digits: 0);
-  return v.abs() >= 100 ? fmtInt(v) : fmtOne(v);
-}
+String _fmtStat(String name, double v) => fmtHeroStat(name, v);
 
 class _SeasonStats extends StatelessWidget {
   const _SeasonStats({

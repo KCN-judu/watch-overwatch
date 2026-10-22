@@ -487,6 +487,14 @@ class FirstRun extends StatelessWidget {
             onPressed: scope.actions.focusSearch,
             tooltip: 'Ctrl+L',
           ),
+          AppButton(
+            tr.shell.openSample,
+            icon: Icons.science_outlined,
+            tooltip: tr.shell.trySampleBody,
+            onPressed: app.searching
+                ? null
+                : () => app.openPlayer(tr.shell.sampleName),
+          ),
         ],
       );
     }

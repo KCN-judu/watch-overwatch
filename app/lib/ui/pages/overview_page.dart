@@ -195,13 +195,16 @@ class _Headline extends StatelessWidget {
               : rateUp
               ? c.positive
               : c.negative,
-          trailing: Sparkline(
-            values: o.rollingWinPct,
-            label: tr.overview.rollingLabel,
-            format: (v) => fmtPct(v, digits: 0),
-            width: 96,
-            height: 32,
-          ),
+          // One point is not a line: the sparkline waits for a second.
+          trailing: o.rollingWinPct.whereType<double>().length < 2
+              ? null
+              : Sparkline(
+                  values: o.rollingWinPct,
+                  label: tr.overview.rollingLabel,
+                  format: (v) => fmtPct(v, digits: 0),
+                  width: 96,
+                  height: 32,
+                ),
         ),
         _Figure(
           label: tr.overview.recordRecent,

@@ -19,7 +19,7 @@ class CompareStrings {
   String get matches => '场次';
   String get kda => 'KDA';
   String get playTime => '游戏时间';
-  String rateNote(int n, String low, String high) => '$n 场 · 可能 $low – $high';
+  String rateNote(int n, String low, String high) => '$n 场 · $low–$high';
   String get onlyOne => '—';
 
   // Two stretches of time (growth page).

@@ -169,6 +169,12 @@ pub fn career_payload(token: &str, mode: Mode, season: Option<u32>) -> Value {
         season,
     )
 }
+/// Whether a career has any matches in it.
+pub fn career_has_matches(c: &CareerSnapshot) -> bool {
+    c.roles.iter().any(|r| r.matches.is_some_and(|m| m > 0))
+        || c.heroes.iter().any(|h| h.matches.is_some_and(|m| m > 0))
+}
+
 /// Whether two career snapshots are the same season's play: both have matches, and their
 /// per-role and per-queue records are identical.
 ///
@@ -177,6 +183,10 @@ pub fn career_payload(token: &str, mode: Mode, season: Option<u32>) -> Value {
 /// season that has not started. So when the current-season answer equals the answer for
 /// season N + 1, the provider has moved to N + 1. Checked on 2026-10-21: no season, season
 /// 25 and season 26 gave equal, equal and empty careers.
+///
+/// On 2026-10-23 the unnumbered competitive answer was empty while season 25 by number
+/// was not (quick play still equal), so callers ask again by number when the unnumbered
+/// answer is empty.
 pub fn same_season_data(current: &CareerSnapshot, numbered: &CareerSnapshot) -> bool {
     let played = |c: &CareerSnapshot| c.roles.iter().any(|r| r.matches.is_some_and(|m| m > 0));
     played(current)
@@ -788,12 +798,24 @@ async fn read_profile<F: Fetcher>(
             part.fetches
                 .push(record(endpoint, Some(mode), season, None, None, &result));
             if let Ok(v) = result {
-                part.careers.push(normalize::career(
-                    normalize::payload(&v.value),
-                    mode,
-                    season,
-                    cat,
-                ));
+                let mut career = normalize::career(normalize::payload(&v.value), mode, season, cat);
+                // An empty unnumbered answer is asked again by number (see `same_season_data`).
+                if season.is_none() && !career_has_matches(&career) {
+                    let current = Some(cat.current_season.get());
+                    let again = f
+                        .fetch(endpoint, career_payload(token, mode, current))
+                        .await;
+                    part.fetches
+                        .push(record(endpoint, Some(mode), current, None, None, &again));
+                    if let Ok(v) = again {
+                        let numbered =
+                            normalize::career(normalize::payload(&v.value), mode, None, cat);
+                        if career_has_matches(&numbered) {
+                            career = numbered;
+                        }
+                    }
+                }
+                part.careers.push(career);
             }
         }
     }
@@ -1038,8 +1060,17 @@ pub async fn collect_player<F: Fetcher>(
             s.note = u.name.clone().unwrap_or_default();
         });
         let mut ratings: Vec<RoleRating> = Vec::new();
-        // Current season first; the previous season only fills roles still unrated.
-        for season in std::iter::once(None).chain(previous.map(Some)) {
+        // Current season first; the previous season only fills roles still unrated. The
+        // provider's unnumbered "current season" answer is sometimes empty while the same
+        // season asked for by number is not (seen 2026-10-23), so an empty one is asked
+        // again by number.
+        let mut current_empty = false;
+        let numbered_current = Some(Some(current));
+        let attempts = [Some(None), numbered_current, previous.map(Some)];
+        for season in attempts.into_iter().flatten() {
+            if season == Some(current) && !current_empty {
+                continue;
+            }
             if u.roles
                 .iter()
                 .all(|r| ratings.iter().any(|x: &RoleRating| x.role == *r))
@@ -1047,12 +1078,15 @@ pub async fn collect_player<F: Fetcher>(
                 break;
             }
             let key = season.unwrap_or(current);
-            let skip_cache = plan.refresh_ratings && season.is_none();
+            // The numbered retry shares the current season's cache key, and that entry is the
+            // empty answer being retried.
+            let skip_cache = (plan.refresh_ratings && season.is_none()) || season == Some(current);
             if let Some(cache) = cache.filter(|_| !skip_cache)
                 && let Some(rows) = cache.season_ratings(&u.id, key)
             {
                 cache_hits += 1;
                 report(plan.progress.as_deref(), |s| s.cached += 1);
+                current_empty |= season.is_none() && rows.is_empty();
                 merge_ratings(&mut ratings, rows, key, current);
                 continue;
             }
@@ -1082,9 +1116,18 @@ pub async fn collect_player<F: Fetcher>(
             });
             if let Ok(v) = result {
                 let rows = normalize::role_ratings(normalize::payload(&v.value), season);
+                if season.is_none() && rows.is_empty() {
+                    current_empty = true;
+                    continue;
+                }
                 if let Some(cache) = cache {
-                    // A season asked for by its number is a finished one: its ranks never change.
-                    cache.put_season_ratings(&u.id, key, &rows, season.is_some());
+                    // A finished season's ranks never change.
+                    cache.put_season_ratings(
+                        &u.id,
+                        key,
+                        &rows,
+                        season.is_some_and(|n| n < current),
+                    );
                 }
                 merge_ratings(&mut ratings, rows, key, current);
             }

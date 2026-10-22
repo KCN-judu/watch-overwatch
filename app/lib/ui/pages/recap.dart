@@ -222,6 +222,7 @@ class _RecapState extends State<_Recap> {
         border: Border.all(color: c.border),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(s.title, style: Ty.meta.copyWith(color: c.textSecondary)),

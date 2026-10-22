@@ -914,6 +914,10 @@ class AppState extends ChangeNotifier {
 
   // ---- Players -----------------------------------------------------------------
 
+  /// A library player's workspace, without opening them (comparisons read their data).
+  PlayerWorkspace workspaceFor(String name) =>
+      workspaces[name.toLowerCase()] ?? _workspace(name);
+
   PlayerWorkspace _workspace(String name) => workspaces.putIfAbsent(
     name.toLowerCase(),
     () => PlayerWorkspace(this, name),
