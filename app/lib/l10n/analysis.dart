@@ -265,13 +265,30 @@ class AnalysisStrings {
   String trendDown(String card) => '$card呈现下降趋势';
   String trendFlat(String card) => '$card没有明显趋势';
   String get trendNeedsEight => '不到 8 场，看不出走势';
+  String get baselineMeaning =>
+      '灰色底带是该玩家之前 20 场的中间一半（第 1 到第 3 四分位），落在带外的一局才算反常；不足 8 场时没有底带。';
+  String get confidenceFirm => '较可信';
+  String get confidenceHint => '有迹象';
+  String get confidenceNone => '看不出变化';
+  String get confidenceTooFew => '样本不足';
+
+  /// The trend card's second line: how big the change is, and how sure.
+  String trendEffect(String changePct, String confidence) =>
+      '较新一半比较早一半 $changePct% · $confidence';
+
+  /// Under the trend cards: what the wording means (the p value is in each card's tip).
+  String get confidenceMeaning =>
+      '“较可信”：Mann-Kendall 趋势检验 p < 0.05；“有迹象”：p < 0.1；否则看不出变化。不足 8 场不检验。具体 p 值和前后两半的均值在悬停提示里。';
+  String pValue(String p) => 'p $p';
   String trendTip({
     required String older,
     required String newer,
     required String change,
     required String changePct,
     required int matches,
-  }) => '较早一半 $older → 较新一半 $newer（$change，$changePct%），共 $matches 场';
+    required String p,
+  }) =>
+      '较早一半 $older → 较新一半 $newer（$change，$changePct%），共 $matches 场；Mann-Kendall 检验 $p';
   String movingAverage(int n) => '$n 场平均';
   String chartEmpty(String title) => '$title：没有数据。';
   String growthChartSummary({

@@ -238,7 +238,7 @@ async fn hero_portraits() -> impl IntoResponse {
 }
 async fn state(State(s): State<AppState>) -> Json<serde_json::Value> {
     Json(
-        serde_json::json!({"accounts":s.client.account_views().await,"metrics":s.client.metrics().await,"endpoints":watch_core::endpoints(),"current_season":s.catalog.current_season.get(),"secrets_path":watch_core::secrets_path().display().to_string()}),
+        serde_json::json!({"accounts":s.client.account_views().await,"metrics":s.client.metrics().await,"endpoints":watch_core::endpoints(),"current_season":s.catalog.current_season.get(),"thresholds":{"group":watch_core::stats::MIN_GROUP_MATCHES,"trend":watch_core::stats::MIN_TREND_MATCHES},"secrets_path":watch_core::secrets_path().display().to_string()}),
     )
 }
 pub(crate) fn fail(error: Failure) -> (StatusCode, Json<serde_json::Value>) {

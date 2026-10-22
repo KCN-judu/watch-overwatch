@@ -201,4 +201,8 @@ class HeroStrings {
   /// N 平, with · M 未知 when some outcomes are unknown.
   String drawsNote(int draws, int unknown) =>
       unknown > 0 ? '$draws 平 · $unknown 未知' : '$draws 平';
+
+  /// The range a win rate plausibly lies in, and the record behind it.
+  String winRateRange(String low, String high, int wins, int matches) =>
+      '可能在 $low–$high 之间（$wins 胜 / $matches 场）。按胜率排序时以区间下限为准。';
 }

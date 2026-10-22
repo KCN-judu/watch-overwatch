@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/export_file.dart';
 import '../core/models.dart';
+import '../core/stats.dart';
 import '../core/support.dart';
 import '../design/tokens.dart';
 import '../l10n/strings.dart';
@@ -703,6 +704,11 @@ class AppState extends ChangeNotifier {
 
   /// The provider's current season as the service knows it (it follows a season change
   /// the catalog has not caught up with); null until the service has said.
+  /// Fewest matches before a hero, map or other group is compared (from the service).
+  int get minGroupMatches =>
+      ((server?['thresholds'] as Map?)?['group'] as num?)?.toInt() ??
+      fallbackMinGroupMatches;
+
   int? get currentSeason =>
       (server?['current_season'] as num?)?.toInt() ?? catalog.currentSeason;
   List<Json> get accounts => [
