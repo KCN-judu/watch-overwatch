@@ -10,6 +10,7 @@ import '../../design/widgets.dart';
 import '../../core/stats.dart';
 import '../../state/app_state.dart';
 import '../player_view.dart';
+import 'hero_compare.dart';
 import 'hero_detail_page.dart';
 import '../../l10n/strings.dart';
 
@@ -92,7 +93,8 @@ class _HeroesPageState extends State<HeroesPage> {
   @override
   Widget build(BuildContext context) => FadeThrough(
     // List ↔ a hero's page, and one hero to the next, fade through.
-    childKey: widget.workspace.openHeroKey ?? '',
+    childKey:
+        '${widget.workspace.openHeroKey ?? ''}|${widget.workspace.comparingHero}',
     child: Builder(builder: _content),
   );
 
@@ -123,6 +125,18 @@ class _HeroesPageState extends State<HeroesPage> {
     final opened = openKey == null
         ? null
         : all.where((h) => PlayerWorkspace.heroKey(h) == openKey).firstOrNull;
+    if (opened != null && ws.comparingHero) {
+      final key = ws.compareHeroKey;
+      return HeroComparePage(
+        key: ValueKey('compare|$openKey|$key'),
+        workspace: ws,
+        a: opened,
+        b: key == null
+            ? null
+            : all.where((h) => PlayerWorkspace.heroKey(h) == key).firstOrNull,
+        all: all,
+      );
+    }
     if (opened != null) {
       return HeroDetailPage(
         key: ValueKey(openKey),

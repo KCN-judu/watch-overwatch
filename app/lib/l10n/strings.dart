@@ -18,6 +18,7 @@ library;
 
 import 'analysis.dart';
 import 'common.dart';
+import 'compare.dart';
 import 'core.dart';
 import 'heroes.dart';
 import 'maps.dart';
@@ -28,6 +29,7 @@ import 'shell.dart';
 
 export 'analysis.dart';
 export 'common.dart';
+export 'compare.dart';
 export 'core.dart';
 export 'heroes.dart';
 export 'maps.dart';
@@ -53,6 +55,9 @@ class Strings {
 
   /// Heroes list, hero detail and profile pages.
   HeroStrings get heroes => const HeroStrings();
+
+  /// Comparisons of two heroes, two stretches of time, two players.
+  CompareStrings get compare => const CompareStrings();
 
   /// The frequent players page.
   PeopleStrings get people => const PeopleStrings();

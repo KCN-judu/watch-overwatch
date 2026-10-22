@@ -73,6 +73,14 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        AppButton(
+          tr.compare.compareHero,
+          icon: Icons.compare_arrows,
+          quiet: true,
+          tooltip: tr.compare.compareHeroTip,
+          onPressed: () => ws.compareHero(null),
+        ),
+        const SizedBox(width: Sp.withinGroup),
         if (index >= 0)
           Text(
             tr.heroes.position(index + 1, keys.length),

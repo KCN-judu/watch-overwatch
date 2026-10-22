@@ -117,6 +117,24 @@ class PlayerWorkspace extends ChangeNotifier {
 
   void closeHero() {
     openHeroKey = null;
+    comparingHero = false;
+    compareHeroKey = null;
+    notifyListeners();
+  }
+
+  /// The open hero is being compared: with [compareHeroKey], or still picking one.
+  bool comparingHero = false;
+  String? compareHeroKey;
+
+  void compareHero(String? key) {
+    comparingHero = true;
+    compareHeroKey = key;
+    notifyListeners();
+  }
+
+  void closeHeroCompare() {
+    comparingHero = false;
+    compareHeroKey = null;
     notifyListeners();
   }
 
