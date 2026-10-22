@@ -169,6 +169,22 @@ pub fn career_payload(token: &str, mode: Mode, season: Option<u32>) -> Value {
         season,
     )
 }
+/// Whether two career snapshots are the same season's play: both have matches, and their
+/// per-role and per-queue records are identical.
+///
+/// The provider never says which season its "current season" (no season asked for) is.
+/// Asked for a season by number, it answers with that season's data, which is empty for a
+/// season that has not started. So when the current-season answer equals the answer for
+/// season N + 1, the provider has moved to N + 1. Checked on 2026-10-21: no season, season
+/// 25 and season 26 gave equal, equal and empty careers.
+pub fn same_season_data(current: &CareerSnapshot, numbered: &CareerSnapshot) -> bool {
+    let played = |c: &CareerSnapshot| c.roles.iter().any(|r| r.matches.is_some_and(|m| m > 0));
+    played(current)
+        && played(numbered)
+        && current.roles == numbered.roles
+        && current.queues == numbered.queues
+}
+
 pub fn match_list_payload(token: &str, mode: Mode, season: Option<u32>, page: u32) -> Value {
     with_season(
         json!({"token":token,"gameMode":mode.provider_value(),"page":page}),
@@ -895,7 +911,7 @@ pub async fn collect_player<F: Fetcher>(
     let mut unrated: Vec<Unrated> = Vec::new();
     let cache = plan.cache.as_deref();
     let subject_id = profile.bnet_id.clone();
-    let current = cat.current_season;
+    let current = cat.current_season.get();
     let previous = current.checked_sub(1).filter(|s| *s > 0);
     let mut cache_hits = 0usize;
     let chosen: Vec<usize> = if !plan.known_matches.is_empty() {

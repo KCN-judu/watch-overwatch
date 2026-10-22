@@ -349,9 +349,13 @@ class PlayerWorkspace extends ChangeNotifier {
     () => _call((s) => app.api.career(s, Mode.competitive, fresh: fresh)),
   );
 
-  Future<void> loadTrend(Mode mode, {bool fresh = false}) => _run(
-    trendFor(mode),
-    () => _call(
+  Future<void> loadTrend(
+    Mode mode, {
+    bool fresh = false,
+  }) => _run(trendFor(mode), () async {
+    // The service may have noticed a new season since the status was last read.
+    await app.refreshServer();
+    return _call(
       (s) => app.api.trend(
         s,
         mode,
@@ -359,8 +363,8 @@ class PlayerWorkspace extends ChangeNotifier {
         count: 6,
         fresh: fresh,
       ),
-    ),
-  );
+    );
+  });
 
   /// Reads the growth measures from what is stored locally: quick (a few milliseconds),
   /// so it is read again whenever the tab is shown.
@@ -697,7 +701,10 @@ class AppState extends ChangeNotifier {
   toast;
   VoidCallback? focusSearch;
 
-  int get currentSeason => (server?['current_season'] as num?)?.toInt() ?? 25;
+  /// The provider's current season as the service knows it (it follows a season change
+  /// the catalog has not caught up with); null until the service has said.
+  int? get currentSeason =>
+      (server?['current_season'] as num?)?.toInt() ?? catalog.currentSeason;
   List<Json> get accounts => [
     for (final a in (server?['accounts'] as List? ?? const []))
       (a as Map).cast<String, dynamic>(),

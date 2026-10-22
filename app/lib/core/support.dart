@@ -34,7 +34,8 @@ class Catalog {
       _icons = (raw?['icons'] as Map?)?.cast<String, dynamic>() ?? const {},
       _upgrades =
           (raw?['stadium_upgrades'] as Map?)?.cast<String, dynamic>() ??
-          const {} {
+          const {},
+      currentSeason = (raw?['current_season'] as num?)?.toInt() {
     for (final s in (raw?['statistics'] as List? ?? const [])) {
       if (s is! Map) continue;
       final hero = '${s['heroGuid']}', guid = '${s['valueGuid']}';
@@ -49,6 +50,9 @@ class Catalog {
   final Map<String, dynamic> _maps;
   final Map<String, dynamic> _icons;
   final Map<String, dynamic> _upgrades;
+
+  /// The season the service considers current; null without a catalog.
+  final int? currentSeason;
   bool get isEmpty => _heroes.isEmpty && _maps.isEmpty;
 
   String? _https(Object? v) =>
@@ -278,7 +282,11 @@ class UiState {
     try {
       final f = _file();
       f.parent.createSync(recursive: true);
-      f.writeAsStringSync(
+      // Written beside the file and renamed over it, so a crash mid-write leaves the
+      // previous layout rather than half a file.
+      final part = File('${f.path}.part');
+      part.writeAsStringSync(
+        flush: true,
         jsonEncode({
           'version': version,
           'theme': theme,
@@ -290,6 +298,7 @@ class UiState {
           'mode': mode,
         }),
       );
+      part.renameSync(f.path);
     } catch (_) {
       // Layout is a convenience; failing to save it must never interrupt work.
     }

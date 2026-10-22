@@ -32,6 +32,36 @@ fn catalog() -> Catalog {
 }
 
 #[test]
+fn a_new_season_shows_as_the_current_answer_equalling_the_next_numbered_one() {
+    let cat = catalog();
+    let raw = fixture("queryCountInfo");
+    let current = normalize::career(normalize::payload(&raw), Mode::Competitive, None, &cat);
+    let numbered = normalize::career(normalize::payload(&raw), Mode::Competitive, Some(26), &cat);
+    // Same play, only the requested season differs: the provider is in season 26.
+    assert!(collect::same_season_data(&current, &numbered));
+    // A season that has not started comes back empty.
+    let empty = normalize::career(&json!({}), Mode::Competitive, Some(26), &cat);
+    assert!(!collect::same_season_data(&current, &empty));
+    // Two empty answers say nothing (a player with no matches this season).
+    assert!(!collect::same_season_data(&empty, &empty));
+    // Different records are different seasons.
+    let mut other = numbered.clone();
+    other.roles[0].matches = other.roles[0].matches.map(|m| m + 1);
+    assert!(!collect::same_season_data(&current, &other));
+}
+
+#[test]
+fn the_current_season_only_moves_forward() {
+    let cat = catalog();
+    let start = cat.current_season.get();
+    assert!(cat.current_season.advance_to(start + 1));
+    assert!(!cat.current_season.advance_to(start));
+    assert_eq!(cat.current_season.get(), start + 1);
+    // A copy of the catalog carries the season it had.
+    assert_eq!(cat.clone().current_season.get(), start + 1);
+}
+
+#[test]
 fn career_snapshot_types_every_documented_block() {
     let cat = catalog();
     let c = normalize::career(

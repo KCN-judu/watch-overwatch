@@ -33,6 +33,8 @@ pub(crate) struct AppState {
     progress: ProgressBook,
     /// Finished-match details and ranks kept between analyses; `None` if it could not be opened.
     store: Option<Arc<store::LocalStore>>,
+    /// Whether this run has checked for a season newer than the catalog (`follow_season`).
+    season_checked: Arc<std::sync::atomic::AtomicBool>,
 }
 /// Opens the on-disk local store; without it everything still works, just without reuse.
 pub(crate) fn open_store() -> Option<Arc<store::LocalStore>> {
@@ -124,6 +126,7 @@ async fn main() -> anyhow::Result<()> {
             catalog: Arc::new(watch_core::Catalog::load()),
             progress: Arc::new(std::sync::Mutex::new(HashMap::new())),
             store: open_store(),
+            season_checked: Arc::default(),
         });
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", port())).await?;
     tracing::info!("Watch Overwatch: http://127.0.0.1:{}", port());
@@ -235,7 +238,7 @@ async fn hero_portraits() -> impl IntoResponse {
 }
 async fn state(State(s): State<AppState>) -> Json<serde_json::Value> {
     Json(
-        serde_json::json!({"accounts":s.client.account_views().await,"metrics":s.client.metrics().await,"endpoints":watch_core::endpoints(),"current_season":s.catalog.current_season,"secrets_path":watch_core::secrets_path().display().to_string()}),
+        serde_json::json!({"accounts":s.client.account_views().await,"metrics":s.client.metrics().await,"endpoints":watch_core::endpoints(),"current_season":s.catalog.current_season.get(),"secrets_path":watch_core::secrets_path().display().to_string()}),
     )
 }
 pub(crate) fn fail(error: Failure) -> (StatusCode, Json<serde_json::Value>) {

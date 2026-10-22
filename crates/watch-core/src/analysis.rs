@@ -210,10 +210,11 @@ impl Clock {
 
 const DAY_MS: i64 = 86_400_000;
 
-/// Calendar zone for day/hour bucketing. The app has always reported in
-/// Asia/Tokyo (UTC+09); note Dashen's own servers run on UTC+08.
-pub const REPORT_TIMEZONE: &str = "Asia/Tokyo";
-pub const REPORT_UTC_OFFSET_MINUTES: i32 = 9 * 60;
+/// Calendar zone for day/hour bucketing: China Standard Time (UTC+08), where the CN
+/// servers, Dashen and the players this app is for all are. (Up to 1.2.0 it was
+/// Asia/Tokyo, UTC+09, which put every match an hour late and midnight in the wrong place.)
+pub const REPORT_TIMEZONE: &str = "Asia/Shanghai";
+pub const REPORT_UTC_OFFSET_MINUTES: i32 = 8 * 60;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

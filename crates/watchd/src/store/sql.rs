@@ -265,6 +265,19 @@ pub const PLAYER_PROFILE: Table = Table {
     key: &["bnet_id"],
 };
 
+/// A player's career in a finished season (the provider's answer, as JSON). A finished
+/// season never changes, so it is read once; the current season is not stored here.
+pub const PAST_CAREER: Table = Table {
+    name: "past_career",
+    columns: &[
+        col("subject", "TEXT NOT NULL"),
+        col("mode", "TEXT NOT NULL"),
+        col("season", "INTEGER NOT NULL"),
+        col("data", "TEXT NOT NULL"),
+    ],
+    key: &["subject", "mode", "season"],
+};
+
 /// A player's competitive ranks in one season, stamped with when they were fetched.
 pub const SEASON_RATINGS: Table = Table {
     name: "season_ratings",
@@ -313,7 +326,8 @@ pub struct StateSql {
 
 pub struct DetailSql {
     pub upsert: String,
-    /// `data`, `unreachable` of one detail (`?1` mode, `?2` match id, `?3` subject).
+    /// `data`, `unreachable`, `fetched_ms` of one detail (`?1` mode, `?2` match id,
+    /// `?3` subject).
     pub select: String,
     /// `subject`, `data` of every detail.
     pub select_all: String,
@@ -331,6 +345,13 @@ pub struct PlayerSql {
     pub profile_select: String,
     pub name_delete_all: String,
     pub profile_delete_all: String,
+}
+
+pub struct CareerSql {
+    pub upsert: String,
+    /// `data` of one finished season (`?1` subject, `?2` mode, `?3` season).
+    pub select: String,
+    pub delete_all: String,
 }
 
 pub struct ParticipantSql {
@@ -372,6 +393,7 @@ pub struct Sql {
     pub detail: DetailSql,
     pub participant: ParticipantSql,
     pub player: PlayerSql,
+    pub career: CareerSql,
     pub rating: RatingSql,
     pub legacy: LegacySql,
 }
@@ -388,6 +410,7 @@ impl Sql {
                 PARTICIPANT_INDEX.to_owned(),
                 PLAYER_NAME.create(),
                 PLAYER_PROFILE.create(),
+                PAST_CAREER.create(),
             ],
             ratings_schema: vec![SEASON_RATINGS.create()],
             list: ListSql {
@@ -410,7 +433,7 @@ impl Sql {
             detail: DetailSql {
                 upsert: MATCH_DETAIL.upsert(),
                 select: MATCH_DETAIL.select(
-                    &["data", "unreachable"],
+                    &["data", "unreachable", "fetched_ms"],
                     &["mode", "match_id", "subject"],
                     None,
                 ),
@@ -433,6 +456,11 @@ impl Sql {
                 profile_select: PLAYER_PROFILE.select(&["data"], &["bnet_id"], None),
                 name_delete_all: PLAYER_NAME.delete_all(),
                 profile_delete_all: PLAYER_PROFILE.delete_all(),
+            },
+            career: CareerSql {
+                upsert: PAST_CAREER.upsert(),
+                select: PAST_CAREER.select(&["data"], &["subject", "mode", "season"], None),
+                delete_all: PAST_CAREER.delete_all(),
             },
             rating: RatingSql {
                 upsert: SEASON_RATINGS.upsert(),
@@ -497,6 +525,9 @@ impl Sql {
                 &self.player.profile_select,
                 &self.player.name_delete_all,
                 &self.player.profile_delete_all,
+                &self.career.upsert,
+                &self.career.select,
+                &self.career.delete_all,
             ]
             .map(String::as_str),
         );

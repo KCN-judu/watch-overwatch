@@ -60,6 +60,7 @@ Flutter 界面 (app/)  ──HTTP, 仅本机──▶  watchd (Rust)  ──HTTP
 | `match_list`、`list_state` | 每个玩家、每个模式、每个赛季的**对局列表**，以及“是否已经读到最早一场” |
 | `match_detail` | 对局详情（按模式、对局编号、被查询的玩家），里面有双方全部玩家 |
 | `match_participant` | 从详情里拆出的“谁参加了哪一场、哪一方、打什么职责”，按玩家编号可查 |
+| `past_career` | 玩家在已结束赛季的生涯（赛季走势页用），读一次就一直用 |
 
 **`ratings.db`（玩家段位）**
 
