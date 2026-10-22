@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../l10n/strings.dart';
 import 'interaction.dart';
+import 'motion.dart';
 import 'tokens.dart';
 
 class ChartSeries {
@@ -259,22 +260,32 @@ class _LineChartState extends State<LineChart> {
                       decoration: _focus.hasFocus && keyboardModality
                           ? BoxDecoration(border: c.itemOutline(focused: true))
                           : null,
-                      child: CustomPaint(
-                        size: Size(box.maxWidth, widget.height),
-                        painter: _LinePainter(
-                          colors: c,
-                          axis: axis,
-                          series: widget.series,
-                          xLabels: widget.xLabels,
-                          hollow: widget.hollow,
-                          shielded: widget.shielded,
-                          valueFormat: widget.valueFormat,
-                          axisFormat: axisFmt,
-                          detailFormat: widget.detailFormat,
-                          index: _index,
-                          seriesIndex: _perSeries ? _series : null,
-                          countFormat: widget.countFormat,
-                          notes: widget.pointNotes,
+                      // Drawn left to right when it first shows or shows other data;
+                      // hovering and keyboard stepping do not replay it.
+                      child: RevealLeftToRight(
+                        dataKey: Object.hashAll([
+                          for (final s in widget.series) ...[
+                            s.label,
+                            ...s.values,
+                          ],
+                        ]),
+                        child: CustomPaint(
+                          size: Size(box.maxWidth, widget.height),
+                          painter: _LinePainter(
+                            colors: c,
+                            axis: axis,
+                            series: widget.series,
+                            xLabels: widget.xLabels,
+                            hollow: widget.hollow,
+                            shielded: widget.shielded,
+                            valueFormat: widget.valueFormat,
+                            axisFormat: axisFmt,
+                            detailFormat: widget.detailFormat,
+                            index: _index,
+                            seriesIndex: _perSeries ? _series : null,
+                            countFormat: widget.countFormat,
+                            notes: widget.pointNotes,
+                          ),
                         ),
                       ),
                     ),

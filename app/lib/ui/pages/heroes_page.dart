@@ -90,7 +90,13 @@ class _HeroesPageState extends State<HeroesPage> {
   };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => FadeThrough(
+    // List ↔ a hero's page, and one hero to the next, fade through.
+    childKey: widget.workspace.openHeroKey ?? '',
+    child: Builder(builder: _content),
+  );
+
+  Widget _content(BuildContext context) {
     final app = AppScope.of(context);
     final ws = widget.workspace;
     final mode = app.mode;

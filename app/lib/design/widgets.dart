@@ -7,10 +7,12 @@ import '../core/api.dart';
 import '../core/models.dart';
 import '../l10n/strings.dart';
 import 'interaction.dart';
+import 'motion.dart';
 import 'tokens.dart';
 import 'net_pic.dart';
 
 export 'interaction.dart';
+export 'motion.dart';
 
 // ---- Buttons ---------------------------------------------------------------
 
@@ -957,7 +959,7 @@ class KpiTile extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(value, style: Ty.num(Ty.figure), maxLines: 1),
+              child: AnimatedValueText(value, style: Ty.num(Ty.figure)),
             ),
             if (note != null)
               Text(note!, style: Ty.meta.copyWith(color: c.textSecondary)),

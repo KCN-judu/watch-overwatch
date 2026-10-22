@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../l10n/strings.dart';
 import 'interaction.dart';
+import 'motion.dart';
 import 'net_pic.dart';
 import 'tokens.dart';
 import 'widgets.dart' show AfterDelay;
@@ -136,7 +137,12 @@ class CardList<T> extends StatefulWidget {
     this.controller,
     this.empty,
     this.loading = false,
+    this.rowKey,
   });
+
+  /// A row's identity. With it, rows that appear while the list is already on screen
+  /// (new matches after a refresh) play in ([ArriveOnce]); rows already there stay put.
+  final Object Function(T row)? rowKey;
 
   final List<T> rows;
   final double itemExtent;
@@ -165,6 +171,40 @@ class _CardListState<T> extends State<CardList<T>> {
 
   int get active =>
       math.min(widget.activeIndex ?? _active, widget.rows.length - 1);
+
+  /// Keys of the rows shown so far, and of those that arrived since the last build.
+  final Set<Object> _seen = {};
+  final Set<Object> _arrived = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _remember(arrive: false);
+  }
+
+  @override
+  void didUpdateWidget(CardList<T> old) {
+    super.didUpdateWidget(old);
+    // The first rows of a list just appear; only later ones play in.
+    _remember(arrive: _seen.isNotEmpty);
+  }
+
+  /// A row that has just arrived plays in, once: it is no longer "arrived" after this
+  /// frame, so scrolling it away and back does not replay it.
+  Widget _arrive(T row, Widget child) {
+    final key = widget.rowKey?.call(row);
+    if (key == null || !_arrived.remove(key)) return child;
+    return ArriveOnce(child: child);
+  }
+
+  void _remember({required bool arrive}) {
+    final key = widget.rowKey;
+    if (key == null) return;
+    for (final row in widget.rows) {
+      final k = key(row);
+      if (_seen.add(k) && arrive) _arrived.add(k);
+    }
+  }
 
   @override
   void dispose() {
@@ -272,7 +312,10 @@ class _CardListState<T> extends State<CardList<T>> {
                             },
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: widget.builder(context, row, state),
+                              child: _arrive(
+                                row,
+                                widget.builder(context, row, state),
+                              ),
                             ),
                           ),
                         ),

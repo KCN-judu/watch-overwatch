@@ -25,14 +25,20 @@ class MatchesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // A match opened in another queue stays remembered but is not shown here.
     final app = AppScope.of(context);
-    if (workspace.openMatchId != null &&
-        (workspace.openMatchMode ?? app.mode) == app.mode) {
-      return MatchDetailPage(
-        workspace: workspace,
-        key: ValueKey(workspace.openMatchId),
-      );
-    }
-    return _MatchList(workspace: workspace);
+    final open =
+        workspace.openMatchId != null &&
+        (workspace.openMatchMode ?? app.mode) == app.mode;
+    // List ↔ detail, and one match's detail to the next, fade through; the list keeps
+    // its scroll position (the workspace holds it) for the way back.
+    return FadeThrough(
+      childKey: open ? workspace.openMatchId! : '',
+      child: open
+          ? MatchDetailPage(
+              workspace: workspace,
+              key: ValueKey(workspace.openMatchId),
+            )
+          : _MatchList(workspace: workspace),
+    );
   }
 }
 
@@ -133,6 +139,7 @@ class _MatchListState extends State<_MatchList> {
                 : visible.indexWhere((m) => m.id == ws.activeMatchId),
             onActiveChanged: (i) => ws.activeMatchId = visible[i].id,
             rowLabel: _rowLabel,
+            rowKey: (m) => m.id,
             onOpen: (m, i) =>
                 ws.openMatch(mode, m.id, [for (final r in visible) r.id]),
             builder: (context, m, state) =>

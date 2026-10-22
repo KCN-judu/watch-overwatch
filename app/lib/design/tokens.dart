@@ -21,8 +21,20 @@ class Radii {
 
 /// Motion durations. Reduced-motion preference collapses all of them to zero.
 class Dur {
+  // Tiers (docs/ui-design.md §7 and the motion spec): exits are shorter than entries,
+  // frequent actions get the short ones, nothing runs past 300 ms.
+
+  /// Hover, press, a check appearing.
   static const fast = Duration(milliseconds: 100);
+
+  /// A control changing state, a tooltip, a value changing in place.
+  static const short = Duration(milliseconds: 160);
+
+  /// A page or tab replacing another (entry; the exit runs [fast]).
   static const normal = Duration(milliseconds: 200);
+
+  /// A chart drawing itself, rows arriving: the longest anything moves.
+  static const long = Duration(milliseconds: 300);
 
   /// How long a wait may last before anything says it is loading (not motion: it
   /// is not shortened by the reduced-motion setting).
