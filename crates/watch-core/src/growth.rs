@@ -309,7 +309,7 @@ fn mann_kendall_p(v: &[f64]) -> f64 {
 }
 
 /// Complementary error function (Abramowitz and Stegun 7.1.26, error under 1.5e-7).
-fn erfc(x: f64) -> f64 {
+pub(crate) fn erfc(x: f64) -> f64 {
     let t = 1.0 / (1.0 + 0.327_591_1 * x);
     let poly = t
         * (0.254_829_592

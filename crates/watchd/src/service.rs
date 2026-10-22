@@ -987,15 +987,84 @@ pub(crate) async fn player_overview(
             season: None,
         })
         .rows;
-    let clock = Clock::now(analysis::REPORT_UTC_OFFSET_MINUTES);
-    let overview = analysis::overview(&rows, clock, AnalysisOptions::default().session_gap_ms);
-    Json(json!({
-        "enabled": true,
-        "listed": rows.len(),
-        "timezone": analysis::REPORT_TIMEZONE,
-        "overview": overview,
-    }))
-    .into_response()
+    let current = s.catalog.current_season.get();
+    let result = tokio::task::spawn_blocking(move || {
+        // The findings also draw on lobby strength and the peer benchmarks, both from
+        // what is stored: still no upstream request.
+        let inputs = PeerInputs::read(&store, &subject, mode, current);
+        let by_id: BTreeMap<String, MatchDetail> = inputs
+            .mine
+            .iter()
+            .map(|d| (d.id.clone(), d.clone()))
+            .collect();
+        let strength = watch_core::strength::lobby_strength(&by_id, &inputs.ratings);
+        let benchmarks = inputs.benchmarks(&subject, mode);
+        let context = watch_core::insights::Context {
+            strength: Some(&strength),
+            benchmarks: &benchmarks,
+        };
+        let clock = Clock::now(analysis::REPORT_UTC_OFFSET_MINUTES);
+        let overview = analysis::overview(
+            &rows,
+            clock,
+            AnalysisOptions::default().session_gap_ms,
+            &context,
+        );
+        json!({
+            "enabled": true,
+            "listed": rows.len(),
+            "timezone": analysis::REPORT_TIMEZONE,
+            "overview": overview,
+        })
+    })
+    .await;
+    match result {
+        Ok(v) => Json(v).into_response(),
+        Err(_) => fail(error("internal", "概览计算失败。 ")).into_response(),
+    }
+}
+
+/// What the peer benchmarks and the overview's findings are worked out from: every stored
+/// detail of `mode`, the stored ranks of everyone in them, and the subject's own details.
+struct PeerInputs {
+    details: Vec<MatchDetail>,
+    ratings: Vec<watch_core::ir::PlayerRating>,
+    mine: Vec<MatchDetail>,
+}
+
+impl PeerInputs {
+    fn read(store: &crate::store::LocalStore, subject: &str, mode: Mode, current: u32) -> Self {
+        let details: Vec<MatchDetail> = store
+            .all_details()
+            .into_iter()
+            .filter(|d| d.mode == mode)
+            .collect();
+        let ids: std::collections::BTreeSet<String> = details
+            .iter()
+            .flat_map(|d| d.allies.iter().chain(&d.enemies))
+            .filter_map(|p| p.bnet_id.clone())
+            .collect();
+        let ratings = ids
+            .iter()
+            .map(|id| collect::stored_rating(store, id, current))
+            .collect();
+        let mine = details
+            .iter()
+            .filter(|d| d.subject().and_then(|p| p.bnet_id.as_deref()) == Some(subject))
+            .cloned()
+            .collect();
+        Self {
+            details,
+            ratings,
+            mine,
+        }
+    }
+
+    fn benchmarks(&self, subject: &str, mode: Mode) -> Vec<watch_core::benchmark::HeroBench> {
+        let own = self.ratings.iter().find(|r| r.bnet_id == subject);
+        let tiers = watch_core::benchmark::subject_tiers(&self.mine, own);
+        watch_core::benchmark::benchmarks(&self.details, &self.ratings, subject, mode, &tiers)
+    }
 }
 
 /// Peer benchmarks (see [`watch_core::benchmark`]) for the player's heroes in a mode, from
@@ -1018,30 +1087,14 @@ pub(crate) async fn player_benchmark(
     };
     let current = s.catalog.current_season.get();
     let result = tokio::task::spawn_blocking(move || {
-        let details: Vec<MatchDetail> = store
-            .all_details()
-            .into_iter()
-            .filter(|d| d.mode == mode)
-            .collect();
-        let ids: std::collections::BTreeSet<String> = details
-            .iter()
-            .flat_map(|d| d.allies.iter().chain(&d.enemies))
-            .filter_map(|p| p.bnet_id.clone())
-            .collect();
-        let ratings: Vec<watch_core::ir::PlayerRating> = ids
-            .iter()
-            .map(|id| collect::stored_rating(store.as_ref(), id, current))
-            .collect();
-        let mine: Vec<MatchDetail> = details
-            .iter()
-            .filter(|d| d.subject().and_then(|p| p.bnet_id.as_deref()) == Some(&subject))
-            .cloned()
-            .collect();
-        let own_rating = ratings.iter().find(|r| r.bnet_id == subject);
-        let tiers = watch_core::benchmark::subject_tiers(&mine, own_rating);
-        let peer_matches = details.len() * 9;
-        let heroes = watch_core::benchmark::benchmarks(&details, &ratings, &subject, mode, &tiers);
-        json!({"enabled":true,"matches":details.len(),"peer_matches":peer_matches,"heroes":heroes})
+        let inputs = PeerInputs::read(&store, &subject, mode, current);
+        let heroes = inputs.benchmarks(&subject, mode);
+        json!({
+            "enabled": true,
+            "matches": inputs.details.len(),
+            "peer_matches": inputs.details.len() * 9,
+            "heroes": heroes,
+        })
     })
     .await;
     match result {

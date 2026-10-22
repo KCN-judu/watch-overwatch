@@ -96,3 +96,36 @@ mod tests {
         assert_eq!(Confidence::of(None, 20, 8), Confidence::None);
     }
 }
+
+/// Two-sided p value of the difference between two win rates (`a` of `n` against `b` of
+/// `m`), by the pooled two-proportion z test. `None` when either side is empty or the
+/// rates are all wins or all losses (no spread to test against).
+pub fn two_proportion_p(a: usize, n: usize, b: usize, m: usize) -> Option<f64> {
+    if n == 0 || m == 0 {
+        return None;
+    }
+    let (n_f, m_f) = (n as f64, m as f64);
+    let pooled = (a + b) as f64 / (n_f + m_f);
+    let se = (pooled * (1.0 - pooled) * (1.0 / n_f + 1.0 / m_f)).sqrt();
+    if se == 0.0 {
+        return None;
+    }
+    let z = (a as f64 / n_f - b as f64 / m_f) / se;
+    Some(crate::growth::erfc(z.abs() / std::f64::consts::SQRT_2))
+}
+
+#[cfg(test)]
+mod proportion_tests {
+    use super::*;
+
+    #[test]
+    fn two_proportions_match_a_known_value() {
+        // 60 of 100 against 45 of 100: z ≈ 2.12, p ≈ 0.034.
+        let p = two_proportion_p(60, 100, 45, 100).unwrap();
+        assert!((p - 0.034).abs() < 0.002, "{p}");
+        // The same rate is no difference at all.
+        assert!(two_proportion_p(5, 10, 10, 20).unwrap() > 0.99);
+        assert_eq!(two_proportion_p(0, 0, 1, 2), None);
+        assert_eq!(two_proportion_p(3, 3, 5, 5), None);
+    }
+}

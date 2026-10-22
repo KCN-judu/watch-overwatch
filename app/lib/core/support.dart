@@ -241,8 +241,11 @@ class UiState {
   double navWidth = 248;
   bool navCollapsed = false;
   String? lastPlayer;
-  String tab = 'matches';
+  String tab = 'overview';
   String mode = 'competitive';
+
+  /// Kinds of overview findings the user asked not to be shown again.
+  Set<String> mutedInsights = {};
 
   static File _file() {
     final base =
@@ -273,6 +276,10 @@ class UiState {
         s.lastPlayer = j['lastPlayer'] is String ? j['lastPlayer'] : null;
         s.tab = j['tab'] is String ? j['tab'] : s.tab;
         s.mode = j['mode'] is String ? j['mode'] : s.mode;
+        s.mutedInsights = {
+          for (final k in (j['mutedInsights'] as List?) ?? const [])
+            if (k is String) k,
+        };
       }
     } catch (_) {}
     return s;
@@ -296,6 +303,7 @@ class UiState {
           'lastPlayer': lastPlayer,
           'tab': tab,
           'mode': mode,
+          'mutedInsights': mutedInsights.toList(),
         }),
       );
       part.renameSync(f.path);

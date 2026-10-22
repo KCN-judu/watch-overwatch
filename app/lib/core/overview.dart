@@ -1,3 +1,4 @@
+import 'benchmark.dart';
 import 'models.dart';
 
 int? _i(Object? v) => v is num ? v.toInt() : null;
@@ -72,20 +73,37 @@ class FormPoint {
   final EntityRef? map;
 }
 
+/// What a finding is about (`watch_core::insights::InsightKind`); `id` is its wire name,
+/// also what the user's “不再提示这类” list holds.
 enum InsightKind {
-  streak,
-  recentForm,
-  map,
-  hero,
-  unknown;
+  streak('streak'),
+  streakStrength('streak_strength'),
+  recentForm('recent_form'),
+  drivers('drivers'),
+  map('map'),
+  hero('hero'),
+  fatigue('fatigue'),
+  heroMetric('hero_metric'),
+  unknown('');
 
-  static InsightKind parse(String? v) => switch (v) {
-    'streak' => streak,
-    'recent_form' => recentForm,
-    'map' => map,
-    'hero' => hero,
-    _ => unknown,
-  };
+  const InsightKind(this.id);
+  final String id;
+
+  static InsightKind parse(String? v) => values.firstWhere(
+    (k) => k.id == v && k != unknown,
+    orElse: () => unknown,
+  );
+}
+
+/// A map or hero a finding lists, with the change in its wins minus losses.
+class InsightItem {
+  InsightItem(Json j)
+    : label = _s(j['label']) ?? '',
+      key = _s(j['key']) ?? '',
+      kind = _s(j['kind']) ?? '',
+      delta = _i(j['delta']) ?? 0;
+  final String label, key, kind;
+  final int delta;
 }
 
 /// A finding the service considers firm enough to say (the app words it).
@@ -97,7 +115,10 @@ class Insight {
       value = _d(j['value']) ?? 0,
       other = _d(j['other']),
       n = _i(j['n']) ?? 0,
-      key = _s(j['key']);
+      key = _s(j['key']),
+      items = _list(j['items'], InsightItem.new),
+      p = _d(j['p']),
+      metric = BenchMetric.parse(_s(j['metric']));
   final InsightKind kind;
   final bool positive;
   final String? subject;
@@ -107,6 +128,15 @@ class Insight {
 
   /// The hero or map it is about, for drilling down.
   final String? key;
+
+  /// What moved a rate (`drivers`).
+  final List<InsightItem> items;
+
+  /// The test behind a difference (`fatigue`).
+  final double? p;
+
+  /// The measure of a `heroMetric` finding.
+  final BenchMetric metric;
 }
 
 class Overview {

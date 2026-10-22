@@ -50,4 +50,19 @@ class OverviewStrings {
   String get emptyTitle => '还没有可概览的对局';
   String emptyBody(String mode) => '该玩家在$mode还没有读取到对局。先到对局页读取，概览会随之生成。';
   String get openMatches => '打开对局页';
+
+  String streakStrength(int stronger, int n) =>
+      '这 $n 场连败里有 $stronger 场，对方平均段位分比己方高 200 以上：输得不全在该玩家';
+  String driversUp(String items) => '状态回升主要来自 $items';
+  String driversDown(String items) => '状态下滑主要来自 $items';
+  String driverItem(String label, String delta) => '$label（净胜 $delta）';
+  String fatigue(String late, String early) =>
+      '一次连续打到第 4 场以后，胜率 $late，明显低于前 3 场的 $early：可以考虑每次少打几场';
+  String heroMetricDown(String hero, String metric, int p) =>
+      '$hero 的$metric在同侪中排第 $p 百分位，明显偏低';
+  String heroMetricUp(String hero, String metric, int p) =>
+      '$hero 的$metric在同侪中排第 $p 百分位，明显偏高';
+  String get mute => '不再提示这类';
+  String muted(int n) => '已隐藏 $n 类提示';
+  String get unmute => '全部恢复';
 }

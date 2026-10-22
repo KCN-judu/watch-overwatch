@@ -162,6 +162,55 @@ void main() {
     expect(t.app.tab, 'matches');
   });
 
+  testWidgets('a place a fall came from opens the matches there', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final json = overviewJson();
+    ((json['overview'] as Map)['insights'] as List).add({
+      'kind': 'drivers',
+      'positive': false,
+      'value': 40.0,
+      'n': 20,
+      'items': [
+        {
+          'label': '努巴尼',
+          'key': 'overwatch:map:0x08000000000002c3',
+          'kind': 'map',
+          'delta': -6,
+        },
+      ],
+    });
+    final t = setUp(json);
+    await tester.pumpWidget(t.page);
+    await tester.pumpAndSettle();
+    expect(find.text('状态下滑主要来自 努巴尼（净胜 −6）'), findsOneWidget);
+    await tester.tap(find.widgetWithText(AppButton, '努巴尼'));
+    expect(t.ws.filtersFor(Mode.quick).mapGuid, '576460752303424195');
+    expect(t.app.tab, 'matches');
+  });
+
+  testWidgets('a kind of finding can be hidden and brought back', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final t = setUp(overviewJson());
+    await tester.pumpWidget(t.page);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('不再提示这类'));
+    await tester.pumpAndSettle();
+    expect(t.app.mutedInsights, {'map'});
+    expect(find.textContaining('努巴尼 是该玩家的强图'), findsNothing);
+    expect(find.text('已隐藏 1 类提示'), findsWidgets);
+    await tester.tap(find.widgetWithText(AppButton, '全部恢复'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('努巴尼 是该玩家的强图'), findsOneWidget);
+  });
+
   testWidgets('no stored matches: say so and point to the match list', (
     tester,
   ) async {
