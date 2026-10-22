@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../core/metric_doc.dart';
 import '../core/models.dart';
 import '../core/support.dart';
 import '../l10n/strings.dart';
@@ -270,9 +272,13 @@ class HeroPortrait extends StatelessWidget {
 ///
 /// It is a tab stop: focusing it with the keyboard shows the sentence, as hovering
 /// does, so the explanation is never pointer-only. The hit area is 28px square.
+///
+/// About a figure, it names its section of the metrics page ([doc]): a click (or Enter)
+/// opens that section, and the sentence says so.
 class InfoTip extends StatefulWidget {
-  const InfoTip(this.message, {super.key});
+  const InfoTip(this.message, {super.key, this.doc});
   final String message;
+  final MetricDoc? doc;
 
   @override
   State<InfoTip> createState() => _InfoTipState();
@@ -286,27 +292,55 @@ class _InfoTipState extends State<InfoTip> {
   Widget build(BuildContext context) {
     final c = context.c;
     final ring = _focused && keyboardModality;
+    final doc = widget.doc;
+    final message = doc == null
+        ? widget.message
+        : [widget.message, tr.shell.metricDocHint].join('\n');
     return Focus(
       onFocusChange: (f) {
         setState(() => _focused = f);
         if (f && keyboardModality) _tip.currentState?.ensureTooltipVisible();
       },
+      onKeyEvent: (_, e) {
+        if (doc != null &&
+            e is KeyDownEvent &&
+            e.logicalKey == LogicalKeyboardKey.enter) {
+          doc.open();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
       child: Tooltip(
         key: _tip,
-        message: widget.message,
-        triggerMode: TooltipTriggerMode.tap,
+        message: message,
+        triggerMode: doc == null
+            ? TooltipTriggerMode.tap
+            : TooltipTriggerMode.longPress,
         showDuration: const Duration(seconds: 8),
         child: Semantics(
-          label: widget.message,
-          child: Container(
-            width: 28,
-            height: 28,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(Radii.control),
-              border: c.itemOutline(focused: ring),
+          label: message,
+          button: doc != null,
+          child: GestureDetector(
+            onTap: doc?.open,
+            child: MouseRegion(
+              cursor: doc == null
+                  ? MouseCursor.defer
+                  : SystemMouseCursors.click,
+              child: Container(
+                width: 28,
+                height: 28,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(Radii.control),
+                  border: c.itemOutline(focused: ring),
+                ),
+                child: Icon(
+                  Icons.info_outline,
+                  size: 14,
+                  color: c.textSecondary,
+                ),
+              ),
             ),
-            child: Icon(Icons.info_outline, size: 14, color: c.textSecondary),
           ),
         ),
       ),

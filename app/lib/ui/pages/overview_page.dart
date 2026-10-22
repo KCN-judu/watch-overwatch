@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/metric_doc.dart';
 import '../../core/benchmark.dart';
 import '../../core/models.dart';
 import '../../core/overview.dart';
@@ -552,6 +553,7 @@ class _Insights extends StatelessWidget {
         SectionHeader(
           tr.overview.insightsTitle,
           info: tr.overview.insightsTip,
+          infoDoc: MetricDoc.threshold,
           trailing: muted.isEmpty
               ? null
               : Row(
@@ -691,6 +693,7 @@ class _Groups extends StatelessWidget {
         Shareable(
           title: heroes ? tr.overview.heroesTitle : tr.overview.mapsTitle,
           info: tr.overview.groupTip,
+          infoDoc: MetricDoc.winRateRange,
           caption: tr.recap.caption(
             app.maskName(workspace.name),
             mode.label,

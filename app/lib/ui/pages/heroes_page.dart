@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/metric_doc.dart';
 import '../../core/hero_stats.dart';
 import '../../core/models.dart';
 import '../../core/support.dart';
@@ -199,7 +200,7 @@ class _HeroesPageState extends State<HeroesPage> {
               error: load.error?.message,
               onRetry: () => ws.loadMatches(mode, fresh: true),
             ),
-            InfoTip(tr.heroes.listInfo),
+            InfoTip(tr.heroes.listInfo, doc: MetricDoc.winRateRange),
           ],
         ),
         const SizedBox(height: Sp.withinGroup),

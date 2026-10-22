@@ -10,7 +10,7 @@ class PeopleStrings {
   String get partyRate => '组排胜率';
   String get soloRate => '单排胜率';
   String matchesNote(int n) => '$n 场';
-  String rangeNote(int n, String low, String high) => '$n 场 · 可能 $low – $high';
+  String rangeNote(int n, String low, String high) => '$n 场 · $low–$high';
   String get matesTitle => '常遇玩家';
   String get matesTip => '在该玩家已存的对局里出现 2 次及以上的玩家，按共同场次排。胜率是该玩家的胜率。点一位查看共同对局。';
   String get anonymous => '未知玩家';

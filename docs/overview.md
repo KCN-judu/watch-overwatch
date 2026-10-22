@@ -29,6 +29,9 @@
 |---|---|
 | [快速开始](getting-started.md) | 十分钟从下载到第一次查询，以及从源码构建 |
 | [使用指引](user-guide.md) | 每个页面怎么看、读数里的符号、快捷键、常见问题 |
+| [按问题找答案](questions.md) | 为什么掉分、该练哪个英雄、进步了吗、这局输在哪、怎么看对局强度 |
+| [指标口径](metrics.md) | 每个指标的定义、算法、局限和例子；界面上 ⓘ 的“口径说明”链到这里 |
+| [术语表](glossary.md) | 界面和文档统一的用词 |
 | [获取账号凭据](credentials.md) | 怎么拿到 `role_id` 和 `token`，以及填到哪里 |
 | [本机接口](http-api.md) | `watchd` 的 HTTP 接口：路径、请求、返回 |
 | [命令行](cli.md) | `watchd dataset`、`watchd analyze` 和 `cargo xtask` |
@@ -44,6 +47,7 @@
 
 ## 阅读路径
 
+- **有具体问题**：[按问题找答案](questions.md)，数字看不懂查 [指标口径](metrics.md)。
 - **只想用**：[快速开始](getting-started.md) → [使用指引](user-guide.md)。读数看不懂时回到使用指引的“读数里的符号”。
 - **想知道数字怎么来的**：[算法](algorithms.md)。每一节末尾写了代码位置。
 - **想用导出的数据做自己的分析**：[导出协议](export.md) → [数据结构](data-model.md)。

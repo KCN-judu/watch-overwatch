@@ -69,6 +69,17 @@ cargo xtask update-catalog $dir
 
 合并后精简，覆盖快照。改完运行 `cargo test`，并看一下 `git diff` 里有哪些变化。
 
+## 文档截图
+
+概览、地图、常遇玩家三页的截图由测试渲染生成，不用手动截：
+
+```powershell
+cd app
+flutter test --update-goldens screenshots
+```
+
+数据是 `app/screenshots/docs_screenshots_test.dart` 里编的，图片写到 `docs/images/`。需要 Windows 自带的微软雅黑字体。这个目录不在 `flutter test` 的默认范围里，CI 不跑它。
+
 ## 文档站
 
 文档站在 `site/` 下，是一个 Astro 项目；内容来自 `docs/` 和 `CHANGELOG.md`，构建前由 `site/scripts/prepare.mjs` 整理。本地预览：

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../core/metric_doc.dart';
 import '../../core/models.dart';
 import '../../core/support.dart';
 import '../../design/cards.dart';
@@ -65,7 +66,10 @@ class _StrengthPageState extends State<StrengthPage> {
         Row(
           children: [
             SectionHeader(tr.analysis.strengthTitle),
-            InfoTip(tr.analysis.strengthInfo(quick: mode == Mode.quick)),
+            InfoTip(
+              tr.analysis.strengthInfo(quick: mode == Mode.quick),
+              doc: MetricDoc.strength,
+            ),
           ],
         ),
         const SizedBox(height: Sp.withinGroup),
@@ -268,7 +272,7 @@ class _StrengthPageState extends State<StrengthPage> {
       Row(
         children: [
           SectionHeader(tr.analysis.byRoleTitle),
-          InfoTip(tr.analysis.byRoleInfo),
+          InfoTip(tr.analysis.byRoleInfo, doc: MetricDoc.strength),
         ],
       ),
       const SizedBox(height: Sp.withinGroup),
@@ -288,7 +292,7 @@ class _StrengthPageState extends State<StrengthPage> {
       Row(
         children: [
           SectionHeader(tr.analysis.perMatchTitle),
-          InfoTip(tr.analysis.perMatchInfo),
+          InfoTip(tr.analysis.perMatchInfo, doc: MetricDoc.strength),
         ],
       ),
       const SizedBox(height: Sp.withinGroup),
@@ -1035,7 +1039,7 @@ class _ChartSection extends StatelessWidget {
                     ),
               ],
             ),
-            InfoTip(tr.analysis.chartInfo),
+            InfoTip(tr.analysis.chartInfo, doc: MetricDoc.strength),
           ],
         ),
         const SizedBox(height: 4),
@@ -1081,7 +1085,7 @@ class _ChartSection extends StatelessWidget {
               for (final m in shown)
                 tr.analysis.chartPointNote(
                   m.outcome.label,
-                  m.subjectRole.label.isEmpty ? '?' : m.subjectRole.label,
+                  m.subjectRole.label.isEmpty ? missing : m.subjectRole.label,
                 ),
             ],
             hollow: [for (final m in shown) m.outcome == Outcome.loss],

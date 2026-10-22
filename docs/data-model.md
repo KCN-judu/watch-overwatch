@@ -54,4 +54,4 @@ IR 的数据来自这些大神接口（`dashen/endpoint.rs`）：
 | `customer/fight/queryCount`、`queryMatchList`、`queryMatchInfo` | 角斗领域的对应接口 |
 | `queryProvinceRank`、`billboard/*` | 省榜、英雄榜 |
 
-英雄统计和段位、近期对局来自同一个 `queryCountInfo`：一次请求返回你本赛季打过的全部英雄，与界面是否显示无关。上游**不提供**每次阵亡的时间点，所以存活时长只能按对局时长和阵亡数估计，见 [算法](algorithms.md)。
+英雄统计和段位、近期对局来自同一个 `queryCountInfo`：一次请求返回该玩家本赛季打过的全部英雄，与界面是否显示无关。上游**不提供**每次阵亡的时间点，所以存活时长只能按对局时长和阵亡数估计，见 [算法](algorithms.md)。

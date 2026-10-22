@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../core/metric_doc.dart';
 import '../../core/models.dart';
 import '../../core/support.dart';
 import '../../design/cards.dart';
@@ -114,6 +115,7 @@ class _TrendPageState extends State<TrendPage> {
                         ? tr.analysis.rankInfo
                         : tr.analysis.noRankInfo(mode.label))
                   : tr.analysis.winRateInfo,
+              doc: metric == 'rank' ? MetricDoc.rating : MetricDoc.winRateRange,
             ),
           ],
         ),

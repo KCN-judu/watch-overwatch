@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/metric_doc.dart';
 import '../../core/maps.dart';
 import '../../core/models.dart';
 import '../../core/support.dart';
@@ -162,6 +163,7 @@ class _List extends StatelessWidget {
           Shareable(
             title: _modeName(g),
             info: i == 0 ? tr.maps.modeTip : null,
+            infoDoc: MetricDoc.winRateRange,
             caption: tr.recap.caption(
               app.maskName(workspace.name),
               app.mode.label,
