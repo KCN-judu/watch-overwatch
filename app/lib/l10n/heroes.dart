@@ -205,4 +205,42 @@ class HeroStrings {
   /// The range a win rate plausibly lies in, and the record behind it.
   String winRateRange(String low, String high, int wins, int matches) =>
       '可能在 $low–$high 之间（$wins 胜 / $matches 场）。按胜率排序时以区间下限为准。';
+
+  // ---- ui/pages/peer_bench.dart ----
+
+  String get peerTitle => '同侪对比';
+  String get peerInfo =>
+      '把该玩家这个英雄的“典型一场”（中位数，每 10 分钟）放进其他玩家用同一英雄的每一场里比：第 50 百分位就是正中间。阵亡越少越好，已经反过来算。同侪优先取同一档位，场次不够就放宽到相邻档位，再不够就不限段位。';
+  String get peerLoading => '正在计算同侪基准…';
+  String get peerNone =>
+      '本机样本还不够比较：需要该玩家用这个英雄至少 3 场，其他玩家至少 30 场。查询更多玩家、读取更多对局后会出现。';
+  String get peerStadium => '角斗领域的数据和段位自成一套，暂不做同侪对比。';
+  String get metricDamage => '伤害';
+  String get metricHealing => '治疗';
+  String get metricMitigation => '阻挡';
+  String get metricEliminations => '消灭';
+  String get metricFinalBlows => '最后一击';
+  String get metricDeaths => '阵亡';
+  String perTen(String v) => '$v /10分';
+  String percentile(int p) => '第 $p 百分位';
+  String get bandPoor => '后 10%';
+  String get bandSubpar => '偏低';
+  String get bandAverage => '中游';
+  String get bandGood => '偏高';
+  String get bandGreat => '前 10%';
+  String peerRow(
+    String metric,
+    String value,
+    int p,
+    String band,
+    String median,
+  ) => '$metric：$value，第 $p 百分位（$band），同侪中位数 $median';
+  String peerMedian(String v) => '同侪中位数 $v';
+  String get anyRank => '不限段位';
+  String tierRange(String low, String high) => low == high ? low : '$low–$high';
+  String peerSource(String band, String hero, int peers, int stored) =>
+      '基准：$band的$hero，$peers 场其他玩家的对局，来自本机已存的 $stored 场对局。样本只包含在这里查询过的玩家所在的对局，不代表全服。';
+
+  /// Under a per-match average: the provider's server-wide figure.
+  String serverAverage(String v) => '全服平均 $v';
 }

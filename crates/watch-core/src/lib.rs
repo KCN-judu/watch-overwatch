@@ -1,4 +1,5 @@
 pub mod analysis;
+pub mod benchmark;
 mod cache;
 mod catalog;
 pub mod collect;

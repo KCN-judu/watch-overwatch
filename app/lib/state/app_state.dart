@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../core/api.dart';
+import '../core/benchmark.dart';
 import '../core/export_file.dart';
 import '../core/models.dart';
 import '../core/overview.dart';
@@ -62,6 +63,7 @@ class PlayerWorkspace extends ChangeNotifier {
   final trend = <Mode, Load<List<SeasonPoint>>>{};
   final growth = <Mode, Load<GrowthResult>>{};
   final overview = <Mode, Load<OverviewResult>>{};
+  final benchmark = <Mode, Load<BenchmarkResult>>{};
   final strength = <Mode, Load<StrengthResult>>{};
   final _strengthCancel = <Mode, CancelToken>{};
 
@@ -122,6 +124,8 @@ class PlayerWorkspace extends ChangeNotifier {
   Load<List<SeasonPoint>> trendFor(Mode m) => trend.putIfAbsent(m, Load.new);
   Load<GrowthResult> growthFor(Mode m) => growth.putIfAbsent(m, Load.new);
   Load<OverviewResult> overviewFor(Mode m) => overview.putIfAbsent(m, Load.new);
+  Load<BenchmarkResult> benchmarkFor(Mode m) =>
+      benchmark.putIfAbsent(m, Load.new);
   Load<StrengthResult> strengthFor(Mode m) => strength.putIfAbsent(m, Load.new);
   MatchFilters filtersFor(Mode m) => filters.putIfAbsent(m, MatchFilters.new);
   int strengthCount(Mode m) => strengthDetails[m] ?? 10;
@@ -396,6 +400,14 @@ class PlayerWorkspace extends ChangeNotifier {
   /// every match-list update, so it always matches the list.
   Future<void> loadOverview(Mode mode) =>
       _run(overviewFor(mode), () => _call((s) => app.api.overview(s, mode)));
+
+  /// Peer benchmarks (no upstream request); read once per mode while the app runs, and
+  /// again with [fresh] (after more matches are stored).
+  Future<void> loadBenchmark(Mode mode, {bool fresh = false}) {
+    final l = benchmarkFor(mode);
+    if (!fresh && (l.has || l.loading)) return Future.value();
+    return _run(l, () => _call((s) => app.api.benchmark(s, mode)));
+  }
 
   /// What the strength analysis is doing before the service starts (reading more of the
   /// match list), and how many matches it chose.

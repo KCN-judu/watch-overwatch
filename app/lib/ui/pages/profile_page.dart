@@ -98,7 +98,7 @@ class ProfilePage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: Sp.betweenSections),
-        _Recent(rows: data.matches, mode: mode),
+        _Recent(rows: data.matches, mode: mode, server: career?.serverAverage),
         const SizedBox(height: Sp.betweenSections),
         Semantics(
           header: true,
@@ -315,7 +315,10 @@ class _FactCard extends StatelessWidget {
 /// Averages over the matches that were read. The match list no longer carries these:
 /// the list is for recognising a match, this is for judging recent form.
 class _Recent extends StatelessWidget {
-  const _Recent({required this.rows, required this.mode});
+  const _Recent({required this.rows, required this.mode, this.server});
+
+  /// The server-wide average per match, shown under the player's own.
+  final StatLine? server;
   final List<MatchSummary> rows;
   final Mode mode;
   @override
@@ -323,6 +326,8 @@ class _Recent extends StatelessWidget {
     final c = context.c;
     final a = Agg(rows);
     String mean(String f) => a.mean[f] == null ? missing : fmtInt(a.mean[f]);
+    String? serverNote(double? v) =>
+        v == null ? null : tr.heroes.serverAverage(fmtInt(v));
     String? partial(String f) => a.mean[f] != null && a.samples[f]! < a.matches
         ? 'n=${a.samples[f]}'
         : null;
@@ -366,19 +371,19 @@ class _Recent extends StatelessWidget {
               KpiTile(
                 tr.heroes.avgDamage,
                 mean('damage'),
-                note: partial('damage'),
+                note: partial('damage') ?? serverNote(server?.damage),
                 color: c.statDamage,
               ),
               KpiTile(
                 tr.heroes.avgHealing,
                 mean('healing'),
-                note: partial('healing'),
+                note: partial('healing') ?? serverNote(server?.healing),
                 color: c.statHealing,
               ),
               KpiTile(
                 tr.heroes.avgMitigation,
                 mean('mitigation'),
-                note: partial('mitigation'),
+                note: partial('mitigation') ?? serverNote(server?.mitigation),
                 color: c.statMitigation,
               ),
             ],

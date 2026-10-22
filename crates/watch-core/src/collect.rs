@@ -689,24 +689,30 @@ pub fn match_prepared(
 /// Fills each participant's `career_rank` from the ranks stored for lobby strength, by the
 /// same rule the analysis uses ([`PlayerRating::rating_for`]), without any request:
 /// players nobody has looked up stay without one.
-pub fn attach_career_ranks(detail: &mut MatchDetail, cache: &dyn StrengthCache, current: u32) {
+/// A player's ranks as stored locally: this season's, and the one before for roles this
+/// season has none in. Nothing is asked of the provider.
+pub fn stored_rating(cache: &dyn StrengthCache, bnet_id: &str, current: u32) -> PlayerRating {
     let previous = current.checked_sub(1).filter(|s| *s > 0);
+    let mut roles = Vec::new();
+    for season in std::iter::once(current).chain(previous) {
+        if let Some(rows) = cache.season_ratings(bnet_id, season) {
+            merge_ratings(&mut roles, rows, season, current);
+        }
+    }
+    PlayerRating {
+        bnet_id: bnet_id.to_owned(),
+        name: None,
+        roles,
+    }
+}
+
+pub fn attach_career_ranks(detail: &mut MatchDetail, cache: &dyn StrengthCache, current: u32) {
     for p in detail.allies.iter_mut().chain(detail.enemies.iter_mut()) {
         let ranked = p.rank.as_ref().is_some_and(|r| r.skill_rating.is_some());
         let (Some(id), false) = (p.bnet_id.as_deref(), ranked) else {
             continue;
         };
-        let mut roles = Vec::new();
-        for season in std::iter::once(current).chain(previous) {
-            if let Some(rows) = cache.season_ratings(id, season) {
-                merge_ratings(&mut roles, rows, season, current);
-            }
-        }
-        let player = PlayerRating {
-            bnet_id: id.to_owned(),
-            name: None,
-            roles,
-        };
+        let player = stored_rating(cache, id, current);
         match player.rating_for(p.role) {
             Some((_, RatingFit::SameRole)) => {
                 p.career_rank = player.for_role(p.role).map(|r| r.rank.clone());
