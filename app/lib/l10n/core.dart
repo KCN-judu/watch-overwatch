@@ -79,6 +79,7 @@ class CoreStrings {
   String get tabOverview => '概览';
   String get tabMatches => '对局';
   String get tabHeroes => '英雄';
+  String get tabMaps => '地图';
   String get tabStrength => '对局强度';
   String get tabGrowth => '成长';
   String get tabTrend => '赛季走势';

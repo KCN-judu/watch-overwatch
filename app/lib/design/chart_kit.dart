@@ -108,6 +108,7 @@ class IntervalRow {
     this.leading,
     this.enough = true,
     this.onTap,
+    this.selected = false,
   });
   final String label;
   final double value;
@@ -122,6 +123,9 @@ class IntervalRow {
 
   /// Drill down (filter the match list to this map, open this hero).
   final VoidCallback? onTap;
+
+  /// The row whose details are shown beside the bars.
+  final bool selected;
 }
 
 /// Horizontal bars from zero, one per thing compared (maps, heroes), with the plausible
@@ -259,6 +263,7 @@ class IntervalBars extends StatelessWidget {
     return Pressable(
       onTap: r.onTap,
       semanticLabel: spoken,
+      selected: r.selected,
       radius: 0,
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: body,

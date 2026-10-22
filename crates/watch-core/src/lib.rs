@@ -10,6 +10,7 @@ mod export;
 pub mod growth;
 pub mod insights;
 pub mod ir;
+pub mod maps;
 pub mod progress;
 mod report;
 mod scheduler;

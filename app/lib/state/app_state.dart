@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../core/api.dart';
 import '../core/benchmark.dart';
+import '../core/maps.dart';
 import '../core/export_file.dart';
 import '../core/models.dart';
 import '../core/overview.dart';
@@ -33,6 +34,7 @@ const tabIds = [
   'overview',
   'matches',
   'heroes',
+  'maps',
   'strength',
   'growth',
   'trend',
@@ -42,6 +44,7 @@ Map<String, String> get tabLabels => {
   'overview': tr.core.tabOverview,
   'matches': tr.core.tabMatches,
   'heroes': tr.core.tabHeroes,
+  'maps': tr.core.tabMaps,
   'strength': tr.core.tabStrength,
   'growth': tr.core.tabGrowth,
   'trend': tr.core.tabTrend,
@@ -64,6 +67,7 @@ class PlayerWorkspace extends ChangeNotifier {
   final growth = <Mode, Load<GrowthResult>>{};
   final overview = <Mode, Load<OverviewResult>>{};
   final benchmark = <Mode, Load<BenchmarkResult>>{};
+  final maps = <Mode, Load<MapsResult>>{};
   final strength = <Mode, Load<StrengthResult>>{};
   final _strengthCancel = <Mode, CancelToken>{};
 
@@ -124,6 +128,7 @@ class PlayerWorkspace extends ChangeNotifier {
   Load<List<SeasonPoint>> trendFor(Mode m) => trend.putIfAbsent(m, Load.new);
   Load<GrowthResult> growthFor(Mode m) => growth.putIfAbsent(m, Load.new);
   Load<OverviewResult> overviewFor(Mode m) => overview.putIfAbsent(m, Load.new);
+  Load<MapsResult> mapsFor(Mode m) => maps.putIfAbsent(m, Load.new);
   Load<BenchmarkResult> benchmarkFor(Mode m) =>
       benchmark.putIfAbsent(m, Load.new);
   Load<StrengthResult> strengthFor(Mode m) => strength.putIfAbsent(m, Load.new);
@@ -266,9 +271,10 @@ class PlayerWorkspace extends ChangeNotifier {
     // The overview is worked out from the stored list: follow it when it changes.
     unawaited(
       next.then((_) {
-        if (app.tab == 'overview' && app.current == this && app.mode == mode) {
-          return loadOverview(mode);
-        }
+        if (app.current != this || app.mode != mode) return null;
+        if (app.tab == 'overview') return loadOverview(mode);
+        if (app.tab == 'maps') return loadMaps(mode);
+        return null;
       }),
     );
     return next;
@@ -400,6 +406,10 @@ class PlayerWorkspace extends ChangeNotifier {
   /// every match-list update, so it always matches the list.
   Future<void> loadOverview(Mode mode) =>
       _run(overviewFor(mode), () => _call((s) => app.api.overview(s, mode)));
+
+  /// Maps by mode type, from the stored list like the overview, and followed the same way.
+  Future<void> loadMaps(Mode mode) =>
+      _run(mapsFor(mode), () => _call((s) => app.api.maps(s, mode)));
 
   /// Peer benchmarks (no upstream request); read once per mode while the app runs, and
   /// again with [fresh] (after more matches are stored).
@@ -988,6 +998,7 @@ class AppState extends ChangeNotifier {
     }
     if (tab == 'growth') jobs.add(ws.loadGrowth(mode));
     if (tab == 'overview') jobs.add(ws.loadOverview(mode));
+    if (tab == 'maps') jobs.add(ws.loadMaps(mode));
     await Future.wait(jobs);
   }
 
@@ -1002,6 +1013,7 @@ class AppState extends ChangeNotifier {
     if (tab == 'trend') jobs.add(ws.loadTrend(mode, fresh: true));
     if (tab == 'growth') jobs.add(ws.loadGrowth(mode));
     if (tab == 'overview') jobs.add(ws.loadOverview(mode));
+    if (tab == 'maps') jobs.add(ws.loadMaps(mode));
     // The refresh button only looks for new matches. Looking every player's rank up
     // again is a few hundred requests, so it stays with "强制刷新" on the strength page.
     if (tab == 'strength' && ws.strengthFor(mode).has) {

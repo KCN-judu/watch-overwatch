@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../l10n/strings.dart';
 import 'benchmark.dart';
+import 'maps.dart';
 import 'models.dart';
 import 'overview.dart';
 
@@ -267,6 +268,11 @@ class Api {
   }
 
   /// Peer benchmarks for the player's heroes, from every match stored locally.
+  /// Maps by mode type, from the stored match list (no upstream request).
+  Future<MapsResult> maps(String session, Mode mode) async => MapsResult(
+    await post('/api/player/maps', {'session': session, 'mode': mode.id}),
+  );
+
   Future<BenchmarkResult> benchmark(String session, Mode mode) async =>
       BenchmarkResult(
         await post('/api/player/benchmark', {
