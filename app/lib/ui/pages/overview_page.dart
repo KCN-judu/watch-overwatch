@@ -12,6 +12,7 @@ import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
+import 'player_compare.dart';
 
 /// One screen about one player, answer first (docs/ui-design.md §11, the skill's
 /// visual-direction.md): a headline band over their most-played hero's banner with the
@@ -112,6 +113,8 @@ class OverviewPage extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: Sp.betweenSections),
+        PlayerCompareSection(workspace: ws, mode: mode, mine: result),
       ],
     );
   }

@@ -572,44 +572,59 @@ class StatusBanner extends StatelessWidget {
         title,
         detail,
       ),
+      // One border colour all round (rounded corners need it); the severity is a bar
+      // down the left inside it.
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: c.raised,
           borderRadius: BorderRadius.circular(Radii.container),
-          border: Border(
-            left: BorderSide(color: color, width: 3),
-            top: BorderSide(color: c.border),
-            right: BorderSide(color: c.border),
-            bottom: BorderSide(color: c.border),
-          ),
+          border: Border.all(color: c.border),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Ty.bodyStrong.copyWith(color: c.textPrimary),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 3, color: color),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
                   ),
-                  if (detail != null)
-                    Text(
-                      detail!,
-                      style: Ty.body.copyWith(color: c.textSecondary),
-                    ),
-                ],
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(icon, size: 18, color: color),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: Ty.bodyStrong.copyWith(
+                                color: c.textPrimary,
+                              ),
+                            ),
+                            if (detail != null)
+                              Text(
+                                detail!,
+                                style: Ty.body.copyWith(color: c.textSecondary),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (actions.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        Wrap(spacing: 8, children: actions),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-            if (actions.isNotEmpty) ...[
-              const SizedBox(width: 12),
-              Wrap(spacing: 8, children: actions),
             ],
-          ],
+          ),
         ),
       ),
     );

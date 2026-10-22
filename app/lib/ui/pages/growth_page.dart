@@ -135,6 +135,9 @@ class _GrowthPageState extends State<GrowthPage> {
   /// The role the page is about; null for all of them together.
   Role? _role;
 
+  /// The latest stretch against the one before it, match by match.
+  bool _compare = false;
+
   /// The match pointed at in any chart: every chart shows the same one, as they all run
   /// over the same matches.
   final _cursor = ValueNotifier<int?>(null);
@@ -217,6 +220,14 @@ class _GrowthPageState extends State<GrowthPage> {
                   for (final r in roles) Segment<Role?>(r, r.label),
                 ],
               ),
+            AppButton(
+              tr.compare.compareTime,
+              icon: Icons.compare_arrows,
+              quiet: !_compare,
+              primary: _compare,
+              tooltip: tr.compare.compareTimeTip,
+              onPressed: () => setState(() => _compare = !_compare),
+            ),
             LoadStatusBar(
               compact: true,
               at: load.at,
@@ -259,7 +270,10 @@ class _GrowthPageState extends State<GrowthPage> {
           const SizedBox(height: Sp.betweenSections),
           SectionHeader(m.title, accent: c.accent, info: m.info),
           const SizedBox(height: Sp.withinGroup + 2),
-          _MeasureChart(m, points, sync: _cursor),
+          if (_compare)
+            _CompareChart(m, points, sync: _cursor)
+          else
+            _MeasureChart(m, points, sync: _cursor),
         ],
         const SizedBox(height: Sp.betweenSections),
       ],
@@ -428,6 +442,92 @@ class _MeasureChart extends StatelessWidget {
                 average: m.format(average.whereType<double>().last),
               ),
       ),
+    );
+  }
+}
+
+/// The latest stretch of matches against the same number just before it, aligned by
+/// position (first match of each, second …), with both means and the difference.
+class _CompareChart extends StatelessWidget {
+  const _CompareChart(this.m, this.points, {required this.sync});
+  final ValueNotifier<int?> sync;
+  final _Measure m;
+  final List<GrowthPoint> points;
+
+  /// Matches per stretch: half the matches, at most 30.
+  static int stretch(int matches) => (matches ~/ 2).clamp(0, 30);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final n = stretch(points.length);
+    if (n < 5) {
+      return Text(
+        tr.compare.timeTooFew,
+        style: Ty.body.copyWith(color: c.textSecondary),
+      );
+    }
+    final recent = points.sublist(points.length - n);
+    final earlier = points.sublist(points.length - 2 * n, points.length - n);
+    final now = [for (final p in recent) m.value(p)];
+    final before = [for (final p in earlier) m.value(p)];
+    double? mean(List<double?> v) {
+      final k = v.whereType<double>();
+      return k.isEmpty ? null : k.reduce((a, b) => a + b) / k.length;
+    }
+
+    final a = mean(now), b = mean(before);
+    final String diff;
+    if (a == null || b == null) {
+      diff = '';
+    } else if (m.format(a) == m.format(b)) {
+      diff = tr.compare.same;
+    } else {
+      diff = tr.compare.diffWord(
+        a > b ? tr.compare.higher : tr.compare.lower,
+        m.format((a - b).abs()),
+      );
+    }
+    final summary = a == null || b == null
+        ? tr.analysis.chartEmpty(m.title)
+        : tr.compare.timeDiff(
+            m.format(a),
+            m.format(b),
+            diff,
+            now.whereType<double>().length,
+            before.whereType<double>().length,
+          );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(summary, style: Ty.body),
+        const SizedBox(height: Sp.withinControl),
+        Panel(
+          padding: PanelPadding.chart,
+          child: LineChart(
+            sync: sync,
+            height: 220,
+            yMin: 0,
+            series: [
+              ChartSeries(
+                label: tr.compare.recentStretch(n),
+                color: c.accent,
+                values: now,
+              ),
+              ChartSeries(
+                label: tr.compare.earlierStretch(n),
+                color: c.textSecondary,
+                values: before,
+                dashed: true,
+              ),
+            ],
+            xLabels: [for (var i = 0; i < n; i++) tr.compare.nth(i + 1)],
+            valueFormat: m.format,
+            axisFormat: m.axisFormat,
+            summary: summary,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:watch_overwatch/design/cards.dart';
 import 'package:watch_overwatch/design/tokens.dart';
+import 'package:watch_overwatch/design/widgets.dart';
 
 Widget host(Widget child) => MaterialApp(
   theme: ThemeData(extensions: [AppColors.dark]),
@@ -80,5 +81,24 @@ void main() {
     await tester.tap(find.text('每 10 分钟'));
     await tester.pump();
     expect(find.text('内容'), findsOneWidget);
+  });
+
+  testWidgets('a status banner of every severity paints', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(extensions: [AppColors.dark]),
+        home: const Scaffold(
+          body: Column(
+            children: [
+              StatusBanner(severity: Severity.info, title: '提示'),
+              StatusBanner(severity: Severity.warning, title: '注意'),
+              StatusBanner(severity: Severity.error, title: '出错', detail: '详情'),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.text('注意'), findsOneWidget);
   });
 }
