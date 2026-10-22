@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../l10n/strings.dart';
 import 'benchmark.dart';
 import 'maps.dart';
+import 'stadium.dart';
 import 'models.dart';
 import 'overview.dart';
 
@@ -272,6 +273,15 @@ class Api {
   Future<MapsResult> maps(String session, Mode mode) async => MapsResult(
     await post('/api/player/maps', {'session': session, 'mode': mode.id}),
   );
+
+  /// Stadium builds per hero, from the stored Stadium matches (no upstream request).
+  Future<StadiumResult> stadium(String session, BuildSample scope) async =>
+      StadiumResult(
+        await post('/api/player/stadium', {
+          'session': session,
+          'scope': scope.id,
+        }),
+      );
 
   Future<BenchmarkResult> benchmark(String session, Mode mode) async =>
       BenchmarkResult(

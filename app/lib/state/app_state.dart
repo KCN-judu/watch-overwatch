@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/benchmark.dart';
 import '../core/maps.dart';
+import '../core/stadium.dart';
 import '../core/export_file.dart';
 import '../core/models.dart';
 import '../core/overview.dart';
@@ -68,6 +69,7 @@ class PlayerWorkspace extends ChangeNotifier {
   final overview = <Mode, Load<OverviewResult>>{};
   final benchmark = <Mode, Load<BenchmarkResult>>{};
   final maps = <Mode, Load<MapsResult>>{};
+  final stadium = <BuildSample, Load<StadiumResult>>{};
   final strength = <Mode, Load<StrengthResult>>{};
   final _strengthCancel = <Mode, CancelToken>{};
 
@@ -129,6 +131,8 @@ class PlayerWorkspace extends ChangeNotifier {
   Load<GrowthResult> growthFor(Mode m) => growth.putIfAbsent(m, Load.new);
   Load<OverviewResult> overviewFor(Mode m) => overview.putIfAbsent(m, Load.new);
   Load<MapsResult> mapsFor(Mode m) => maps.putIfAbsent(m, Load.new);
+  Load<StadiumResult> stadiumFor(BuildSample s) =>
+      stadium.putIfAbsent(s, Load.new);
   Load<BenchmarkResult> benchmarkFor(Mode m) =>
       benchmark.putIfAbsent(m, Load.new);
   Load<StrengthResult> strengthFor(Mode m) => strength.putIfAbsent(m, Load.new);
@@ -410,6 +414,14 @@ class PlayerWorkspace extends ChangeNotifier {
   /// Maps by mode type, from the stored list like the overview, and followed the same way.
   Future<void> loadMaps(Mode mode) =>
       _run(mapsFor(mode), () => _call((s) => app.api.maps(s, mode)));
+
+  /// Stadium builds (no upstream request); read once per scope while the app runs, and
+  /// again with [fresh].
+  Future<void> loadStadium(BuildSample scope, {bool fresh = false}) {
+    final l = stadiumFor(scope);
+    if (!fresh && (l.has || l.loading)) return Future.value();
+    return _run(l, () => _call((s) => app.api.stadium(s, scope)));
+  }
 
   /// Peer benchmarks (no upstream request); read once per mode while the app runs, and
   /// again with [fresh] (after more matches are stored).

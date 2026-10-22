@@ -243,4 +243,23 @@ class HeroStrings {
 
   /// Under a per-match average: the provider's server-wide figure.
   String serverAverage(String v) => '全服平均 $v';
+
+  // Stadium builds (hero detail, Stadium mode).
+  String get buildsTitle => '构筑';
+  String get buildsTip =>
+      '这个英雄在本机已存的角斗领域对局里，各个异能和物品被选了多少、选了之后赢了多少。横条是胜率，细线是可能的范围。少于 5 场的条目变灰，排在后面，不参与比较。点一行列出该玩家用它的对局。';
+  String get scopeOwn => '该玩家';
+  String get scopeEveryone => '本机所有玩家';
+  String buildsSource(int n, int own, int stored) => own == n
+      ? '$n 场该玩家的对局，来自本机已存的 $stored 场角斗领域对局。'
+      : '$n 个玩家对局（其中该玩家 $own 场），来自本机已存的 $stored 场角斗领域对局。样本只包含在这里查询过的玩家所在的对局，不代表全服。';
+  String get buildsNone => '本机还没有这个英雄的角斗领域对局详情。打开几场对局的详情后，这里会统计构筑。';
+  String get buildsPowers => '异能';
+  String get buildsItems => '物品';
+  String get buildsSets => '常用异能组合';
+  String roundTag(int r) => '第 $r 回合';
+  String pickRate(String rate) => '选取率 $rate';
+  String get noOwnMatches => '该玩家没有用它的已存对局。';
+  String ownMatches(int n) => '该玩家用它的 $n 场对局';
+  String get hideMatches => '收起';
 }

@@ -306,7 +306,7 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
             collect::attach_career_ranks(&mut detail, store.as_ref(), current);
         }
         analysis::attach_fleta(&mut detail);
-        view.ir = json!(detail);
+        view.ir = detail_json(&detail);
         view.extra.insert("cached".into(), json!(true));
         view.extra.insert(
             "ratings_pending".into(),
@@ -366,7 +366,7 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
                     );
                 }
             }
-            json!(shown)
+            detail_json(&shown)
         }
         "card" => json!(normalize::profile(raw)),
         "heroes" => json!(normalize::player_hero_board(raw, cat)),
@@ -1071,6 +1071,56 @@ pub(crate) async fn player_maps(
     match result {
         Ok(v) => Json(v).into_response(),
         Err(_) => fail(error("internal", "地图统计失败。 ")).into_response(),
+    }
+}
+
+/// A match detail as the app reads it: the IR, plus a Stadium match round by round.
+fn detail_json(detail: &MatchDetail) -> Value {
+    let mut v = json!(detail);
+    if detail.mode == Mode::Stadium {
+        v["stadium_timeline"] = json!(watch_core::stadium::timeline(detail));
+    }
+    v
+}
+
+#[derive(Deserialize)]
+pub(crate) struct StadiumInput {
+    session: String,
+    #[serde(default = "own_scope")]
+    scope: watch_core::stadium::Scope,
+}
+
+fn own_scope() -> watch_core::stadium::Scope {
+    watch_core::stadium::Scope::Own
+}
+
+/// Stadium builds per hero (see [`watch_core::stadium`]), from the stored Stadium details:
+/// the player's own, or everyone in them. No upstream request.
+pub(crate) async fn player_stadium(
+    State(s): State<AppState>,
+    Json(input): Json<StadiumInput>,
+) -> Response {
+    let player = match session(&s, &input.session, "玩家会话已过期，请重新查找玩家。 ").await
+    {
+        Ok(p) => p,
+        Err(e) => return fail(e).into_response(),
+    };
+    let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
+        return Json(json!({"enabled":false})).into_response();
+    };
+    let result = tokio::task::spawn_blocking(move || {
+        let details: Vec<MatchDetail> = store
+            .all_details()
+            .into_iter()
+            .filter(|d| d.mode == Mode::Stadium)
+            .collect();
+        let view = watch_core::stadium::stadium(&details, &subject, input.scope);
+        json!({"enabled": true, "stadium": view})
+    })
+    .await;
+    match result {
+        Ok(v) => Json(v).into_response(),
+        Err(_) => fail(error("internal", "角斗领域构筑统计失败。 ")).into_response(),
     }
 }
 

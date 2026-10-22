@@ -14,6 +14,7 @@ pub mod maps;
 pub mod progress;
 mod report;
 mod scheduler;
+pub mod stadium;
 pub mod stats;
 pub mod strength;
 pub use cache::{CachedDetail, ListKey, MemoryCache, RATINGS_TTL, StoredList, StrengthCache};

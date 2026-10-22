@@ -106,6 +106,7 @@ class MatchStrings {
   String statsAllUnnamed(int n) => '本场 $n 项统计，目录里还没有它们的名称。';
   String statsSomeUnnamed(int n) => '另有 $n 项统计目录里没有名称，未显示。';
   String get rounds => '回合';
+  String get timelineTip => '每回合左侧是该回合的胜负，右侧是该玩家这一回合新选的异能和物品。';
   String round(int i, String score, String clock) => '第 $i 回合  $score  $clock';
 
   // ---- team_table ----

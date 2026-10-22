@@ -1,6 +1,7 @@
 // Dart mirror of `watch-core::ir`. Field names follow the Rust serde output
 // (snake_case). Missing or malformed values become null, never zero.
 import '../l10n/strings.dart';
+import 'stadium.dart';
 
 typedef Json = Map<String, dynamic>;
 
@@ -434,7 +435,8 @@ class MatchDetail {
       subjectHeroes = _list(j['subject_heroes'], HeroSegment.new),
       allies = _list(j['allies'], Participant.new),
       enemies = _list(j['enemies'], Participant.new),
-      rounds = _list(j['rounds'], Round.new);
+      rounds = _list(j['rounds'], Round.new),
+      stadiumTimeline = _list(j['stadium_timeline'], RoundStep.new);
   final String id;
 
   /// The players' ranks are not all looked up yet; the table is shown first and filled
@@ -451,6 +453,9 @@ class MatchDetail {
   final List<HeroSegment> subjectHeroes;
   final List<Participant> allies, enemies;
   final List<Round> rounds;
+
+  /// Stadium: what the player took round by round, and how each round went.
+  final List<RoundStep> stadiumTimeline;
 }
 
 class PlayerProfile {

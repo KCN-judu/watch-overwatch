@@ -11,6 +11,7 @@ import '../../design/widgets.dart';
 import '../../state/app_state.dart';
 import '../../state/match_view.dart';
 import 'peer_bench.dart';
+import 'stadium_builds.dart';
 import '../../design/net_pic.dart';
 import '../../l10n/strings.dart';
 
@@ -123,12 +124,19 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
                   const SizedBox(height: Sp.betweenSections + 8),
                   _SeasonStats(hero: hero, accent: accent, recent: recent),
                   const SizedBox(height: Sp.betweenSections + 8),
-                  PeerBenchSection(
-                    workspace: ws,
-                    mode: app.mode,
-                    hero: hero.hero,
-                    accent: accent,
-                  ),
+                  if (app.mode == Mode.stadium)
+                    StadiumBuildsSection(
+                      workspace: ws,
+                      hero: hero.hero,
+                      accent: accent,
+                    )
+                  else
+                    PeerBenchSection(
+                      workspace: ws,
+                      mode: app.mode,
+                      hero: hero.hero,
+                      accent: accent,
+                    ),
                   const SizedBox(height: Sp.betweenSections + 8),
                   _Recent(
                     workspace: ws,
