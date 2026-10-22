@@ -117,7 +117,7 @@ class MatchStrings {
   String teamTotal(String team) => '$team合计';
 
   /// Badge next to the player being looked at.
-  String get subject => '查询对象';
+  String get subject => '该玩家';
   String get suspendedTip => '该玩家账号处于暂停状态';
   String get kdaTip => 'Kills / Assists / Deaths：消灭 / 助攻 / 阵亡';
   String get damageTip => '对英雄伤害。条形长度按全场 10 人的最大值';
@@ -162,7 +162,7 @@ class MatchStrings {
     String healing,
     String mitigation,
   ) =>
-      '$name，查询对象，$hero，$role，消灭$kills助攻$assists阵亡$deaths，'
+      '$name，该玩家，$hero，$role，消灭$kills助攻$assists阵亡$deaths，'
       '伤害$damage，治疗$healing，阻挡$mitigation';
   String get noParticipants => '没有参与者数据';
   String get noParticipantsBody => '上游没有返回这一方的名单。';

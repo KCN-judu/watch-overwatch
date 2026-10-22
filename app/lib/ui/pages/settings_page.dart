@@ -102,7 +102,9 @@ class _SettingsPageState extends State<SettingsPage> {
       await app.refreshServer();
       app.toast?.call(tr.shell.accountRemoved(name));
     } on ApiError catch (e) {
-      app.toast?.call(tr.shell.removeAccountFailed(e.message));
+      app.toast?.call(
+        tr.shell.removeAccountFailed(tr.shell.errorSentence(e.kind)),
+      );
     }
   }
 
@@ -250,7 +252,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 Padding(
                   padding: const EdgeInsets.only(top: Sp.withinGroup),
                   child: Text(
-                    tr.shell.saveFailed(_saveError!.message),
+                    tr.shell.saveFailed(
+                      tr.shell.errorSentence(_saveError!.kind),
+                    ),
                     style: Ty.body.copyWith(color: c.error),
                   ),
                 ),
