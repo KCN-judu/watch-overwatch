@@ -18,12 +18,17 @@ class ChartSeries {
     this.highs,
     this.counts,
     this.countNotes,
+    this.stepped = false,
   });
   final String label;
   final Color color;
   final List<double?>
   values; // null = no data: the line breaks, never drops to zero
   final bool dashed;
+
+  /// Holds each value until the next one (a rank stays until it changes), instead of
+  /// drawing a slope between them.
+  final bool stepped;
 
   /// Optional spread behind each value (lowest and highest of what the value
   /// averages), drawn as a vertical bar through the point.
@@ -41,6 +46,20 @@ class ChartSeries {
       i < highs!.length &&
       lows![i] != null &&
       highs![i] != null;
+}
+
+/// A shaded range behind the lines: what counts as usual (the player's own recent
+/// spread, a peer range). A point outside it is the one worth looking at.
+class ChartBand {
+  const ChartBand({
+    required this.lows,
+    required this.highs,
+    required this.meaning,
+  });
+  final List<double?> lows, highs;
+
+  /// Said under the chart: what the band is.
+  final String meaning;
 }
 
 /// Line chart with direct end labels, round-number ticks, quiet horizontal grid,
@@ -66,8 +85,17 @@ class LineChart extends StatefulWidget {
     this.tickStep,
     this.yMin,
     this.yMax,
+    this.band,
+    this.sync,
   });
   final List<ChartSeries> series;
+
+  /// Shaded behind the lines (see [ChartBand]); part of the axis range.
+  final ChartBand? band;
+
+  /// Shared by charts over the same x positions (the same matches): pointing at a
+  /// column in one shows that column in all of them.
+  final ValueNotifier<int?>? sync;
   final List<String> xLabels;
 
   /// Spoken description of the finding; also the semantics label.
@@ -111,7 +139,38 @@ class LineChart extends StatefulWidget {
 }
 
 class _LineChartState extends State<LineChart> {
-  int? _index;
+  int? _ownIndex;
+
+  /// The column the readout is about: this chart's own, or the one another chart
+  /// sharing [LineChart.sync] points at.
+  int? get _index => _ownIndex;
+  set _index(int? i) {
+    _ownIndex = i;
+    final sync = widget.sync;
+    if (sync != null && sync.value != i) sync.value = i;
+  }
+
+  void _followSync() {
+    final i = widget.sync?.value;
+    if (i != _ownIndex && mounted) {
+      setState(() => _ownIndex = i == null ? null : math.min(i, _n - 1));
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.sync?.addListener(_followSync);
+  }
+
+  @override
+  void didUpdateWidget(LineChart old) {
+    super.didUpdateWidget(old);
+    if (old.sync != widget.sync) {
+      old.sync?.removeListener(_followSync);
+      widget.sync?.addListener(_followSync);
+    }
+  }
 
   /// Which series the readout is about, when each series has its own detail.
   int _series = 0;
@@ -151,6 +210,7 @@ class _LineChartState extends State<LineChart> {
 
   @override
   void dispose() {
+    widget.sync?.removeListener(_followSync);
     _focus.dispose();
     super.dispose();
   }
@@ -166,6 +226,8 @@ class _LineChartState extends State<LineChart> {
         ...?s.lows?.whereType<double>(),
         ...?s.highs?.whereType<double>(),
       ],
+      ...?widget.band?.lows.whereType<double>(),
+      ...?widget.band?.highs.whereType<double>(),
     ];
     if (values.isEmpty || _n == 0) {
       return SizedBox(
@@ -285,6 +347,7 @@ class _LineChartState extends State<LineChart> {
                             seriesIndex: _perSeries ? _series : null,
                             countFormat: widget.countFormat,
                             notes: widget.pointNotes,
+                            band: widget.band,
                           ),
                         ),
                       ),
@@ -321,6 +384,11 @@ class _LineChartState extends State<LineChart> {
               if (widget.rangeMeaning != null)
                 Text(
                   widget.rangeMeaning!,
+                  style: Ty.meta.copyWith(color: c.textSecondary),
+                ),
+              if (widget.band != null)
+                Text(
+                  widget.band!.meaning,
                   style: Ty.meta.copyWith(color: c.textSecondary),
                 ),
               Text(
@@ -417,7 +485,9 @@ class _LinePainter extends CustomPainter {
     required this.seriesIndex,
     required this.countFormat,
     required this.notes,
+    required this.band,
   });
+  final ChartBand? band;
   final AppColors colors;
   final _Axis axis;
   final List<ChartSeries> series;
@@ -516,6 +586,33 @@ class _LinePainter extends CustomPainter {
         );
       }
     }
+    // The band: a quiet fill between its lows and highs, broken where either is unknown.
+    final b = band;
+    if (b != null) {
+      final fill = Paint()
+        ..color = colors.textSecondary.withValues(alpha: 0.14);
+      final n = math.min(b.lows.length, b.highs.length);
+      var i = 0;
+      while (i < n) {
+        if (b.lows[i] == null || b.highs[i] == null) {
+          i++;
+          continue;
+        }
+        final start = i;
+        while (i < n && b.lows[i] != null && b.highs[i] != null) {
+          i++;
+        }
+        final path = Path()..moveTo(g.x(start), y(b.highs[start]!));
+        for (var k = start + 1; k < i; k++) {
+          path.lineTo(g.x(k), y(b.highs[k]!));
+        }
+        for (var k = i - 1; k >= start; k--) {
+          path.lineTo(g.x(k), y(b.lows[k]!));
+        }
+        path.close();
+        canvas.drawPath(path, fill);
+      }
+    }
     // X labels: at most ~8, always including the last.
     final every = math.max(1, (xLabels.length / 8).ceil());
     for (var i = 0; i < xLabels.length; i++) {
@@ -592,18 +689,23 @@ class _LinePainter extends CustomPainter {
         run = null;
       }
 
+      double? lastY;
       for (var i = 0; i < s.values.length; i++) {
         final v = s.values[i];
         if (v == null) {
           flush();
+          lastY = null;
           continue;
         }
         final p = Offset(g.x(i) + dx, y(v));
         if (run == null) {
           run = Path()..moveTo(p.dx, p.dy);
         } else {
+          // A stepped line keeps the last value level until this column.
+          if (s.stepped && lastY != null) run!.lineTo(p.dx, lastY);
           run!.lineTo(p.dx, p.dy);
         }
+        lastY = p.dy;
       }
       flush();
       for (var i = 0; i < s.values.length; i++) {

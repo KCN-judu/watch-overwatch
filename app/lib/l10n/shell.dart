@@ -309,4 +309,26 @@ class ShellStrings {
   String get densityCompact => '紧凑';
   String get densityStandard => '标准';
   String get densityComfortable => '宽松';
+
+  // ---- design/chart_kit.dart ----
+
+  /// Monday first, as the calendar in China.
+  List<String> get weekdaysShort => const ['一', '二', '三', '四', '五', '六', '日'];
+  String hourTick(int h) => '$h';
+  String heatCell(String day, int hour, String value, int n) =>
+      '周$day $hour 点：$value，$n 场';
+  String heatCellTooFew(String day, int hour, int n) =>
+      '周$day $hour 点：$n 场，太少不计';
+  String get heatLegendLow => '低';
+  String get heatLegendHigh => '高';
+  String heatMeaning(String metric, int minN) =>
+      '颜色越深，$metric离中线越远；少于 $minN 场的格子不着色。';
+  String intervalRow(String label, String value, String range, int n) =>
+      '$label：$value（区间 $range），$n 场';
+  String intervalRowTooFew(String label, String value, int n) =>
+      '$label：$value，只有 $n 场，样本太少';
+  String intervalMeaning(String reference) =>
+      '横条是数值，细线是可能的范围（区间），竖线是$reference；灰色的条目场次太少，不参与比较。';
+  String sparkline(String label, String first, String last) =>
+      '$label：从 $first 到 $last';
 }
