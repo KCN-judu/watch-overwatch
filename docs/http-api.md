@@ -30,6 +30,7 @@ Invoke-RestMethod http://127.0.0.1:18180/api/player/growth -Method Post -Headers
 | `POST /api/player/search` | 查玩家，返回会话编号 |
 | `POST /api/player/view` | 某个视图，返回统一数据结构（IR），见下 |
 | `POST /api/player/dataset` | 完整数据集和分析；可带 `progress_id` |
+| `POST /api/player/overview` | 概览页：近 20 场与之前 20 场、今天 / 昨天 / 近 7 天、按英雄 / 地图 / 职责的战绩（带胜率区间）、星期 × 小时、最近的连续游戏、最近 20 场、几条有把握的发现；只用本机已存的对局列表 |
 | `POST /api/player/growth` | 成长面板：逐局的存活时长、Fleta、KDA、治疗量、阻挡量和各指标的走势（整体和分职责） |
 | `POST /api/player/stored` | 本机已有的某个名字的对局列表和最近的玩家资料，不发任何上游请求 |
 | `POST /api/player/prepare` | 把已读取的对局里还没准备好的，每次取一小批：读详情并（可选）查参与者段位，存进本机 |

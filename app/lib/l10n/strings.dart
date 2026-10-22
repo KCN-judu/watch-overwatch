@@ -21,6 +21,7 @@ import 'common.dart';
 import 'core.dart';
 import 'heroes.dart';
 import 'matches.dart';
+import 'overview.dart';
 import 'shell.dart';
 
 export 'analysis.dart';
@@ -28,6 +29,7 @@ export 'common.dart';
 export 'core.dart';
 export 'heroes.dart';
 export 'matches.dart';
+export 'overview.dart';
 export 'shell.dart';
 
 class Strings {
@@ -47,6 +49,9 @@ class Strings {
 
   /// Heroes list, hero detail and profile pages.
   HeroStrings get heroes => const HeroStrings();
+
+  /// The overview page.
+  OverviewStrings get overview => const OverviewStrings();
 
   /// Match list, match detail, team tables and the player card.
   MatchStrings get matches => const MatchStrings();

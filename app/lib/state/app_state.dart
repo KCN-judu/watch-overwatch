@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/export_file.dart';
 import '../core/models.dart';
+import '../core/overview.dart';
 import '../core/stats.dart';
 import '../core/support.dart';
 import '../design/tokens.dart';
@@ -27,8 +28,17 @@ class Load<T> {
 
 enum BackendStatus { starting, ready, offline }
 
-const tabIds = ['matches', 'heroes', 'strength', 'growth', 'trend', 'profile'];
+const tabIds = [
+  'overview',
+  'matches',
+  'heroes',
+  'strength',
+  'growth',
+  'trend',
+  'profile',
+];
 Map<String, String> get tabLabels => {
+  'overview': tr.core.tabOverview,
   'matches': tr.core.tabMatches,
   'heroes': tr.core.tabHeroes,
   'strength': tr.core.tabStrength,
@@ -51,6 +61,7 @@ class PlayerWorkspace extends ChangeNotifier {
   final competitive = Load<CareerSnapshot>();
   final trend = <Mode, Load<List<SeasonPoint>>>{};
   final growth = <Mode, Load<GrowthResult>>{};
+  final overview = <Mode, Load<OverviewResult>>{};
   final strength = <Mode, Load<StrengthResult>>{};
   final _strengthCancel = <Mode, CancelToken>{};
 
@@ -110,6 +121,7 @@ class PlayerWorkspace extends ChangeNotifier {
   Load<PlayerDataset> matchesFor(Mode m) => matches.putIfAbsent(m, Load.new);
   Load<List<SeasonPoint>> trendFor(Mode m) => trend.putIfAbsent(m, Load.new);
   Load<GrowthResult> growthFor(Mode m) => growth.putIfAbsent(m, Load.new);
+  Load<OverviewResult> overviewFor(Mode m) => overview.putIfAbsent(m, Load.new);
   Load<StrengthResult> strengthFor(Mode m) => strength.putIfAbsent(m, Load.new);
   MatchFilters filtersFor(Mode m) => filters.putIfAbsent(m, MatchFilters.new);
   int strengthCount(Mode m) => strengthDetails[m] ?? 10;
@@ -247,6 +259,14 @@ class PlayerWorkspace extends ChangeNotifier {
       (_) => _readList(mode, fresh, quota, roles),
     );
     _listSync[mode] = next;
+    // The overview is worked out from the stored list: follow it when it changes.
+    unawaited(
+      next.then((_) {
+        if (app.tab == 'overview' && app.current == this && app.mode == mode) {
+          return loadOverview(mode);
+        }
+      }),
+    );
     return next;
   }
 
@@ -371,6 +391,11 @@ class PlayerWorkspace extends ChangeNotifier {
   /// so it is read again whenever the tab is shown.
   Future<void> loadGrowth(Mode mode) =>
       _run(growthFor(mode), () => _call((s) => app.api.growth(s, mode)));
+
+  /// The overview, from the stored match list (no upstream request): read again after
+  /// every match-list update, so it always matches the list.
+  Future<void> loadOverview(Mode mode) =>
+      _run(overviewFor(mode), () => _call((s) => app.api.overview(s, mode)));
 
   /// What the strength analysis is doing before the service starts (reading more of the
   /// match list), and how many matches it chose.
@@ -660,7 +685,7 @@ class PlayerWorkspace extends ChangeNotifier {
 class AppState extends ChangeNotifier {
   AppState(this.backend, this.ui)
     : mode = Mode.parse(ui.mode),
-      tab = tabIds.contains(ui.tab) ? ui.tab : 'matches',
+      tab = tabIds.contains(ui.tab) ? ui.tab : 'overview',
       density = DensityMode.parse(ui.density),
       themeMode =
           {'light': ThemeMode.light, 'dark': ThemeMode.dark}[ui.theme] ??
@@ -935,6 +960,7 @@ class AppState extends ChangeNotifier {
       if (!t.has && !t.loading) jobs.add(ws.loadTrend(mode));
     }
     if (tab == 'growth') jobs.add(ws.loadGrowth(mode));
+    if (tab == 'overview') jobs.add(ws.loadOverview(mode));
     await Future.wait(jobs);
   }
 
@@ -948,6 +974,7 @@ class AppState extends ChangeNotifier {
     ];
     if (tab == 'trend') jobs.add(ws.loadTrend(mode, fresh: true));
     if (tab == 'growth') jobs.add(ws.loadGrowth(mode));
+    if (tab == 'overview') jobs.add(ws.loadOverview(mode));
     // The refresh button only looks for new matches. Looking every player's rank up
     // again is a few hundred requests, so it stays with "强制刷新" on the strength page.
     if (tab == 'strength' && ws.strengthFor(mode).has) {

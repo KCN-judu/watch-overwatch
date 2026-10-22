@@ -76,6 +76,7 @@ class CoreStrings {
 
   // ---- state/app_state.dart ----
 
+  String get tabOverview => '概览';
   String get tabMatches => '对局';
   String get tabHeroes => '英雄';
   String get tabStrength => '对局强度';

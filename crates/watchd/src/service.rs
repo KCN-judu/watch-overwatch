@@ -962,6 +962,42 @@ pub(crate) async fn player_growth(
     .into_response()
 }
 
+/// The overview page (see [`analysis::overview`]) from the player's stored match list:
+/// no request goes to the upstream, so it is there at once and works offline. `listed`
+/// says how many matches it covers.
+pub(crate) async fn player_overview(
+    State(s): State<AppState>,
+    Json(input): Json<GrowthInput>,
+) -> Response {
+    let Some(mode) = Mode::parse(&input.mode) else {
+        return fail(error("validation", "无效的模式。 ")).into_response();
+    };
+    let player = match session(&s, &input.session, "玩家会话已过期，请重新查找玩家。 ").await
+    {
+        Ok(p) => p,
+        Err(e) => return fail(e).into_response(),
+    };
+    let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
+        return Json(json!({"enabled":false})).into_response();
+    };
+    let rows = store
+        .match_list(ListKey {
+            subject: &subject,
+            mode,
+            season: None,
+        })
+        .rows;
+    let clock = Clock::now(analysis::REPORT_UTC_OFFSET_MINUTES);
+    let overview = analysis::overview(&rows, clock, AnalysisOptions::default().session_gap_ms);
+    Json(json!({
+        "enabled": true,
+        "listed": rows.len(),
+        "timezone": analysis::REPORT_TIMEZONE,
+        "overview": overview,
+    }))
+    .into_response()
+}
+
 /// Full IR dataset for one player plus its analysis.
 pub(crate) async fn player_dataset(
     State(s): State<AppState>,

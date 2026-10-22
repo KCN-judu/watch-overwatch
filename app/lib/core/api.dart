@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../l10n/strings.dart';
 import 'models.dart';
+import 'overview.dart';
 
 /// A failure reported by `watchd` or by reaching it.
 class ApiError implements Exception {
@@ -263,6 +264,15 @@ class Api {
     );
     return StrengthResult(j);
   }
+
+  /// The overview (records, groups, form, findings) from the stored match list.
+  Future<OverviewResult> overview(String session, Mode mode) async =>
+      OverviewResult(
+        await post('/api/player/overview', {
+          'session': session,
+          'mode': mode.id,
+        }),
+      );
 
   /// The growth measures (survival time, Fleta index, KDA) match by match, with their
   /// trends, from the details already stored on this machine (no upstream request).

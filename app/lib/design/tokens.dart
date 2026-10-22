@@ -397,6 +397,15 @@ class Ty {
     leadingDistribution: _even,
   );
 
+  /// The overview's headline figures: the page's largest type, for a handful of numbers
+  /// only (docs/ui-design.md §7, the reference's “数字是主角”).
+  static const display = TextStyle(
+    fontSize: 40,
+    height: 1.1,
+    fontWeight: FontWeight.w600,
+    leadingDistribution: _even,
+  );
+
   /// Large figures (scores) in list rows.
   static const figure = TextStyle(
     fontSize: 24,
