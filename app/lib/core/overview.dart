@@ -1,6 +1,5 @@
 import 'models.dart';
 
-
 int? _i(Object? v) => v is num ? v.toInt() : null;
 double? _d(Object? v) => v is num ? v.toDouble() : null;
 String? _s(Object? v) => v is String && v.isNotEmpty ? v : null;
