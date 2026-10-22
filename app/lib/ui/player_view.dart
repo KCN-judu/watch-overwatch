@@ -10,6 +10,7 @@ import '../l10n/strings.dart';
 import '../state/app_state.dart';
 import 'pages/heroes_page.dart';
 import 'pages/maps_page.dart';
+import 'pages/people_page.dart';
 import 'pages/matches_page.dart';
 import 'pages/overview_page.dart';
 import 'pages/profile_page.dart';
@@ -24,6 +25,7 @@ const tabIcons = {
   'matches': Icons.sports_esports_outlined,
   'heroes': Icons.groups_2_outlined,
   'maps': Icons.map_outlined,
+  'people': Icons.people_outline,
   'strength': Icons.balance,
   'growth': Icons.trending_up,
   'trend': Icons.show_chart,
@@ -61,6 +63,7 @@ class PlayerView extends StatelessWidget {
                     'overview' => OverviewPage(workspace: workspace),
                     'heroes' => HeroesPage(workspace: workspace),
                     'maps' => MapsPage(workspace: workspace),
+                    'people' => PeoplePage(workspace: workspace),
                     'strength' => StrengthPage(workspace: workspace),
                     'growth' => GrowthPage(workspace: workspace),
                     'trend' => TrendPage(workspace: workspace),

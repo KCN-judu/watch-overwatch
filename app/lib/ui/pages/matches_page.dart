@@ -142,8 +142,12 @@ class _MatchListState extends State<_MatchList> {
             rowKey: (m) => m.id,
             onOpen: (m, i) =>
                 ws.openMatch(mode, m.id, [for (final r in visible) r.id]),
-            builder: (context, m, state) =>
-                _MatchCard(match: m, catalog: catalog, state: state),
+            builder: (context, m, state) => _MatchCard(
+              match: m,
+              catalog: catalog,
+              state: state,
+              party: ws.peopleFor(mode).value?.partySize[m.id],
+            ),
             empty: load.loading
                 ? const AfterDelay(child: SizedBox.shrink())
                 : _emptyState(app, ws, mode, all.isEmpty, filters),
@@ -220,8 +224,12 @@ class _MatchCard extends StatelessWidget {
     required this.match,
     required this.catalog,
     required this.state,
+    this.party,
   });
   final MatchSummary match;
+
+  /// Group size, where the match's detail is stored (1 = alone).
+  final int? party;
   final Catalog catalog;
   final CardState state;
 
@@ -288,6 +296,7 @@ class _MatchCard extends StatelessWidget {
                         [
                           fmtDateTime(m.startedAtMs),
                           if (mapMode != null && mapMode.isNotEmpty) mapMode,
+                          if ((party ?? 1) > 1) tr.people.partyTag(party!),
                         ].join('  ·  '),
                         style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
                         maxLines: 1,
