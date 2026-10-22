@@ -408,6 +408,13 @@ class PlayerWorkspace extends ChangeNotifier {
     if (l.has && l.error == null) unawaited(prepareInBackground(mode));
   }
 
+  /// The player's places on the hero boards; read once while the app runs.
+  final heroBoard = Load<List<HeroBoardEntry>>();
+  Future<void> loadHeroBoard() {
+    if (heroBoard.has || heroBoard.loading) return Future.value();
+    return _run(heroBoard, () => _call((s) => app.api.heroBoard(s)));
+  }
+
   Future<void> loadCompetitive({bool fresh = false}) => _run(
     competitive,
     () => _call((s) => app.api.career(s, Mode.competitive, fresh: fresh)),

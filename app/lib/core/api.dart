@@ -190,6 +190,19 @@ class Api {
     return CareerSnapshot((j['ir'] as Map).cast<String, dynamic>());
   }
 
+  /// Where the player's heroes stand on the provider's hero boards (province ranks).
+  Future<List<HeroBoardEntry>> heroBoard(String session) async {
+    final j = await post('/api/player/view', {
+      'session': session,
+      'view': 'heroes',
+      'mode': Mode.competitive.provider,
+    });
+    return [
+      for (final e in (j['ir'] as List?) ?? const [])
+        if (e is Map<String, dynamic>) HeroBoardEntry(e),
+    ];
+  }
+
   Future<MatchDetail> detail(
     String session,
     Mode mode,

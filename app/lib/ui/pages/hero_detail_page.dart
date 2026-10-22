@@ -35,6 +35,14 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
   final ScrollController _scroll = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => widget.workspace.loadHeroBoard(),
+    );
+  }
+
+  @override
   void dispose() {
     _scroll.dispose();
     super.dispose();
@@ -128,6 +136,14 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
                     art: app.catalog.heroArt(hero.hero),
                     banner: app.catalog.heroBanner(hero.hero),
                     recentKda: Agg(recent).kda,
+                    board: ws.heroBoard.value
+                        ?.where(
+                          (e) =>
+                              e.hero?.guid == hero.hero.guid &&
+                              e.queue == hero.queue &&
+                              e.rank != null,
+                        )
+                        .firstOrNull,
                   ),
                   const SizedBox(height: Sp.betweenSections + 8),
                   _SeasonStats(hero: hero, accent: accent, recent: recent),
@@ -177,7 +193,11 @@ class _Poster extends StatelessWidget {
     required this.art,
     required this.banner,
     required this.recentKda,
+    this.board,
   });
+
+  /// The hero's place on the provider's hero board, when it has one.
+  final HeroBoardEntry? board;
   final HeroUsage hero;
   final Role role;
   final GameHero? game;
@@ -306,6 +326,31 @@ class _Poster extends StatelessWidget {
                         Text(
                           hero.queue.label,
                           style: Ty.body.copyWith(color: c.textSecondary),
+                        ),
+                      if (board != null)
+                        Tooltip(
+                          message: tr.heroes.heroBoardTip(
+                            board!.matches ?? 0,
+                            fmtPct(board!.winRatePct),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.leaderboard_outlined,
+                                size: 18,
+                                color: accent,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                tr.heroes.heroBoard(
+                                  board!.province ?? '',
+                                  board!.rank!,
+                                ),
+                                style: Ty.bodyStrong,
+                              ),
+                            ],
+                          ),
                         ),
                     ],
                   ),

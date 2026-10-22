@@ -54,7 +54,7 @@ role_id 和 token 怎么拿，见 [获取账号凭据](docs/credentials.md)。�
 | `app/` | Flutter 界面 |
 | `resources/game/` | 从游戏解包的英雄资料与图标（`app/assets/game/` 是打进应用的副本） |
 | `resources/brand/` | 应用图标原图 |
-| `ui/` | 旧的网页界面，仍随 `watchd` 提供，不是主界面 |
+| `ui/` | 旧的网页界面，仍随 `watchd` 提供，不再更新（见 `docs/legacy-ui.md`） |
 
 ## 构建
 
@@ -104,4 +104,4 @@ cd app; dart format --output=none --set-exit-if-changed lib test; flutter analyz
 - 请求并发上限 2，每个账号每秒最多 5 次；401 或 403 会停用这个凭据，429 会按服务端要求等待。
 - 快速比赛没有段位，对局强度用参与者的竞技段位代替，细节见算法文档。
 - 职责、子职责、技能等图标和资料来自游戏本体和暴雪、大神的公开资源，仅供个人使用，不属于本项目的开源内容。
-- 旧版的赛事、商店、补丁、英雄百科、地图猜题只在旧网页界面里，Flutter 界面还没有迁移。
+- 旧网页界面不再更新。它的赛事、商店、补丁等与战绩分析无关的功能不迁移，逐项决定和退役计划见 [旧网页界面的退役](docs/legacy-ui.md)。
