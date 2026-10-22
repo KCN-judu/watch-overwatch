@@ -12,6 +12,7 @@ pub mod insights;
 pub mod ir;
 pub mod maps;
 pub mod progress;
+pub mod ranks;
 mod report;
 mod scheduler;
 pub mod stadium;

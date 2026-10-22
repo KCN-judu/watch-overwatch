@@ -339,4 +339,32 @@ class AnalysisStrings {
   String get peak => '最高';
   String get noData => '没有数据';
   String seasonPointNote(String matches, String rank) => '$matches 场 · $rank';
+
+  // Rank tracks (season trend page).
+  String get tracksTitle => '段位轨迹';
+  String get tracksTip =>
+      '每个职责一条线：每场对局结束时该玩家这个职责的段位分，阶梯表示段位保持到下一场。空心点是输掉的对局。虚线是赛季分界：对局列表不带赛季，分界按各赛季生涯场次从最新一场往回数出来，所以是推算的。点一场（鼠标点已指着的那一场，或按 Enter）打开这场对局。';
+  String get tracksNone => '本机存的对局里还没有带段位分的对局。竞技比赛的对局才带段位。';
+  String seasonMark(int s) => 'S$s';
+  String trackSummary(String role, String from, String to, int n) =>
+      '$role：$n 场，从 $from 到 $to';
+  String get trackOpenHint => '点已指着的一场或按 Enter 打开这场对局';
+  String get dropsTitle => '掉分时对面强不强';
+  String get dropsTip =>
+      '一段连续掉了 100 分（一个小段）以上的对局：对面平均段位分比我方高多少，来自打开过详情、算过对局强度的对局。';
+  String drop(
+    String role,
+    String from,
+    String to,
+    int lost,
+    int n,
+    int w,
+    int l,
+  ) => '$role $from – $to 掉了 $lost 分（$n 场，$w 胜 $l 负）';
+  String dropEdge(int rated, String edge) => '其中 $rated 场有对局强度：对面平均$edge';
+  String edgeHigher(int v) => '高 $v 分';
+  String edgeLower(int v) => '低 $v 分';
+  String get edgeEven => '与我方持平';
+  String get dropNoEdge => '这几场还没有对局强度。打开它们的详情，或在对局强度页分析后再看。';
+  String get openDropMatch => '打开最后一场';
 }

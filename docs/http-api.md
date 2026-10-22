@@ -31,6 +31,7 @@ Invoke-RestMethod http://127.0.0.1:18180/api/player/growth -Method Post -Headers
 | `POST /api/player/view` | 某个视图，返回统一数据结构（IR），见下 |
 | `POST /api/player/dataset` | 完整数据集和分析；可带 `progress_id` |
 | `POST /api/player/stadium` | 角斗领域构筑：按英雄统计异能、物品的选取率、通常回合、胜率，以及常用异能组合；`scope` 为 `own`（该玩家）或 `everyone`（本机所有玩家）；只用本机已存的详情。对局详情（`view: detail`）在角斗领域另带 `stadium_timeline`：该玩家每回合的胜负和新选的异能、物品 |
+| `POST /api/player/ranks` | 段位轨迹：各职责每场的段位分（带推算的赛季、对局强度）、各赛季在列表里的起止、最近几段掉分及对面强度；`season_matches` 传各赛季生涯场次（来自赛季走势），用来划分赛季；只用本机已存的数据 |
 | `POST /api/player/maps` | 地图页：按地图类型分组的地图战绩（带胜率区间、是否参与比较）、平均时长（来自已存详情）、每张图最常用的英雄；只用本机已存的数据，不向上游请求 |
 | `POST /api/player/overview` | 概览页：近 20 场与之前 20 场、今天 / 昨天 / 近 7 天、按英雄 / 地图 / 职责的战绩（带胜率区间）、星期 × 小时、最近的连续游戏、最近 20 场、几条有把握的发现（规则见 `docs/algorithms.md` 7.3）；只用本机已存的对局、详情和段位分，不向上游请求 |
 | `POST /api/player/benchmark` | 同侪基准：该玩家各英雄的典型一场在同段位、同英雄的其他玩家中的百分位（每 10 分钟的伤害、治疗、阻挡、消灭、最后一击、阵亡），只用本机已存的对局 |

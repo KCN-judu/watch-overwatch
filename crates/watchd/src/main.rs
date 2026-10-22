@@ -114,6 +114,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/player/overview", post(service::player_overview))
         .route("/api/player/benchmark", post(service::player_benchmark))
         .route("/api/player/maps", post(service::player_maps))
+        .route("/api/player/ranks", post(service::player_ranks))
         .route("/api/player/stadium", post(service::player_stadium))
         .route("/api/progress", get(service::progress))
         .route("/api/cache", get(service::cache_stats))
