@@ -1021,6 +1021,18 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Whether share pictures hide player names.
+  bool get maskNames => ui.shareMaskNames;
+
+  void setMaskNames(bool on) {
+    ui.shareMaskNames = on;
+    ui.save();
+    notifyListeners();
+  }
+
+  /// A player's name as a share picture shows it.
+  String maskName(String name) => maskNames ? tr.recap.masked : name;
+
   void setTheme(ThemeMode t) {
     themeMode = t;
     ui.theme =

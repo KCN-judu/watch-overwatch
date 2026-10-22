@@ -7,6 +7,7 @@ import '../../design/cards.dart';
 import '../../design/chart_kit.dart';
 import '../../design/icons.dart';
 import '../../design/net_pic.dart';
+import '../../design/share.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../l10n/strings.dart';
@@ -68,6 +69,7 @@ class _MapsPageState extends State<MapsPage> {
     final picked =
         all.where((e) => e.$2.key == _picked).firstOrNull ?? all.first;
     final list = _List(
+      workspace: ws,
       result: result,
       picked: picked.$2.key,
       onPick: (key) => setState(() => _picked = key),
@@ -128,10 +130,12 @@ String _modeName(ModeGroup g) => g.mode ?? tr.maps.otherMode;
 
 class _List extends StatelessWidget {
   const _List({
+    required this.workspace,
     required this.result,
     required this.picked,
     required this.onPick,
   });
+  final PlayerWorkspace workspace;
   final MapsResult result;
   final String picked;
   final ValueChanged<String> onPick;
@@ -155,9 +159,15 @@ class _List extends StatelessWidget {
         const SizedBox(height: Sp.betweenGroups),
         for (final (i, g) in result.modes.indexed) ...[
           if (i > 0) const SizedBox(height: Sp.betweenSections),
-          SectionHeader(
-            _modeName(g),
+          Shareable(
+            title: _modeName(g),
             info: i == 0 ? tr.maps.modeTip : null,
+            caption: tr.recap.caption(
+              app.maskName(workspace.name),
+              app.mode.label,
+              g.record.matches,
+            ),
+            fileName: _modeName(g),
             trailing: Text(
               tr.maps.modeSummary(
                 g.record.matches,
@@ -165,34 +175,33 @@ class _List extends StatelessWidget {
               ),
               style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
             ),
-          ),
-          const SizedBox(height: SectionHeader.below),
-          Panel(
-            child: IntervalBars(
-              format: (v) => fmtPct(v, digits: 0),
-              reference: g.record.winRatePct,
-              referenceMeaning: g.record.winRatePct == null
-                  ? null
-                  : tr.maps.typeRate(fmtPct(g.record.winRatePct, digits: 0)),
-              labelWidth: 220,
-              rows: [
-                for (final m in g.maps)
-                  IntervalRow(
-                    label: m.map.label,
-                    value: m.aggregate.record.winRatePct ?? 0,
-                    low: m.aggregate.record.lowPct,
-                    high: m.aggregate.record.highPct,
-                    n: m.aggregate.record.decided,
-                    enough: m.ranked,
-                    selected: m.key == picked,
-                    leading: MapThumb(
-                      app.catalog.mapImage(m.map),
-                      width: 40,
-                      height: 22,
+            child: Panel(
+              child: IntervalBars(
+                format: (v) => fmtPct(v, digits: 0),
+                reference: g.record.winRatePct,
+                referenceMeaning: g.record.winRatePct == null
+                    ? null
+                    : tr.maps.typeRate(fmtPct(g.record.winRatePct, digits: 0)),
+                labelWidth: 220,
+                rows: [
+                  for (final m in g.maps)
+                    IntervalRow(
+                      label: m.map.label,
+                      value: m.aggregate.record.winRatePct ?? 0,
+                      low: m.aggregate.record.lowPct,
+                      high: m.aggregate.record.highPct,
+                      n: m.aggregate.record.decided,
+                      enough: m.ranked,
+                      selected: m.key == picked,
+                      leading: MapThumb(
+                        app.catalog.mapImage(m.map),
+                        width: 40,
+                        height: 22,
+                      ),
+                      onTap: () => onPick(m.key),
                     ),
-                    onTap: () => onPick(m.key),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
