@@ -639,6 +639,220 @@ pub fn analyze(ds: &PlayerDataset, options: &AnalysisOptions) -> PlayerAnalysis 
     }
 }
 
+// ---- Overview ------------------------------------------------------------------------------
+
+/// How many of the newest matches count as "recent" on the overview.
+pub const RECENT_MATCHES: usize = 20;
+
+/// One match in the overview's form strip.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FormPoint {
+    pub match_id: String,
+    pub started_at_ms: Option<i64>,
+    pub outcome: Outcome,
+    pub hero: Option<EntityRef>,
+    pub role: Role,
+    pub map: Option<EntityRef>,
+}
+
+/// What a finding is about; the app words it (each kind is one sentence in its table).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum InsightKind {
+    /// `value` matches won (positive) or lost (negative) in a row, up to now.
+    Streak,
+    /// The recent win rate (`value`) against the one before (`other`), over `n` matches.
+    RecentForm,
+    /// A map (`subject`) clearly better or worse than the player's rate (`other`): its
+    /// whole plausible range is on one side. `value` is its rate over `n` matches.
+    Map,
+    /// The same for a hero.
+    Hero,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Insight {
+    pub kind: InsightKind,
+    /// Good news (true), bad news (false).
+    pub positive: bool,
+    pub subject: Option<String>,
+    pub value: f64,
+    pub other: Option<f64>,
+    pub n: usize,
+    /// For drill-down: the group's key (a hero or map stable id).
+    pub key: Option<String>,
+}
+
+/// Everything the overview page shows, from a player's stored match list alone.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Overview {
+    pub overall: Aggregate,
+    /// The newest [`RECENT_MATCHES`] matches, and the same number before them.
+    pub recent: Aggregate,
+    pub before: Aggregate,
+    pub windows: Vec<WindowAggregate>,
+    pub by_role: Vec<Group>,
+    pub by_hero: Vec<Group>,
+    pub by_map: Vec<Group>,
+    /// `heat[weekday][hour]`, Monday first, in the report time zone.
+    pub heat: Vec<Vec<Record>>,
+    /// The newest session first, at most three.
+    pub sessions: Vec<Session>,
+    /// The newest [`RECENT_MATCHES`] matches, oldest first.
+    pub form: Vec<FormPoint>,
+    /// Win rate over the last 10 decided matches at each of the newest 30, oldest first.
+    pub rolling_win_pct: Vec<Option<f64>>,
+    /// Findings firm enough to say; never more than four.
+    pub insights: Vec<Insight>,
+}
+
+fn weekday(clock: Clock, at_ms: i64) -> usize {
+    // 1970-01-01 was a Thursday: Monday is 0.
+    (((at_ms + clock.offset_ms()).div_euclid(DAY_MS) + 3).rem_euclid(7)) as usize
+}
+
+/// Groups whose whole plausible range lies above or below `rate` (both with enough
+/// matches), best evidence first.
+fn clear_outliers(groups: &[Group], rate: f64) -> Vec<(&Group, bool)> {
+    let mut found: Vec<(&Group, bool, f64)> = groups
+        .iter()
+        .filter(|g| g.aggregate.record.enough && g.key != "unknown")
+        .filter_map(|g| {
+            let r = &g.aggregate.record;
+            let (lo, hi) = (r.win_rate_low_pct?, r.win_rate_high_pct?);
+            if lo > rate {
+                Some((g, true, lo - rate))
+            } else if hi < rate {
+                Some((g, false, rate - hi))
+            } else {
+                None
+            }
+        })
+        .collect();
+    found.sort_by(|a, b| b.2.total_cmp(&a.2));
+    found.into_iter().map(|(g, up, _)| (g, up)).collect()
+}
+
+pub fn overview(rows: &[MatchSummary], clock: Clock, session_gap_ms: i64) -> Overview {
+    let mut newest: Vec<&MatchSummary> = rows.iter().collect();
+    newest.sort_by_key(|m| std::cmp::Reverse(m.started_at_ms.unwrap_or(i64::MIN)));
+    let recent: Vec<&MatchSummary> = newest.iter().take(RECENT_MATCHES).copied().collect();
+    let before: Vec<&MatchSummary> = newest
+        .iter()
+        .skip(RECENT_MATCHES)
+        .take(RECENT_MATCHES)
+        .copied()
+        .collect();
+    let mut heat = vec![vec![Record::default(); 24]; 7];
+    for m in rows {
+        if let Some(t) = m.started_at_ms {
+            heat[weekday(clock, t)][clock.local_hour(t) as usize].add(m.outcome);
+        }
+    }
+    let decided: Vec<&MatchSummary> = newest
+        .iter()
+        .filter(|m| matches!(m.outcome, Outcome::Win | Outcome::Loss))
+        .copied()
+        .collect();
+    let rolling_win_pct = (0..decided.len().min(30))
+        .rev()
+        .map(|i| {
+            let window: Vec<_> = decided.iter().skip(i).take(10).collect();
+            (window.len() == 10).then(|| {
+                100.0 * window.iter().filter(|m| m.outcome == Outcome::Win).count() as f64 / 10.0
+            })
+        })
+        .collect();
+    let overall = aggregate(rows.iter());
+    let recent_agg = aggregate(recent.iter().copied());
+    let before_agg = aggregate(before.iter().copied());
+    let by_hero = breakdown(rows, Dimension::Hero);
+    let by_map = breakdown(rows, Dimension::Map);
+
+    let mut insights = Vec::new();
+    let streak = overall.streaks.current;
+    if streak.abs() >= 3 {
+        insights.push(Insight {
+            kind: InsightKind::Streak,
+            positive: streak > 0,
+            subject: None,
+            value: streak.unsigned_abs() as f64,
+            other: None,
+            n: streak.unsigned_abs() as usize,
+            key: None,
+        });
+    }
+    if let (Some(now), Some(then)) = (
+        recent_agg.record.win_rate_pct,
+        before_agg.record.win_rate_pct,
+    ) {
+        let n = recent_agg.record.wins + recent_agg.record.losses;
+        let m = before_agg.record.wins + before_agg.record.losses;
+        if n >= 10 && m >= 10 && (now - then).abs() >= 15.0 {
+            insights.push(Insight {
+                kind: InsightKind::RecentForm,
+                positive: now > then,
+                subject: None,
+                value: now,
+                other: Some(then),
+                n,
+                key: None,
+            });
+        }
+    }
+    if let Some(rate) = overall.record.win_rate_pct {
+        for (kind, groups) in [(InsightKind::Map, &by_map), (InsightKind::Hero, &by_hero)] {
+            if let Some((g, up)) = clear_outliers(groups, rate).first() {
+                insights.push(Insight {
+                    kind,
+                    positive: *up,
+                    subject: g.label.clone(),
+                    value: g.aggregate.record.win_rate_pct.unwrap_or_default(),
+                    other: Some(rate),
+                    n: g.aggregate.record.matches,
+                    key: Some(g.key.clone()),
+                });
+            }
+        }
+    }
+    insights.truncate(4);
+
+    Overview {
+        windows: [Window::Today, Window::Yesterday, Window::Week]
+            .into_iter()
+            .map(|window| WindowAggregate {
+                window,
+                aggregate: aggregate(
+                    rows.iter()
+                        .filter(|m| window.contains(clock, m.started_at_ms)),
+                ),
+            })
+            .collect(),
+        by_role: breakdown(rows, Dimension::Role),
+        by_hero,
+        by_map,
+        heat,
+        sessions: sessions(rows, session_gap_ms).into_iter().take(3).collect(),
+        form: recent
+            .iter()
+            .rev()
+            .map(|m| FormPoint {
+                match_id: m.id.clone(),
+                started_at_ms: m.started_at_ms,
+                outcome: m.outcome,
+                hero: m.hero.clone(),
+                role: m.role,
+                map: m.map.clone(),
+            })
+            .collect(),
+        rolling_win_pct,
+        overall,
+        recent: recent_agg,
+        before: before_agg,
+        insights,
+    }
+}
+
 /// Fills each participant's Fleta index: their final blows as a percentage of half of
 /// their own team's final blows, so 100 means they took half of the team's final blows
 /// (the share a player in a team of five would not be expected to exceed by much), and
@@ -1109,5 +1323,112 @@ mod tests {
         attach_fleta(&mut d);
         assert_eq!(d.allies[0].fleta, Some(100.0));
         assert_eq!(d.enemies[0].fleta, Some(200.0));
+    }
+
+    fn on_map(id: &str, at: i64, outcome: Outcome, map: &str) -> MatchSummary {
+        let mut m = timed(id, at, outcome);
+        m.map = Some(EntityRef::new(EntityKind::Map, map, Some(map.into())));
+        m
+    }
+
+    #[test]
+    fn weekdays_start_on_monday_in_the_report_zone() {
+        let clock = Clock {
+            now_ms: 0,
+            utc_offset_minutes: 8 * 60,
+        };
+        // 2026-10-19 00:30 +08 was a Monday; 2026-10-18 23:30 +08 a Sunday.
+        let monday = 1_792_368_000_000 - 8 * HOUR + 30 * 60_000;
+        assert_eq!(weekday(clock, monday), 0);
+        assert_eq!(weekday(clock, monday - HOUR), 6);
+    }
+
+    #[test]
+    fn the_overview_splits_recent_from_before_and_lists_form_oldest_first() {
+        let clock = Clock {
+            now_ms: 100 * HOUR,
+            utc_offset_minutes: 8 * 60,
+        };
+        let rows: Vec<MatchSummary> = (0..45)
+            .map(|i| {
+                timed(
+                    &format!("m{i}"),
+                    i * HOUR,
+                    if i % 2 == 0 {
+                        Outcome::Win
+                    } else {
+                        Outcome::Loss
+                    },
+                )
+            })
+            .collect();
+        let o = overview(&rows, clock, 5 * HOUR);
+        assert_eq!(o.overall.record.matches, 45);
+        assert_eq!(o.recent.record.matches, RECENT_MATCHES);
+        assert_eq!(o.before.record.matches, RECENT_MATCHES);
+        assert_eq!(o.form.len(), RECENT_MATCHES);
+        assert_eq!(o.form.first().unwrap().match_id, "m25");
+        assert_eq!(o.form.last().unwrap().match_id, "m44");
+        assert_eq!(o.rolling_win_pct.len(), 30);
+        assert_eq!(o.rolling_win_pct.last().unwrap(), &Some(50.0));
+        assert_eq!(o.heat.len(), 7);
+        assert!(o.heat.iter().all(|d| d.len() == 24));
+        let heat_total: usize = o.heat.iter().flatten().map(|r| r.matches).sum();
+        assert_eq!(heat_total, 45);
+        assert!(o.sessions.len() <= 3);
+    }
+
+    #[test]
+    fn only_a_map_whose_whole_range_is_off_the_rate_is_a_finding() {
+        let clock = Clock {
+            now_ms: 0,
+            utc_offset_minutes: 8 * 60,
+        };
+        let mut rows = Vec::new();
+        let mut t = 0;
+        let mut add = |rows: &mut Vec<MatchSummary>, map: &str, wins: usize, losses: usize| {
+            for k in 0..wins + losses {
+                t += HOUR;
+                let o = if k < wins {
+                    Outcome::Win
+                } else {
+                    Outcome::Loss
+                };
+                rows.push(on_map(&format!("{map}{k}"), t, o, map));
+            }
+        };
+        // 18 of 20 on one map is clearly above a ~50 % player; 3 of 5 elsewhere is not.
+        add(&mut rows, "1", 18, 2);
+        add(&mut rows, "2", 3, 2);
+        add(&mut rows, "3", 10, 25);
+        let o = overview(&rows, clock, HOUR / 2);
+        let maps: Vec<_> = o
+            .insights
+            .iter()
+            .filter(|i| i.kind == InsightKind::Map)
+            .collect();
+        assert_eq!(maps.len(), 1);
+        assert_eq!(maps[0].subject.as_deref(), Some("1"));
+        assert!(maps[0].positive);
+        assert!(o.insights.len() <= 4);
+    }
+
+    #[test]
+    fn a_long_streak_is_said() {
+        let clock = Clock {
+            now_ms: 0,
+            utc_offset_minutes: 8 * 60,
+        };
+        let rows: Vec<MatchSummary> = (0..4)
+            .map(|i| timed(&format!("m{i}"), i * HOUR, Outcome::Loss))
+            .collect();
+        let o = overview(&rows, clock, HOUR);
+        let s = o
+            .insights
+            .iter()
+            .find(|i| i.kind == InsightKind::Streak)
+            .unwrap();
+        assert!(!s.positive);
+        assert_eq!(s.n, 4);
     }
 }

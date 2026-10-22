@@ -10,6 +10,7 @@ import '../l10n/strings.dart';
 import '../state/app_state.dart';
 import 'pages/heroes_page.dart';
 import 'pages/matches_page.dart';
+import 'pages/overview_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/strength_page.dart';
 import 'pages/growth_page.dart';
@@ -18,6 +19,7 @@ import 'shell.dart' show ShellScope;
 import '../design/net_pic.dart';
 
 const tabIcons = {
+  'overview': Icons.dashboard_outlined,
   'matches': Icons.sports_esports_outlined,
   'heroes': Icons.groups_2_outlined,
   'strength': Icons.balance,
@@ -54,6 +56,7 @@ class PlayerView extends StatelessWidget {
                 child: FadeThrough(
                   childKey: (app.tab, workspace.name),
                   child: switch (app.tab) {
+                    'overview' => OverviewPage(workspace: workspace),
                     'heroes' => HeroesPage(workspace: workspace),
                     'strength' => StrengthPage(workspace: workspace),
                     'growth' => GrowthPage(workspace: workspace),
