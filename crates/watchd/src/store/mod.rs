@@ -195,6 +195,13 @@ impl LocalStore {
             .flatten()
     }
 
+    /// Every stored match detail, whoever it was stored for.
+    pub fn all_details(&self) -> Vec<MatchDetail> {
+        self.matches
+            .read("read all details", matches::all_details)
+            .unwrap_or_default()
+    }
+
     /// The provider's answer for a player's career in a finished season, if read before.
     pub fn past_career(&self, subject: &str, mode: Mode, season: u32) -> Option<String> {
         self.matches

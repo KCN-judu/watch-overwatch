@@ -998,6 +998,58 @@ pub(crate) async fn player_overview(
     .into_response()
 }
 
+/// Peer benchmarks (see [`watch_core::benchmark`]) for the player's heroes in a mode, from
+/// every match stored on this machine and the ranks stored for their players: no upstream
+/// request. `peer_matches` is how many other players' matches the sample holds.
+pub(crate) async fn player_benchmark(
+    State(s): State<AppState>,
+    Json(input): Json<GrowthInput>,
+) -> Response {
+    let Some(mode) = Mode::parse(&input.mode) else {
+        return fail(error("validation", "无效的模式。 ")).into_response();
+    };
+    let player = match session(&s, &input.session, "玩家会话已过期，请重新查找玩家。 ").await
+    {
+        Ok(p) => p,
+        Err(e) => return fail(e).into_response(),
+    };
+    let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
+        return Json(json!({"enabled":false})).into_response();
+    };
+    let current = s.catalog.current_season.get();
+    let result = tokio::task::spawn_blocking(move || {
+        let details: Vec<MatchDetail> = store
+            .all_details()
+            .into_iter()
+            .filter(|d| d.mode == mode)
+            .collect();
+        let ids: std::collections::BTreeSet<String> = details
+            .iter()
+            .flat_map(|d| d.allies.iter().chain(&d.enemies))
+            .filter_map(|p| p.bnet_id.clone())
+            .collect();
+        let ratings: Vec<watch_core::ir::PlayerRating> = ids
+            .iter()
+            .map(|id| collect::stored_rating(store.as_ref(), id, current))
+            .collect();
+        let mine: Vec<MatchDetail> = details
+            .iter()
+            .filter(|d| d.subject().and_then(|p| p.bnet_id.as_deref()) == Some(&subject))
+            .cloned()
+            .collect();
+        let own_rating = ratings.iter().find(|r| r.bnet_id == subject);
+        let tiers = watch_core::benchmark::subject_tiers(&mine, own_rating);
+        let peer_matches = details.len() * 9;
+        let heroes = watch_core::benchmark::benchmarks(&details, &ratings, &subject, mode, &tiers);
+        json!({"enabled":true,"matches":details.len(),"peer_matches":peer_matches,"heroes":heroes})
+    })
+    .await;
+    match result {
+        Ok(v) => Json(v).into_response(),
+        Err(_) => fail(error("internal", "同侪基准计算失败。 ")).into_response(),
+    }
+}
+
 /// Full IR dataset for one player plus its analysis.
 pub(crate) async fn player_dataset(
     State(s): State<AppState>,

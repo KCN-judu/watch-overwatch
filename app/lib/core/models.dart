@@ -590,6 +590,7 @@ class CareerSnapshot {
       roles = _list(j['roles'], RoleCareer.new),
       heroes = _list(j['heroes'], HeroUsage.new),
       provinceRanks = _list(j['province_ranks'], ProvinceRank.new),
+      serverAverage = _serverAverage(j['queues']),
       behavior = _o(j['behavior']) == null
           ? null
           : Behavior(_o(j['behavior'])!);
@@ -598,6 +599,24 @@ class CareerSnapshot {
   final List<RoleCareer> roles;
   final List<HeroUsage> heroes;
   final List<ProvinceRank> provinceRanks;
+
+  /// The provider's server-wide average per match (`serverMapCountData`), from the
+  /// role queue when it has one: a reference line, not a peer group.
+  final StatLine? serverAverage;
+
+  static StatLine? _serverAverage(Object? queues) {
+    StatLine? any;
+    for (final q in (queues as List?) ?? const []) {
+      if (q is! Map || q['server_average'] is! Map) continue;
+      final s = StatLine.fromJson(
+        (q['server_average'] as Map).cast<String, dynamic>(),
+      );
+      if (q['queue'] == 'role_queue') return s;
+      any ??= s;
+    }
+    return any;
+  }
+
   final Behavior? behavior;
   RoleCareer? role(Role r) {
     for (final c in roles) {

@@ -175,6 +175,15 @@ fn index_participants(
     Ok(())
 }
 
+/// Every stored detail (any subject), for figures drawn from all of them (peer benchmarks).
+pub fn all_details(conn: &Connection) -> rusqlite::Result<Vec<MatchDetail>> {
+    Ok(conn
+        .prepare_cached(&SQL.detail.select_all)?
+        .query_map([], |r| r.get::<_, String>(1))?
+        .filter_map(Result::ok)
+        .filter_map(|data| serde_json::from_str(&data).ok())
+        .collect())
+}
 /// Details stored before the participant index existed are added to it, once: only when
 /// the index is empty and there are details.
 pub fn backfill_participants(tx: &Transaction<'_>) -> rusqlite::Result<()> {

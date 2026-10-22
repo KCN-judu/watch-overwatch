@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import '../l10n/strings.dart';
+import 'benchmark.dart';
 import 'models.dart';
 import 'overview.dart';
 
@@ -264,6 +265,15 @@ class Api {
     );
     return StrengthResult(j);
   }
+
+  /// Peer benchmarks for the player's heroes, from every match stored locally.
+  Future<BenchmarkResult> benchmark(String session, Mode mode) async =>
+      BenchmarkResult(
+        await post('/api/player/benchmark', {
+          'session': session,
+          'mode': mode.id,
+        }),
+      );
 
   /// The overview (records, groups, form, findings) from the stored match list.
   Future<OverviewResult> overview(String session, Mode mode) async =>
