@@ -16,6 +16,7 @@ import '../core/models.dart';
 import '../core/overview.dart';
 import '../core/stats.dart';
 import '../core/support.dart';
+import '../core/update.dart';
 import '../design/tokens.dart';
 import '../l10n/strings.dart';
 import 'match_view.dart';
@@ -870,6 +871,14 @@ class AppState extends ChangeNotifier {
       // Fill the picture cache in the background; screens show skeletons until then.
       unawaited(ImageStore.instance.preload(catalog.preloadUrls()));
       await refreshServer();
+      if (ui.autoCheckUpdates) {
+        // After the first screen is up; a failed check stays quiet.
+        unawaited(
+          Future<void>.delayed(
+            const Duration(seconds: 3),
+          ).then((_) => checkUpdate().catchError((_) => null)),
+        );
+      }
     } on ApiError catch (e) {
       status = BackendStatus.offline;
       backendError = e.message;
@@ -1063,6 +1072,58 @@ class AppState extends ChangeNotifier {
 
   /// A player's name as a share picture shows it.
   String maskName(String name) => maskNames ? tr.recap.masked : name;
+
+  // ---- Updates ----------------------------------------------------------------
+
+  /// The last answer about a newer version; null until one has been asked for.
+  UpdateInfo? update;
+  UpdateDownload? updateDownload;
+  Timer? _updatePoll;
+
+  bool get autoCheckUpdates => ui.autoCheckUpdates;
+
+  void setAutoCheckUpdates(bool on) {
+    ui.autoCheckUpdates = on;
+    ui.save();
+    notifyListeners();
+  }
+
+  /// Asks the service whether a newer release is out (it asks GitHub).
+  Future<UpdateInfo?> checkUpdate({bool force = false}) async {
+    final info = await api.checkUpdate(force: force);
+    update = info;
+    updateDownload ??= info.download.state == 'idle' ? null : info.download;
+    notifyListeners();
+    return info;
+  }
+
+  /// Downloads the newer release, following it until it is ready or has failed.
+  Future<void> startUpdateDownload() async {
+    updateDownload = await api.downloadUpdate();
+    notifyListeners();
+    _updatePoll?.cancel();
+    _updatePoll = Timer.periodic(const Duration(milliseconds: 400), (t) async {
+      try {
+        final d = await api.updateStatus();
+        updateDownload = d;
+        if (!d.busy) t.cancel();
+      } on ApiError catch (e) {
+        updateDownload = UpdateDownload({
+          'state': 'failed',
+          'error': e.message,
+        });
+        t.cancel();
+      }
+      notifyListeners();
+    });
+  }
+
+  /// Starts the installer and quits; the new version opens by itself.
+  Future<void> applyUpdate() async {
+    await api.applyUpdate();
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    exit(0);
+  }
 
   void setTheme(ThemeMode t) {
     themeMode = t;

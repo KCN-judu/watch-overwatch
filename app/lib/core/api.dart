@@ -12,6 +12,7 @@ import 'people.dart';
 import 'ranks.dart';
 import 'stadium.dart';
 import 'models.dart';
+import 'update.dart';
 import 'overview.dart';
 
 /// A failure reported by `watchd` or by reaching it.
@@ -450,6 +451,26 @@ class Api {
       'max_rated_players': 5000,
     },
   }, cancel: cancel);
+
+  /// This version against the latest release; [force] asks GitHub again instead of
+  /// reusing the last answer.
+  Future<UpdateInfo> checkUpdate({bool force = false}) async => UpdateInfo(
+    await post('/api/update/check', {
+      'force': force,
+    }, timeout: const Duration(seconds: 40)),
+  );
+
+  /// Starts (or rejoins) the download of the latest release.
+  Future<UpdateDownload> downloadUpdate() async => UpdateDownload(
+    (await post('/api/update/download', const {}))['download'] as Json?,
+  );
+
+  Future<UpdateDownload> updateStatus() async => UpdateDownload(
+    (await post('/api/update/status', const {}))['download'] as Json?,
+  );
+
+  /// Hands over to the installer; the service exits right after answering.
+  Future<void> applyUpdate() => post('/api/update/apply', const {});
 
   Future<Json> state() => get('/api/state');
   Future<Json> catalog() => get('/api/catalog');

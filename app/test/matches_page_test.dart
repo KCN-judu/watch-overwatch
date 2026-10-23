@@ -17,6 +17,8 @@ class _NoShell implements ShellActions {
   @override
   void openShortcuts() {}
   @override
+  void openUpdate() {}
+  @override
   void openExport() {}
   @override
   void showSettings() {}

@@ -14,6 +14,7 @@ import '../../design/widgets.dart';
 import '../../l10n/strings.dart';
 import '../../state/app_state.dart';
 import '../shell.dart' show ShellScope;
+import '../update_dialog.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -323,6 +324,48 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: Icons.keyboard_outlined,
                   tooltip: 'F1',
                   onPressed: ShellScope.of(context).actions.openShortcuts,
+                ),
+              ),
+
+              // ---- Updates
+              const SizedBox(height: Sp.betweenSections),
+              SectionHeader(tr.update.title),
+              const SizedBox(height: Sp.withinGroup),
+              _row(
+                tr.update.version,
+                Row(
+                  children: [
+                    Text(
+                      '${app.server?['version'] ?? app.update?.current ?? missing}',
+                      style: Ty.num(Ty.bodyStrong),
+                    ),
+                    const SizedBox(width: Sp.betweenItems),
+                    if (app.update case final u?
+                        when u.newer && u.latest != null)
+                      AppButton(
+                        tr.update.newVersion(u.latest!.version),
+                        icon: Icons.system_update_alt,
+                        primary: true,
+                        onPressed: () => showUpdateDialog(context),
+                      )
+                    else
+                      AppButton(
+                        tr.update.check,
+                        onPressed: () => showUpdateDialog(context, check: true),
+                      ),
+                  ],
+                ),
+              ),
+              _row(
+                tr.update.autoCheck,
+                SegmentedBar<bool>(
+                  semanticLabel: tr.update.autoCheck,
+                  value: app.autoCheckUpdates,
+                  onChanged: app.setAutoCheckUpdates,
+                  segments: [
+                    Segment(true, tr.update.autoOn, hint: tr.update.privacy),
+                    Segment(false, tr.update.autoOff),
+                  ],
                 ),
               ),
 

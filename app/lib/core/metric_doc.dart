@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'support.dart';
 
 /// A section of `docs/metrics.md`, the page that defines every figure the app shows.
 /// The ids are the page's anchors; a test checks each one exists there.
@@ -25,13 +25,6 @@ enum MetricDoc {
 
   /// Opens the section in the system browser (the user clicked "口径说明").
   Future<void> open() async {
-    // Never from a test run: that would open a real browser.
-    if (!Platform.isWindows ||
-        Platform.environment.containsKey('FLUTTER_TEST')) {
-      return;
-    }
-    try {
-      await Process.run('rundll32', ['url.dll,FileProtocolHandler', url]);
-    } catch (_) {}
+    await openUrl(url);
   }
 }

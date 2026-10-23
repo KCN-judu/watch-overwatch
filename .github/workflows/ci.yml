@@ -80,5 +80,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="${GITHUB_REF_NAME}"
-          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "$tag" --notes "见 CHANGELOG.md"
+          # The release text is the CHANGELOG section: the app's update dialog shows it.
+          cargo xtask release-notes "$tag" > dist/notes.md
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "Watch Overwatch ${tag#v}" --notes-file dist/notes.md
           gh release upload "$tag" dist/*.zip dist/*.sha256 --clobber

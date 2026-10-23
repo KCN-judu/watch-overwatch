@@ -10,6 +10,7 @@ import 'app_state.dart';
 abstract class ShellActions {
   void openPalette();
   void openShortcuts();
+  void openUpdate();
   void openExport();
   void showSettings();
   void focusSearch();
@@ -279,6 +280,12 @@ List<Cmd> buildCommands() {
       shortcut: const SingleActivator(LogicalKeyboardKey.f1),
       shortcutLabel: 'F1',
       run: (a, s) => s.openShortcuts(),
+    ),
+    Cmd(
+      id: 'help.update',
+      label: tr.update.cmdCheck,
+      category: tr.core.categoryHelp,
+      run: (a, s) => s.openUpdate(),
     ),
   ];
 }
