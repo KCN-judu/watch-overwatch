@@ -128,7 +128,8 @@ void main() {
       expect(find.textContaining('每日总结 · 2026-10-22 周四'), findsOneWidget);
       expect(find.text('刷新纪录：消灭'), findsOneWidget);
       expect(find.text('之前本机最高 24'), findsOneWidget);
-      expect(find.text('全场最高治疗'), findsOneWidget);
+      expect(find.text('全场 10 人里最高'), findsOneWidget);
+      expect(find.textContaining('治疗 ×', findRichText: true), findsOneWidget);
       expect(find.text('4 连胜'), findsOneWidget);
       expect(find.text('+25%'), findsOneWidget);
       expect(find.text('31/0/9'), findsOneWidget);

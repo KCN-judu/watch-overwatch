@@ -373,11 +373,7 @@ class _HeroCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              value,
-              maxLines: 1,
-              style: Ty.num(Ty.figure).copyWith(color: color),
-            ),
+            FigureText(value, style: Ty.figure, color: color),
             Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
           ],
         ),
@@ -448,7 +444,7 @@ class _HeroCard extends StatelessWidget {
             color: enough ? null : c.textSecondary,
             tip: enough ? _rangeTip(h) : tr.heroes.smallSample(h.matches ?? 0),
           ),
-          metric(tr.heroes.playTimeLabel, _time(h.playTimeS), width: 108),
+          metric(tr.heroes.playTimeLabel, _time(h.playTimeS), width: 128),
           if (extraSort)
             metric(
               tr.heroes.per10Metric(sortLabel),

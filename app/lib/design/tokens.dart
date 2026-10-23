@@ -404,6 +404,12 @@ class DensityScope extends StatelessWidget {
 class Ty {
   static const family = 'Microsoft YaHei UI';
   static const fallback = ['Microsoft YaHei', 'Segoe UI'];
+
+  /// Big figures only (KPIs, scores, poster numbers): Windows' own Bahnschrift, a
+  /// DIN-style face, set semi-condensed so numbers read tall and tight (the reference's
+  /// "数字是主角"). Chinese in a figure ("3 胜 2 负") falls back to YaHei.
+  static const numbers = 'Bahnschrift';
+  static const _narrow = [FontVariation('wdth', 85)];
   static const _tab = [FontFeature.tabularFigures()];
   static const _even = TextLeadingDistribution.even;
   static const meta = TextStyle(
@@ -454,15 +460,21 @@ class Ty {
   /// The overview's headline figures: the page's largest type, for a handful of numbers
   /// only (docs/ui-design.md §7, the reference's “数字是主角”).
   static const display = TextStyle(
-    fontSize: 40,
-    height: 1.1,
+    fontFamily: numbers,
+    fontFamilyFallback: fallback,
+    fontVariations: _narrow,
+    fontSize: 44,
+    height: 1.05,
     fontWeight: FontWeight.w600,
     leadingDistribution: _even,
   );
 
   /// Large figures (scores) in list rows.
   static const figure = TextStyle(
-    fontSize: 24,
+    fontFamily: numbers,
+    fontFamilyFallback: fallback,
+    fontVariations: _narrow,
+    fontSize: 26,
     height: 1.2,
     fontWeight: FontWeight.w600,
     leadingDistribution: _even,
@@ -486,7 +498,10 @@ class Ty {
     letterSpacing: -1,
   );
   static const posterFigure = TextStyle(
-    fontSize: 34,
+    fontFamily: numbers,
+    fontFamilyFallback: fallback,
+    fontVariations: _narrow,
+    fontSize: 38,
     height: 1.1,
     fontWeight: FontWeight.w700,
     leadingDistribution: _even,

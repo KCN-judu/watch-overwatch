@@ -6,6 +6,7 @@ import '../../core/overview.dart';
 import '../../core/people.dart';
 import '../../core/support.dart';
 import '../../design/cards.dart';
+import '../../design/headline.dart';
 import '../../design/icons.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
@@ -126,9 +127,9 @@ String? _range(OverviewRecord r) => r.lowPct == null || r.highPct == null
         fmtPct(r.highPct, digits: 0),
       );
 
-KpiTile _recordTile(String label, OverviewRecord r) => KpiTile(
-  label,
-  _rate(r),
+HeadlineFigure _figure(String label, OverviewRecord r) => HeadlineFigure(
+  label: label,
+  value: _rate(r),
   note: _range(r) ?? tr.people.matchesNote(r.matches),
 );
 
@@ -149,30 +150,16 @@ class _List extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Flexible(
-              child: Text(
-                tr.people.coverage(result.details, app.mode.label),
-                style: Ty.meta.copyWith(color: c.textSecondary),
-              ),
-            ),
-            InfoTip(tr.people.coverageTip),
-          ],
-        ),
-        const SizedBox(height: Sp.betweenGroups),
-        SectionHeader(
-          tr.people.partyTitle,
-          info: tr.people.partyTip,
-          infoDoc: MetricDoc.winRateRange,
-        ),
-        const SizedBox(height: SectionHeader.below),
-        Wrap(
-          spacing: Sp.withinGroup,
-          runSpacing: Sp.withinGroup,
-          children: [
-            _recordTile(tr.people.partyRate, result.party),
-            _recordTile(tr.people.soloRate, result.solo),
+        HeadlineBand(
+          eyebrow: Text(
+            tr.people.coverage(result.details, app.mode.label),
+            style: Ty.meta.copyWith(color: c.textSecondary),
+          ),
+          title: tr.people.partyTitle,
+          actions: [InfoTip(tr.people.partyTip, doc: MetricDoc.winRateRange)],
+          figures: [
+            _figure(tr.people.partyRate, result.party),
+            _figure(tr.people.soloRate, result.solo),
           ],
         ),
         const SizedBox(height: Sp.betweenSections),
@@ -277,17 +264,30 @@ class _Duo extends StatelessWidget {
       body = const AfterDelay(child: Center(child: Spinner()));
     } else {
       final ids = [for (final m in d.matches) m.matchId];
+      // The hero they played most beside the player: the headline's picture.
+      final counts = <String, (EntityRef, int)>{};
+      for (final m in d.matches) {
+        final h = m.themHero;
+        if (h == null) continue;
+        counts[h.guid] = (h, (counts[h.guid]?.$2 ?? 0) + 1);
+      }
+      final top = counts.isEmpty
+          ? null
+          : (counts.values.toList()..sort((a, b) => b.$2.compareTo(a.$2)))
+                .first
+                .$1;
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            spacing: Sp.withinGroup,
-            runSpacing: Sp.withinGroup,
-            children: [
-              _recordTile(tr.people.withThem, d.withThem),
-              _recordTile(tr.people.without, d.without),
+          HeadlineBand(
+            art: app.catalog.heroBanner(top),
+            tint: heroTint(context, top),
+            title: mate.name ?? tr.people.anonymous,
+            figures: [
+              _figure(tr.people.withThem, d.withThem),
+              _figure(tr.people.without, d.without),
               if (d.against.matches > 0)
-                _recordTile(tr.people.againstThem, d.against),
+                _figure(tr.people.againstThem, d.against),
             ],
           ),
           const SizedBox(height: Sp.betweenSections),
@@ -324,8 +324,10 @@ class _Duo extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionHeader(mate.name ?? tr.people.anonymous),
-        const SizedBox(height: SectionHeader.below),
+        if (d == null) ...[
+          SectionHeader(mate.name ?? tr.people.anonymous),
+          const SizedBox(height: SectionHeader.below),
+        ],
         body,
         Padding(
           padding: const EdgeInsets.only(top: Sp.withinGroup),

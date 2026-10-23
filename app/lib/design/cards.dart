@@ -5,7 +5,7 @@ import '../l10n/strings.dart';
 import 'icons.dart';
 import 'net_pic.dart';
 import 'tokens.dart';
-import 'widgets.dart' show ProgressLine;
+import 'widgets.dart' show FigureText, ProgressLine;
 
 /// The one section heading: a short bar, the title, an optional info tip and an
 /// optional control at the right end. The bar is the accent colour unless the section
@@ -420,7 +420,7 @@ class StatCard extends StatelessWidget {
         children: [
           Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
           const SizedBox(height: Sp.hairline),
-          Text(value, style: Ty.num(Ty.figure)),
+          FigureText(value, style: Ty.figure),
           if (share != null) ...[
             const SizedBox(height: Sp.iconGap),
             ProgressLine(value: share!.clamp(0.0, 1.0), color: accent),

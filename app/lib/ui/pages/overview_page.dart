@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../../core/metric_doc.dart';
 import '../../core/benchmark.dart';
+import '../../core/metric_doc.dart';
 import '../../core/models.dart';
 import '../../core/overview.dart';
 import '../../core/support.dart';
 import '../../design/cards.dart';
 import '../../design/chart_kit.dart';
+import '../../design/faces.dart';
+import '../../design/headline.dart';
 import '../../design/icons.dart';
-import '../../design/net_pic.dart';
 import '../../design/share.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
@@ -179,12 +180,34 @@ class _Headline extends StatelessWidget {
     final rateUp = (recent.winRatePct ?? 0) >= (before.winRatePct ?? 0);
     final kdaUp = (o.recent.kda ?? 0) >= (o.before.kda ?? 0);
 
-    final figures = Wrap(
-      spacing: Sp.page,
-      runSpacing: Sp.betweenGroups,
-      crossAxisAlignment: WrapCrossAlignment.end,
-      children: [
-        _Figure(
+    return HeadlineBand(
+      art: banner,
+      tint: heroTint(context, _topHero),
+      eyebrow: Row(
+        children: [
+          Text(
+            tr.overview.coverage(listed, mode.label),
+            style: Ty.meta.copyWith(color: c.textSecondary),
+          ),
+          InfoTip(tr.overview.coverageTip),
+        ],
+      ),
+      actions: [
+        AppButton(
+          tr.recap.open,
+          icon: Icons.auto_stories_outlined,
+          tooltip: tr.recap.openTip,
+          onPressed: () => showRecap(
+            context,
+            workspace: workspace,
+            mode: mode,
+            overview: o,
+            listed: listed,
+          ),
+        ),
+      ],
+      figures: [
+        HeadlineFigure(
           label: tr.overview.winRateRecent,
           value: fmtPct(recent.winRatePct, digits: 0),
           note: rateDelta == null
@@ -206,154 +229,33 @@ class _Headline extends StatelessWidget {
                   height: 32,
                 ),
         ),
-        _Figure(
+        HeadlineFigure(
           label: tr.overview.recordRecent,
-          value: tr.overview.record(recent.wins, recent.losses, recent.draws),
-          small: true,
+          child: RecordText(recent.wins, recent.losses, draws: recent.draws),
         ),
-        _Figure(
+        HeadlineFigure(
           label: tr.overview.kdaRecent,
           value: fmtTwo(o.recent.kda),
           note: kdaDelta == null ? null : tr.overview.versusBefore(kdaDelta),
           noteColor: kdaUp ? c.positive : c.negative,
         ),
-        _Figure(
-          label: tr.overview.today,
-          value: today == null || today.matches == 0
-              ? tr.overview.noMatchesToday
-              : tr.overview.record(today.wins, today.losses, today.draws),
-          small: true,
-        ),
+        if (today == null || today.matches == 0)
+          HeadlineFigure(
+            label: tr.overview.today,
+            value: tr.overview.noMatchesToday,
+            small: true,
+          )
+        else
+          HeadlineFigure(
+            label: tr.overview.today,
+            child: RecordText(
+              today.wins,
+              today.losses,
+              draws: today.draws,
+              style: Ty.figure,
+            ),
+          ),
       ],
-    );
-
-    return ClipRect(
-      child: Stack(
-        children: [
-          // The player's most-played hero, faded in from the right behind the figures.
-          if (banner != null)
-            Positioned.fill(
-              child: ShaderMask(
-                blendMode: BlendMode.dstIn,
-                shaderCallback: (rect) => const LinearGradient(
-                  begin: Alignment.centerRight,
-                  end: Alignment.centerLeft,
-                  colors: AppColors.artFade,
-                  stops: [0, 0.6, 1],
-                ).createShader(rect),
-                child: Opacity(
-                  opacity: 0.55,
-                  child: NetPic(
-                    banner,
-                    fit: BoxFit.cover,
-                    alignment: const Alignment(0.6, -0.2),
-                  ),
-                ),
-              ),
-            ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(Sp.betweenSections),
-            decoration: BoxDecoration(
-              border: Border.all(color: c.border),
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  for (final a in AppColors.headlineScrim)
-                    c.raised.withValues(alpha: a),
-                ],
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      tr.overview.coverage(listed, mode.label),
-                      style: Ty.meta.copyWith(color: c.textSecondary),
-                    ),
-                    InfoTip(tr.overview.coverageTip),
-                    const Spacer(),
-                    AppButton(
-                      tr.recap.open,
-                      icon: Icons.auto_stories_outlined,
-                      tooltip: tr.recap.openTip,
-                      onPressed: () => showRecap(
-                        context,
-                        workspace: workspace,
-                        mode: mode,
-                        overview: o,
-                        listed: listed,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: Sp.betweenGroups),
-                figures,
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// One headline figure: small label, the figure in the display size, and a coloured
-/// comparison under it.
-class _Figure extends StatelessWidget {
-  const _Figure({
-    required this.label,
-    required this.value,
-    this.note,
-    this.noteColor,
-    this.trailing,
-    this.small = false,
-  });
-  final String label, value;
-  final String? note;
-  final Color? noteColor;
-  final Widget? trailing;
-
-  /// A phrase rather than a number: one step smaller.
-  final bool small;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Semantics(
-      container: true,
-      label: [label, value, ?note].join('，'),
-      excludeSemantics: true,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
-          const SizedBox(height: Sp.hairline),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              AnimatedValueText(
-                value,
-                style: Ty.num(small ? Ty.figure : Ty.display),
-              ),
-              if (trailing != null) ...[
-                const SizedBox(width: Sp.betweenGroups),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: Sp.iconGap),
-                  child: trailing!,
-                ),
-              ],
-            ],
-          ),
-          if (note != null)
-            Text(note!, style: Ty.meta.copyWith(color: noteColor)),
-        ],
-      ),
     );
   }
 }
@@ -382,52 +284,22 @@ class _Form extends StatelessWidget {
           ),
         ),
         const SizedBox(height: SectionHeader.below),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
+        FaceStrip(
+          faces: [
             for (final f in o.form)
-              Pressable(
+              (
+                portrait: app.catalog.heroPortrait(f.hero),
+                outcome: f.outcome,
+                tip: tr.overview.formTip(
+                  f.outcome.label,
+                  f.map?.label ?? tr.common.unknownMap,
+                  f.hero?.label ?? tr.common.unknownHero,
+                  fmtDateTime(f.startedAtMs),
+                ),
                 onTap: () {
                   workspace.openMatch(mode, f.matchId, ids);
                   app.setTab('matches');
                 },
-                semanticLabel: tr.overview.formTip(
-                  f.outcome.label,
-                  f.map?.label ?? tr.common.unknownMap,
-                  f.hero?.label ?? tr.common.unknownHero,
-                  fmtDateTime(f.startedAtMs),
-                ),
-                tooltip: tr.overview.formTip(
-                  f.outcome.label,
-                  f.map?.label ?? tr.common.unknownMap,
-                  f.hero?.label ?? tr.common.unknownHero,
-                  fmtDateTime(f.startedAtMs),
-                ),
-                radius: 0,
-                child: SizedBox(
-                  width: 52,
-                  height: 64,
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        width: 52,
-                        height: 52,
-                        child: PortraitCell(app.catalog.heroPortrait(f.hero)),
-                      ),
-                      // The result: a coloured bar with the word, not colour alone.
-                      Container(
-                        height: 12,
-                        alignment: Alignment.center,
-                        color: c.outcome(f.outcome.id),
-                        child: Text(
-                          f.outcome.label,
-                          style: Ty.micro.copyWith(color: c.onAccent),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
           ],
         ),
@@ -520,7 +392,7 @@ class _Insights extends StatelessWidget {
   void _drill(AppState app, String kind, String key) {
     for (final m in workspace.matchesFor(mode).value?.matches ?? const []) {
       final e = kind == 'map' ? m.map : m.hero;
-      if (e == null || _Groups._stable(e) != key) continue;
+      if (e == null || groupKey(e) != key) continue;
       final f = workspace.filtersFor(mode)..clear();
       if (kind == 'map') {
         f.mapGuid = e.guid;
@@ -667,14 +539,10 @@ class _Groups extends StatelessWidget {
   EntityRef? _entity(String key) {
     for (final m in workspace.matchesFor(mode).value?.matches ?? const []) {
       final e = heroes ? m.hero : m.map;
-      if (e != null && _stable(e) == key) return e;
+      if (e != null && groupKey(e) == key) return e;
     }
     return null;
   }
-
-  static String _stable(EntityRef e) => e.officialId != null
-      ? 'overwatch:${e.kind}:${e.officialId!.toLowerCase()}'
-      : 'dashen:${e.kind}:${e.guid}';
 
   @override
   Widget build(BuildContext context) {

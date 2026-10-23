@@ -5,6 +5,7 @@ import '../../core/models.dart';
 import '../../core/stats.dart';
 import '../../core/support.dart';
 import '../../design/cards.dart';
+import '../../design/headline.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../l10n/strings.dart';
@@ -259,41 +260,25 @@ class _Comparison extends StatelessWidget {
             for (final (i, h) in [a, b].indexed) ...[
               if (i > 0) const SizedBox(width: Sp.betweenSections),
               Expanded(
-                child: Panel(
-                  child: Row(
-                    children: [
-                      NetImage(
-                        catalog.heroIcon(h.hero),
-                        size: 48,
-                        fallback: h.hero.label,
-                      ),
-                      const SizedBox(width: Sp.betweenGroups),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(h.hero.label, style: Ty.title),
-                            Wrap(
-                              spacing: Sp.withinGroup,
-                              runSpacing: Sp.withinGroup,
-                              children: [
-                                KpiTile(
-                                  tr.compare.winRate,
-                                  fmtPct(h.winRatePct, digits: 0),
-                                  note: _rateNote(h),
-                                ),
-                                KpiTile(tr.compare.kda, fmtTwo(_kda(h))),
-                                KpiTile(
-                                  tr.compare.playTime,
-                                  fmtPlayTime(h.playTimeS),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                child: HeadlineBand(
+                  art: catalog.heroBanner(h.hero),
+                  tint: heroTint(context, h.hero),
+                  title: h.hero.label,
+                  figures: [
+                    HeadlineFigure(
+                      label: tr.compare.winRate,
+                      value: fmtPct(h.winRatePct, digits: 0),
+                      note: _rateNote(h),
+                    ),
+                    HeadlineFigure(
+                      label: tr.compare.kda,
+                      value: fmtTwo(_kda(h)),
+                    ),
+                    HeadlineFigure(
+                      label: tr.compare.playTime,
+                      value: fmtPlayTime(h.playTimeS),
+                    ),
+                  ],
                 ),
               ),
             ],

@@ -223,10 +223,7 @@ class _Poster extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
-              Text(
-                value,
-                style: Ty.num(Ty.posterFigure).copyWith(color: color ?? ink),
-              ),
+              FigureText(value, style: Ty.posterFigure, color: color ?? ink),
               SizedBox(
                 height: 16,
                 child: note == null
