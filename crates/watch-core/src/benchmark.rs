@@ -144,17 +144,12 @@ fn per10(detail: &MatchDetail, p: &Participant) -> Option<(String, BTreeMap<Benc
 
 /// A participant's tier: the rank in the match, else their career rank for the role.
 fn tier_of(p: &Participant, ratings: &HashMap<&str, &PlayerRating>) -> Option<&'static str> {
-    let sr = p
-        .rank
-        .as_ref()
-        .and_then(|r| r.skill_rating)
-        .map(|v| v as f64)
-        .or_else(|| {
-            ratings
-                .get(p.bnet_id.as_deref()?)
-                .and_then(|r| r.rating_for(p.role))
-                .map(|(sr, _)| sr)
-        })?;
+    let sr = p.rating().map(|(v, _)| v).or_else(|| {
+        ratings
+            .get(p.bnet_id.as_deref()?)
+            .and_then(|r| r.rating_for(p.role))
+            .map(|(sr, _)| sr)
+    })?;
     rating_tier(sr).map(|(t, _)| t)
 }
 
@@ -384,9 +379,7 @@ mod tests {
                 skill_rating: Some(sr),
                 at_ms: None,
             }),
-            career_rank: None,
-            career_other_roles: false,
-            career_rank_at_ms: None,
+            career: Default::default(),
             fleta: None,
             perks: Vec::new(),
             party_bnet_ids: Vec::new(),

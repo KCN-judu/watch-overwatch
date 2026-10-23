@@ -1458,17 +1458,31 @@ fn a_rank_snapshot_is_taken_once_kept_when_the_match_is_stored_again_and_never_r
     let by_id = std::iter::once((id.as_str(), &first)).collect();
     let mut snapped = detail.clone();
     assert!(watch_core::snapshot::take(&mut snapped, &by_id, 1_000));
-    let p = got(&snapped);
-    assert_eq!(p.career_rank.and_then(|r| r.skill_rating), Some(2100));
-    assert_eq!(p.career_rank_at_ms, Some(1_000));
+    assert!(matches!(
+        got(&snapped).career,
+        CareerRank::Ranked {
+            rank: Rank {
+                skill_rating: Some(2100),
+                ..
+            },
+            other_roles: false,
+            at_ms: Some(1_000)
+        }
+    ));
     // A later lookup at 2600 does not move it: it is this match's lobby.
     let later = rating(&id, target.role, 2600, None);
     let by_id = std::iter::once((id.as_str(), &later)).collect();
     watch_core::snapshot::take(&mut snapped, &by_id, 2_000);
-    assert_eq!(
-        got(&snapped).career_rank.and_then(|r| r.skill_rating),
-        Some(2100)
-    );
+    assert!(matches!(
+        got(&snapped).career,
+        CareerRank::Ranked {
+            rank: Rank {
+                skill_rating: Some(2100),
+                ..
+            },
+            ..
+        }
+    ));
     // The match read in again (no snapshots in it) keeps the stored one.
     let cache = watch_core::MemoryCache::new();
     cache.put_detail("1001", &snapped, &[]);
@@ -1477,11 +1491,17 @@ fn a_rank_snapshot_is_taken_once_kept_when_the_match_is_stored_again_and_never_r
         .detail(Mode::Quick, &detail.id, "1001")
         .unwrap()
         .detail;
-    assert_eq!(
-        got(&kept).career_rank.and_then(|r| r.skill_rating),
-        Some(2100)
-    );
-    assert_eq!(got(&kept).career_rank_at_ms, Some(1_000));
+    assert!(matches!(
+        got(&kept).career,
+        CareerRank::Ranked {
+            rank: Rank {
+                skill_rating: Some(2100),
+                ..
+            },
+            at_ms: Some(1_000),
+            ..
+        }
+    ));
     // Looked up and unranked is a snapshot too.
     let none = PlayerRating {
         bnet_id: id.clone(),
@@ -1491,8 +1511,10 @@ fn a_rank_snapshot_is_taken_once_kept_when_the_match_is_stored_again_and_never_r
     let by_id = std::iter::once((id.as_str(), &none)).collect();
     let mut unranked = detail.clone();
     watch_core::snapshot::take(&mut unranked, &by_id, 3_000);
-    assert!(got(&unranked).career_rank.is_none());
-    assert_eq!(got(&unranked).career_rank_at_ms, Some(3_000));
+    assert_eq!(
+        got(&unranked).career,
+        CareerRank::Unranked { at_ms: Some(3_000) }
+    );
     // A rank the match itself reported needs no snapshot and gets none.
     let mut with_rank = detail.clone();
     for p in with_rank.allies.iter_mut() {
@@ -1508,7 +1530,22 @@ fn a_rank_snapshot_is_taken_once_kept_when_the_match_is_stored_again_and_never_r
     }
     let by_id = std::iter::once((id.as_str(), &first)).collect();
     watch_core::snapshot::take(&mut with_rank, &by_id, 4_000);
-    assert!(got(&with_rank).career_rank_at_ms.is_none());
+    assert_eq!(got(&with_rank).career, CareerRank::Querying);
+    // What is shown: the match's own rank, the snapshot, unranked, or still querying.
+    let shown = |d: &MatchDetail| match got(d).rank_state(Mode::Quick) {
+        RankState::Ranked { source, rank, .. } => format!("{source} {:?}", rank.skill_rating),
+        RankState::Unranked { .. } => "unranked".into(),
+        RankState::Querying => "querying".into(),
+    };
+    assert_eq!(shown(&with_rank), "match Some(3000)");
+    assert_eq!(shown(&snapped), "snapshot Some(2100)");
+    assert_eq!(shown(&unranked), "unranked");
+    assert_eq!(shown(&detail), "querying");
+    // Nothing to look up in Stadium: unranked, not waited for.
+    assert!(matches!(
+        got(&detail).rank_state(Mode::Stadium),
+        RankState::Unranked { at_ms: None }
+    ));
 }
 
 #[test]

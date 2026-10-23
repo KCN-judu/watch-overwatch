@@ -297,6 +297,11 @@ pub const SEASON_RATINGS: Table = Table {
 
 pub const PRAGMAS: &str = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;";
 pub const VACUUM: &str = "VACUUM";
+/// Details holding rank snapshots in the 1.4.0 development format (`career_rank_at_ms`).
+pub const OLD_RANK_SNAPSHOTS: &str = "SELECT mode, match_id, subject, data FROM match_detail \
+     WHERE data LIKE '%\"career_rank_at_ms\"%'";
+pub const SET_DETAIL_DATA: &str =
+    "UPDATE match_detail SET data = ?1 WHERE mode = ?2 AND match_id = ?3 AND subject = ?4";
 pub const ATTACH_LEGACY: &str = "ATTACH DATABASE ?1 AS legacy";
 pub const DETACH_LEGACY: &str = "DETACH DATABASE legacy";
 const PARTICIPANT_INDEX: &str =

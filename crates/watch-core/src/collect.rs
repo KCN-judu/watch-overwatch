@@ -1020,6 +1020,7 @@ pub async fn collect_player<F: Fetcher>(
                     }
                 }
             }
+            crate::snapshot::unreachable(&mut detail, &unreachable, crate::now_ms() as i64);
             if let (Some(cache), Some(subject)) = (cache, subject_id.as_deref()) {
                 cache.put_detail(subject, &detail, &unreachable);
             }

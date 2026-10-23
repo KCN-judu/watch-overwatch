@@ -153,8 +153,6 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         player: player,
         ally: playerIsAlly,
         catalog: app.catalog,
-        ratingsLoading:
-            ws.ratingsLoading(mode, id) && load.value!.ratingsPending,
       );
     } else {
       body = _Body(
@@ -170,7 +168,6 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
           }
         },
         refreshing: load.loading,
-        ratingsLoading: ws.ratingsLoading(mode, id),
       );
     }
 
@@ -210,15 +207,11 @@ class _Body extends StatelessWidget {
     required this.summary,
     required this.onOpenPlayer,
     required this.refreshing,
-    required this.ratingsLoading,
   });
   final MatchDetail detail;
   final MatchSummary? summary;
   final ValueChanged<Participant> onOpenPlayer;
   final bool refreshing;
-
-  /// The players' ranks are being looked up: cells without one say so.
-  final bool ratingsLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -290,7 +283,6 @@ class _Body extends StatelessWidget {
           onSelect: onOpenPlayer,
           catalog: app.catalog,
           stadium: detail.mode == Mode.stadium,
-          ratingsLoading: ratingsLoading && detail.ratingsPending,
         ),
         const SizedBox(height: Sp.betweenSections),
         TeamTable(
@@ -301,7 +293,6 @@ class _Body extends StatelessWidget {
           onSelect: onOpenPlayer,
           catalog: app.catalog,
           stadium: detail.mode == Mode.stadium,
-          ratingsLoading: ratingsLoading && detail.ratingsPending,
         ),
         const SizedBox(height: Sp.withinGroup),
         Text(

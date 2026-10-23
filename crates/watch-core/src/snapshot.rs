@@ -7,13 +7,13 @@
 //! however much later it is opened, and lobby strength is worked out from it alone.
 use std::collections::HashMap;
 
-use crate::ir::{MatchDetail, Participant, PlayerRating, Rank, RatingFit, Role};
+use crate::ir::{CareerRank, MatchDetail, Participant, PlayerRating, Rank, RatingFit, Role};
 
 /// Whether this participant still needs a snapshot: a known player in a known role,
 /// with no rank reported by the match itself and none looked up yet.
 pub fn wants(p: &Participant) -> bool {
     let in_match = p.rank.as_ref().is_some_and(|r| r.skill_rating.is_some());
-    p.bnet_id.is_some() && p.role != Role::Unknown && !in_match && p.career_rank_at_ms.is_none()
+    p.bnet_id.is_some() && p.role != Role::Unknown && !in_match && p.career == CareerRank::Querying
 }
 
 /// Whether any participant of the match still needs a snapshot, leaving out those who
@@ -57,28 +57,34 @@ pub fn take(detail: &mut MatchDetail, ratings: &HashMap<&str, &PlayerRating>, no
         let Some(player) = p.bnet_id.as_deref().and_then(|id| ratings.get(id)) else {
             continue;
         };
-        let (rank, other) = match player.rating_for(p.role) {
-            Some((_, RatingFit::SameRole)) => {
-                (player.for_role(p.role).map(|r| r.rank.clone()), false)
-            }
+        let at_ms = Some(now_ms);
+        p.career = match player.rating_for(p.role) {
+            Some((_, RatingFit::SameRole)) => match player.for_role(p.role) {
+                Some(r) => CareerRank::Ranked {
+                    rank: r.rank.clone(),
+                    other_roles: false,
+                    at_ms,
+                },
+                None => CareerRank::Unranked { at_ms },
+            },
             Some((best, RatingFit::OtherRoles)) => {
                 // Tier and division from the rating, so the rank shows its emblem like
                 // any other rank instead of only a label.
                 let tier = crate::strength::rating_tier(best);
-                let rank = Rank {
-                    tier: tier.map(|(t, _)| t.to_owned()),
-                    division: tier.map(|(_, d)| d),
-                    score: None,
-                    skill_rating: Some(best.round() as i64),
-                    at_ms: None,
-                };
-                (Some(rank), true)
+                CareerRank::Ranked {
+                    rank: Rank {
+                        tier: tier.map(|(t, _)| t.to_owned()),
+                        division: tier.map(|(_, d)| d),
+                        score: None,
+                        skill_rating: Some(best.round() as i64),
+                        at_ms: None,
+                    },
+                    other_roles: true,
+                    at_ms,
+                }
             }
-            None => (None, false),
+            None => CareerRank::Unranked { at_ms },
         };
-        p.career_rank = rank;
-        p.career_other_roles = other;
-        p.career_rank_at_ms = Some(now_ms);
         taken = true;
     }
     taken
@@ -91,17 +97,27 @@ pub fn carry(new: &mut MatchDetail, old: &MatchDetail) {
         .allies
         .iter()
         .chain(&old.enemies)
-        .filter(|p| p.career_rank_at_ms.is_some())
+        .filter(|p| p.career != CareerRank::Querying)
         .filter_map(|p| Some((p.bnet_id.as_deref()?, p)))
         .collect();
     for p in new.allies.iter_mut().chain(new.enemies.iter_mut()) {
-        if p.career_rank_at_ms.is_some() {
+        if p.career != CareerRank::Querying {
             continue;
         }
         if let Some(o) = p.bnet_id.as_deref().and_then(|id| kept.get(id)) {
-            p.career_rank = o.career_rank.clone();
-            p.career_other_roles = o.career_other_roles;
-            p.career_rank_at_ms = o.career_rank_at_ms;
+            p.career = o.career.clone();
+        }
+    }
+}
+
+/// Those the match gave no token for cannot be looked up: unranked, so they are not
+/// waited for.
+pub fn unreachable(detail: &mut MatchDetail, ids: &[String], now_ms: i64) {
+    for p in detail.allies.iter_mut().chain(detail.enemies.iter_mut()) {
+        if wants(p) && p.bnet_id.as_ref().is_some_and(|id| ids.contains(id)) {
+            p.career = CareerRank::Unranked {
+                at_ms: Some(now_ms),
+            };
         }
     }
 }

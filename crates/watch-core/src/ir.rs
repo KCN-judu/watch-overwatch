@@ -165,6 +165,100 @@ pub struct Score {
     pub opponent: Option<i64>,
 }
 
+/// A participant's competitive rank as looked up for a match: one of three states.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(tag = "state", rename_all = "snake_case")]
+pub enum CareerRank {
+    /// Not looked up yet.
+    #[default]
+    Querying,
+    /// Looked up, and the player has no rank (or cannot be looked up: no token).
+    Unranked {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        at_ms: Option<i64>,
+    },
+    /// Looked up at `at_ms`. `other_roles`: none in the role played, so the highest of the
+    /// player's ranks in the other roles.
+    Ranked {
+        rank: Rank,
+        #[serde(default)]
+        other_roles: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        at_ms: Option<i64>,
+    },
+}
+
+/// The rank a participant is shown with, worked out from the rank the match reported and
+/// the snapshot ([`Participant::rank_state`]): what the app draws and the analyses count.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(tag = "state", rename_all = "snake_case")]
+pub enum RankState<'a> {
+    Ranked {
+        rank: &'a Rank,
+        /// `match` (reported by the match) or `snapshot` (looked up for it).
+        source: &'static str,
+        other_roles: bool,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        at_ms: Option<i64>,
+    },
+    Unranked {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        at_ms: Option<i64>,
+    },
+    Querying,
+}
+
+impl Participant {
+    /// Ranked by the match's own rank, else by the snapshot; unranked when the snapshot
+    /// says so or there is nothing to look up (Stadium has no competitive rank to look up,
+    /// an unknown player or role cannot be); otherwise still being looked up.
+    pub fn rank_state(&self, mode: Mode) -> RankState<'_> {
+        if let Some(rank) = self.rank.as_ref() {
+            return RankState::Ranked {
+                rank,
+                source: "match",
+                other_roles: false,
+                at_ms: None,
+            };
+        }
+        match &self.career {
+            CareerRank::Ranked {
+                rank,
+                other_roles,
+                at_ms,
+            } => RankState::Ranked {
+                rank,
+                source: "snapshot",
+                other_roles: *other_roles,
+                at_ms: *at_ms,
+            },
+            CareerRank::Unranked { at_ms } => RankState::Unranked { at_ms: *at_ms },
+            CareerRank::Querying
+                if mode == Mode::Stadium
+                    || self.bnet_id.is_none()
+                    || self.role == Role::Unknown =>
+            {
+                RankState::Unranked { at_ms: None }
+            }
+            CareerRank::Querying => RankState::Querying,
+        }
+    }
+
+    /// The rating the lobby counts this participant at, and whether it is borrowed from
+    /// other roles: the match's own, else the snapshot's.
+    pub fn rating(&self) -> Option<(f64, bool)> {
+        if let Some(sr) = self.rank.as_ref().and_then(|r| r.skill_rating) {
+            return Some((sr as f64, false));
+        }
+        match &self.career {
+            CareerRank::Ranked {
+                rank, other_roles, ..
+            } => Some((rank.skill_rating? as f64, *other_roles)),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Rank {
     /// Provider tier key, e.g. `Platinum`.
@@ -315,15 +409,7 @@ pub struct Participant {
     /// before), as looked up for this match: a snapshot stored with it, taken when the
     /// match was read in and never changed after (`crate::snapshot`).
     #[serde(default)]
-    pub career_rank: Option<Rank>,
-    /// `career_rank` is the highest of the player's ranks in other roles (they have none for
-    /// the role they played).
-    #[serde(default)]
-    pub career_other_roles: bool,
-    /// When the snapshot was taken (ms since the epoch); `None` while it has not been.
-    /// Set with `career_rank` empty, the player was looked up and has no rank.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub career_rank_at_ms: Option<i64>,
+    pub career: CareerRank,
     /// Fleta index, worked out from the match when a detail is shown; see
     /// [`crate::analysis::attach_fleta`].
     #[serde(default)]
