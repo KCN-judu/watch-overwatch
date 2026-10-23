@@ -1,19 +1,16 @@
-//! The local store: two SQLite files under the user's data folder.
-//!
-//!  - `matches.db`: each player's match list, finished-match details (with everyone who
-//!    took part) and an index of who took part in which match;
-//!  - `ratings.db`: players' competitive ranks, one row per player and season, stamped
-//!    with when they were fetched. A row older than [`watch_core::RATINGS_TTL`] counts as
-//!    missing and is overwritten by the next lookup.
+//! The local store: one SQLite file under the user's data folder, `matches.db`: each
+//! player's match list, finished-match details (with everyone who took part, and the rank
+//! snapshot taken for each) and an index of who took part in which match.
 //!
 //! It holds other players' names and bnet ids (they are in the match details) but never
-//! any token. Match details stored more than 180 days ago are dropped when the files
-//! open, expired ranks too; match lists are kept, as they are only ever extended.
+//! any token. Match details stored more than 180 days ago are dropped when the file opens;
+//! match lists are kept, as they are only ever extended. Players' ranks are not kept
+//! apart from the matches: the `ratings.db` of earlier versions is deleted.
 //!
 //! How the code is divided, so each kind of side effect has one home:
 //!  - [`sql`]: every statement, generated from table declarations; no SQL anywhere else;
 //!  - [`db`]: owns the connection, the lock, transactions and failure logging;
-//!  - [`matches`], [`ratings`]: typed reads and writes over a connection, nothing else
+//!  - [`matches`]: typed reads and writes over a connection, nothing else
 //!    (no clock, no files);
 //!  - [`files`]: paths, sizes and carrying an older store over;
 //!  - this module: the [`Clock`] (the only source of time), and the adapter that gives the
@@ -21,7 +18,6 @@
 mod db;
 mod files;
 mod matches;
-mod ratings;
 mod sql;
 
 use db::Db;
@@ -29,11 +25,11 @@ use files::Layout;
 use matches::ListId;
 use serde::Serialize;
 use sql::{SQL, VACUUM};
-use std::{path::Path, sync::Arc, time::Duration};
+use std::{path::Path, sync::Arc};
 use watch_core::{
-    CachedDetail, ListKey, RATINGS_TTL, StoredList, StrengthCache,
+    CachedDetail, ListKey, StoredList, StrengthCache,
     dashen::Mode,
-    ir::{MatchDetail, MatchSummary, RoleRating},
+    ir::{MatchDetail, MatchSummary},
 };
 
 /// How long a stored match detail is kept.
@@ -62,18 +58,14 @@ pub struct CacheStats {
     pub listed: usize,
     /// Distinct players seen in stored matches.
     pub participants: usize,
-    /// Players with at least one stored season of ranks.
-    pub players: usize,
     pub bytes: u64,
 }
 
 #[derive(Debug)]
 pub struct LocalStore {
     matches: Db,
-    ratings: Db,
     layout: Layout,
     clock: Arc<dyn Clock>,
-    ratings_ttl_ms: i64,
 }
 
 /// A detail fetched less than this long after its match ended may not be complete yet:
@@ -108,45 +100,29 @@ fn list_id<'a>(key: &ListKey<'a>) -> ListId<'a> {
 }
 
 impl LocalStore {
-    /// Opens the store in `dir` with the system clock and the standard rank lifetime.
+    /// Opens the store in `dir` with the system clock.
     pub fn open(dir: &Path) -> rusqlite::Result<Self> {
-        Self::open_with(dir, Arc::new(SystemClock), RATINGS_TTL)
+        Self::open_with(dir, Arc::new(SystemClock))
     }
 
-    /// Opens (creating if needed) the two databases in `dir`. What an older version kept in
-    /// `strength.db` is moved over once.
-    pub fn open_with(
-        dir: &Path,
-        clock: Arc<dyn Clock>,
-        ratings_ttl: Duration,
-    ) -> rusqlite::Result<Self> {
+    /// Opens (creating if needed) the database in `dir`. What an older version kept in
+    /// `strength.db` is moved over once; the rank cache of earlier versions is deleted.
+    pub fn open_with(dir: &Path, clock: Arc<dyn Clock>) -> rusqlite::Result<Self> {
         let layout = Layout::new(dir);
         layout.ensure();
         let matches = Db::open("matches", &layout.matches_db(), &SQL.matches_schema, &[])?;
-        let ratings = Db::open(
-            "ratings",
-            &layout.ratings_db(),
-            &SQL.ratings_schema,
-            &SQL.rating.upgrade,
-        )?;
         let now = clock.now_ms();
-        let ratings_ttl_ms = ratings_ttl.as_millis() as i64;
-        files::migrate_legacy(&layout, &matches, &ratings, now - ratings_ttl_ms);
+        files::migrate_legacy(&layout, &matches);
+        layout.remove_rank_cache();
         matches.write("drop old details", |tx| {
             matches::prune_details(tx, now - DETAIL_KEEP_MS)
         });
         matches.write("index participants", matches::backfill_participants);
         matches.write("upgrade rank snapshots", matches::upgrade_rank_snapshots);
-        // Expired ranks would only ever be overwritten: do not keep them.
-        ratings.write("drop expired ranks", |tx| {
-            ratings::prune(tx, now - ratings_ttl_ms)
-        });
         Ok(Self {
             matches,
-            ratings,
             layout,
             clock,
-            ratings_ttl_ms,
         })
     }
 
@@ -159,10 +135,6 @@ impl LocalStore {
             matches: counts.details,
             listed: counts.listed,
             participants: counts.players,
-            players: self
-                .ratings
-                .read("count players", ratings::players)
-                .unwrap_or(0),
             bytes: self.layout.bytes(),
         }
     }
@@ -219,13 +191,10 @@ impl LocalStore {
         });
     }
 
-    /// Forgets everything, in both databases.
+    /// Forgets everything.
     pub fn clear(&self) {
         self.matches.write("clear matches", matches::delete_all);
-        self.ratings.write("clear ratings", ratings::delete_all);
-        for db in [&self.matches, &self.ratings] {
-            let _ = db.with(|c| c.execute_batch(VACUUM));
-        }
+        let _ = self.matches.with(|c| c.execute_batch(VACUUM));
     }
 }
 
@@ -278,30 +247,6 @@ impl StrengthCache for LocalStore {
             matches::put_detail(tx, subject, detail, unreachable, now)
         });
     }
-
-    fn season_ratings(&self, bnet_id: &str, season: u32) -> Option<Vec<RoleRating>> {
-        let stored = self
-            .ratings
-            .read("read ranks", |c| ratings::get(c, bnet_id, season))
-            .flatten()?;
-        // A settled season never goes stale; any other counts as missing once it is past
-        // its lifetime, and the caller fetches and overwrites it.
-        let fresh = self.clock.now_ms().saturating_sub(stored.fetched_ms) <= self.ratings_ttl_ms;
-        (stored.settled || fresh).then_some(stored.ratings)
-    }
-
-    fn put_season_ratings(
-        &self,
-        bnet_id: &str,
-        season: u32,
-        ratings: &[RoleRating],
-        settled: bool,
-    ) {
-        let now = self.clock.now_ms();
-        self.ratings.write("store ranks", |tx| {
-            ratings::put(tx, bnet_id, season, ratings, settled, now)
-        });
-    }
 }
 
 #[cfg(test)]
@@ -309,10 +254,11 @@ mod tests {
     use super::*;
     use rusqlite::Connection;
     use std::sync::atomic::{AtomicI64, Ordering};
+    use std::time::Duration;
     use watch_core::{
         Catalog,
         dashen::normalize,
-        ir::{Bans, Outcome, OutcomeSource, Rank, Role, Score},
+        ir::{Bans, Outcome, OutcomeSource, Score},
     };
 
     /// A clock the test moves by hand.
@@ -342,20 +288,6 @@ mod tests {
         dir
     }
 
-    fn rating(role: Role, sr: i64) -> RoleRating {
-        RoleRating {
-            role,
-            season: None,
-            rank: Rank {
-                tier: None,
-                division: None,
-                score: None,
-                skill_rating: Some(sr),
-                at_ms: None,
-            },
-        }
-    }
-
     fn summary(id: &str, at: i64) -> MatchSummary {
         let row = serde_json::json!({"matchId": id, "beginTs": at, "roleType": "tank"});
         normalize::match_list(&serde_json::json!([row]), Mode::Quick, &Catalog::default()).remove(0)
@@ -371,10 +303,7 @@ mod tests {
 
     #[test]
     fn every_statement_is_valid_against_the_schema() {
-        for (statements, schema) in [
-            (SQL.for_matches(), &SQL.matches_schema),
-            (SQL.for_ratings(), &SQL.ratings_schema),
-        ] {
+        for (statements, schema) in [(SQL.for_matches(), &SQL.matches_schema)] {
             let conn = Connection::open_in_memory().unwrap();
             for ddl in schema {
                 conn.execute(ddl, []).unwrap();
@@ -406,108 +335,6 @@ mod tests {
         assert!(store.past_career("1", Mode::Competitive, 24).is_some());
         store.clear();
         assert_eq!(store.past_career("1", Mode::Competitive, 24), None);
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn ranks_expire_after_their_lifetime_and_the_next_lookup_overwrites_them() {
-        let dir = temp_dir("ratings");
-        let clock = ManualClock::new();
-        let store = LocalStore::open_with(&dir, clock.clone(), RATINGS_TTL).unwrap();
-        assert!(store.season_ratings("1", 25).is_none());
-        store.put_season_ratings("1", 25, &[rating(Role::Tank, 2300)], false);
-        store.put_season_ratings("1", 24, &[rating(Role::Tank, 2000)], false);
-
-        clock.advance(2 * DAY);
-        let kept = store.season_ratings("1", 25).unwrap();
-        assert_eq!(kept[0].rank.skill_rating, Some(2300));
-
-        // Past three days every season is a miss, past seasons included.
-        clock.advance(2 * DAY);
-        assert!(store.season_ratings("1", 25).is_none());
-        assert!(store.season_ratings("1", 24).is_none());
-
-        // The lookup that follows overwrites the row and stamps it again.
-        store.put_season_ratings("1", 25, &[rating(Role::Tank, 2400)], false);
-        assert_eq!(
-            store.season_ratings("1", 25).unwrap()[0].rank.skill_rating,
-            Some(2400)
-        );
-        assert_eq!(
-            store.stats().players,
-            1,
-            "one player, however often it is replaced"
-        );
-        // Other players and seasons are separate.
-        assert!(store.season_ratings("2", 25).is_none());
-        store.clear();
-        assert_eq!(store.stats().players, 0);
-        drop(store);
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn a_settled_season_never_expires_and_is_kept_when_the_store_opens() {
-        let dir = temp_dir("settled");
-        let clock = ManualClock::new();
-        {
-            let store = LocalStore::open_with(&dir, clock.clone(), RATINGS_TTL).unwrap();
-            store.put_season_ratings("1", 24, &[rating(Role::Tank, 1900)], true);
-            store.put_season_ratings("1", 25, &[rating(Role::Tank, 2300)], false);
-            clock.advance(30 * DAY);
-            assert!(
-                store.season_ratings("1", 24).is_some(),
-                "a finished season stays"
-            );
-            assert!(
-                store.season_ratings("1", 25).is_none(),
-                "the current one expired"
-            );
-        }
-        let store = LocalStore::open_with(&dir, clock, RATINGS_TTL).unwrap();
-        assert!(store.season_ratings("1", 24).is_some());
-        assert_eq!(store.stats().players, 1, "only the settled row is left");
-        drop(store);
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn a_ratings_database_from_before_the_settled_column_is_upgraded() {
-        let dir = temp_dir("upgrade");
-        std::fs::create_dir_all(&dir).unwrap();
-        {
-            let old = Connection::open(dir.join("ratings.db")).unwrap();
-            old.execute(sql::OLD_RATINGS_TABLE, []).unwrap();
-            old.execute(sql::OLD_RATINGS_ROW, []).unwrap();
-            old.execute(sql::OLD_RATINGS_ROW_EARLIER, []).unwrap();
-        }
-        let clock = ManualClock::new();
-        let store = LocalStore::open_with(&dir, clock.clone(), RATINGS_TTL).unwrap();
-        // The old rows are there. The newest season in the table stays unsettled; the one
-        // before it was asked for by its number, so it is settled.
-        assert!(store.season_ratings("1", 25).is_some());
-        assert!(store.season_ratings("1", 24).is_some());
-        clock.advance(30 * DAY);
-        assert!(store.season_ratings("1", 25).is_none());
-        assert!(store.season_ratings("1", 24).is_some());
-        store.put_season_ratings("2", 24, &[rating(Role::Tank, 1900)], true);
-        assert!(store.season_ratings("2", 24).is_some());
-        drop(store);
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn expired_ranks_are_dropped_when_the_store_opens() {
-        let dir = temp_dir("prune");
-        let clock = ManualClock::new();
-        {
-            let store = LocalStore::open_with(&dir, clock.clone(), RATINGS_TTL).unwrap();
-            store.put_season_ratings("1", 25, &[rating(Role::Tank, 2300)], false);
-        }
-        clock.advance(4 * DAY);
-        let store = LocalStore::open_with(&dir, clock, RATINGS_TTL).unwrap();
-        assert_eq!(store.stats().players, 0);
-        drop(store);
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -686,7 +513,7 @@ mod tests {
     fn a_detail_read_just_after_its_match_is_read_again_until_it_has_settled() {
         let clock = ManualClock::new();
         let dir = temp_dir("settling");
-        let store = LocalStore::open_with(&dir, clock.clone(), RATINGS_TTL).unwrap();
+        let store = LocalStore::open_with(&dir, clock.clone()).unwrap();
         let now = clock.now_ms();
         let detail = |at: i64| MatchDetail {
             id: "m".into(),
@@ -731,32 +558,37 @@ mod tests {
     }
 
     #[test]
+    fn the_rank_cache_of_earlier_versions_is_deleted_on_opening() {
+        let dir = temp_dir("rank-cache");
+        std::fs::create_dir_all(&dir).unwrap();
+        for name in ["ratings.db", "ratings.db-wal"] {
+            std::fs::write(dir.join(name), b"old").unwrap();
+        }
+        let store = LocalStore::open(&dir).unwrap();
+        assert!(!dir.join("ratings.db").exists());
+        assert!(!dir.join("ratings.db-wal").exists());
+        drop(store);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn an_older_single_file_store_is_carried_over_once() {
         let dir = temp_dir("legacy");
         std::fs::create_dir_all(&dir).unwrap();
         let clock = ManualClock::new();
-        let now = clock.now_ms();
         {
             // What the single-file version had: all tables in strength.db.
             let old = Connection::open(dir.join("strength.db")).unwrap();
-            for ddl in SQL.matches_schema.iter().chain(&SQL.ratings_schema) {
+            for ddl in &SQL.matches_schema {
                 old.execute(ddl, []).unwrap();
             }
-            let upsert = &SQL.rating.upsert;
-            old.execute(upsert, rusqlite::params!["1", 25, now, "[]", 0])
-                .unwrap();
-            // One already past its lifetime: not carried over.
-            let stale = now - (RATINGS_TTL.as_millis() as i64) - 1;
-            old.execute(upsert, rusqlite::params!["2", 25, stale, "[]", 0])
-                .unwrap();
             old.execute(
                 &SQL.list.upsert,
                 rusqlite::params!["1001", "sport", 0, "m1", 5, "{}"],
             )
             .unwrap();
         }
-        let store = LocalStore::open_with(&dir, clock, RATINGS_TTL).unwrap();
-        assert_eq!(store.stats().players, 1);
+        let store = LocalStore::open_with(&dir, clock).unwrap();
         assert_eq!(store.stats().listed, 1);
         assert!(!dir.join("strength.db").exists(), "the old file is removed");
         drop(store);
@@ -836,7 +668,7 @@ mod tests {
         .iter()
         .map(|p| p.concat())
         .collect();
-        for name in ["db.rs", "matches.rs", "ratings.rs", "files.rs", "mod.rs"] {
+        for name in ["db.rs", "matches.rs", "files.rs", "mod.rs"] {
             let path = Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("src/store")
                 .join(name);

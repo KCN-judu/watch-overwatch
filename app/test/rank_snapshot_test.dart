@@ -80,10 +80,19 @@ void main() {
     expect((badge.snapshot, badge.otherRoles), (true, true));
   });
 
-  test('the background job reads its state', () {
+  test('the background job reads its state, retries included', () {
     final job = RankJob({'state': 'paused', 'done': 4, 'remaining': 12});
-    expect(job.paused, isTrue);
+    expect(job.state, RankJobState.paused);
     expect(job.finished, isFalse);
+    final retry = RankJob({
+      'state': 'retrying',
+      'remaining': 3,
+      'retry_in_s': 30,
+    });
+    expect(
+      (retry.state, retry.retryInS, retry.finished),
+      (RankJobState.retrying, 30, false),
+    );
     expect(RankJob.opt(null), isNull);
     expect(RankJob.opt({'state': 'done'})!.finished, isTrue);
   });

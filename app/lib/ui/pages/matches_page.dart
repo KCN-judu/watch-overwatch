@@ -734,15 +734,19 @@ class _ScopeLine extends StatelessWidget {
                 ),
               ],
             ),
-        if (ws.prepareRemaining[mode] != null)
+        if (ws.prepareJobs[mode] case final job?)
           Tooltip(
             message: tr.matches.preparingTip,
-            child: Text(
-              ws.preparePaused.contains(mode)
-                  ? tr.matches.preparingPaused(ws.prepareRemaining[mode]!)
-                  : tr.matches.preparing(ws.prepareRemaining[mode]!),
-              style: secondary,
-            ),
+            child: Text(switch (job.state) {
+              RankJobState.paused => tr.matches.preparingPaused(job.remaining),
+              RankJobState.retrying => tr.matches.preparingRetry(
+                job.retryInS ?? 0,
+                job.remaining,
+              ),
+              RankJobState.waiting ||
+              RankJobState.running ||
+              RankJobState.done => tr.matches.preparing(job.remaining),
+            }, style: secondary),
           ),
         LoadStatusBar(
           compact: true,

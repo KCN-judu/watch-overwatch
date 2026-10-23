@@ -110,34 +110,6 @@ impl Table {
         format!("DELETE FROM {}{}", self.name, self.filter(by))
     }
 
-    /// Add a column to an existing table (the upgrade for databases made without it).
-    pub fn add_column(&self, column: &str) -> String {
-        let c = self
-            .columns
-            .iter()
-            .find(|c| c.name == column)
-            .unwrap_or_else(|| panic!("table {} has no column {column}", self.name));
-        format!("ALTER TABLE {} ADD COLUMN {} {}", self.name, c.name, c.decl)
-    }
-
-    /// Set `flag` to 1 on every row whose `column` is below the highest in the table.
-    pub fn flag_below_highest(&self, flag: &str, column: &str) -> String {
-        self.check(&[flag, column]);
-        format!(
-            "UPDATE {t} SET {flag} = 1 WHERE {column} < (SELECT MAX({column}) FROM {t})",
-            t = self.name
-        )
-    }
-
-    /// Delete the rows whose `column` is below `?1`, except those with `keep` set to 1.
-    pub fn delete_older_unless(&self, column: &str, keep: &str) -> String {
-        self.check(&[column, keep]);
-        format!(
-            "DELETE FROM {} WHERE {column} < ?1 AND {keep} = 0",
-            self.name
-        )
-    }
-
     /// Delete the rows whose `column` is below `?1`.
     pub fn delete_older(&self, column: &str) -> String {
         self.check(&[column]);
@@ -278,21 +250,6 @@ pub const PAST_CAREER: Table = Table {
     key: &["subject", "mode", "season"],
 };
 
-/// A player's competitive ranks in one season, stamped with when they were fetched.
-pub const SEASON_RATINGS: Table = Table {
-    name: "season_ratings",
-    columns: &[
-        col("bnet_id", "TEXT NOT NULL"),
-        col("season", "INTEGER NOT NULL"),
-        col("fetched_ms", "INTEGER NOT NULL"),
-        col("data", "TEXT NOT NULL"),
-        // 1 for a finished season asked for by its number: never expires. Last, so a
-        // database made before the column existed gets it appended by the upgrade below.
-        col("settled", "INTEGER NOT NULL DEFAULT 0"),
-    ],
-    key: &["bnet_id", "season"],
-};
-
 // ---- Fixed statements --------------------------------------------------------------------------
 
 pub const PRAGMAS: &str = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;";
@@ -370,39 +327,22 @@ pub struct ParticipantSql {
     pub delete_all: String,
 }
 
-pub struct RatingSql {
-    pub upsert: String,
-    /// `fetched_ms`, `settled`, `data` of one player and season (`?1` bnet id, `?2` season).
-    pub select: String,
-    /// Ranks fetched before `?1` that are not settled.
-    pub delete_older: String,
-    /// Brings a ratings database made before `settled` existed up to date: the later
-    /// statements only run when the first one (adding the column) did.
-    pub upgrade: Vec<String>,
-    pub count_players: String,
-    pub delete_all: String,
-}
-
-/// Copying an older single-file store into the two current ones.
+/// Copying an older single-file store into the current one.
 pub struct LegacySql {
     pub detail: String,
     pub list: String,
     pub state: String,
     pub participant: String,
-    /// Only ranks fetched at or after `?1`.
-    pub ratings: String,
 }
 
 pub struct Sql {
     pub matches_schema: Vec<String>,
-    pub ratings_schema: Vec<String>,
     pub list: ListSql,
     pub state: StateSql,
     pub detail: DetailSql,
     pub participant: ParticipantSql,
     pub player: PlayerSql,
     pub career: CareerSql,
-    pub rating: RatingSql,
     pub legacy: LegacySql,
 }
 
@@ -420,7 +360,6 @@ impl Sql {
                 PLAYER_PROFILE.create(),
                 PAST_CAREER.create(),
             ],
-            ratings_schema: vec![SEASON_RATINGS.create()],
             list: ListSql {
                 upsert: MATCH_LIST.upsert(),
                 rows: MATCH_LIST.select(
@@ -470,34 +409,11 @@ impl Sql {
                 select: PAST_CAREER.select(&["data"], &["subject", "mode", "season"], None),
                 delete_all: PAST_CAREER.delete_all(),
             },
-            rating: RatingSql {
-                upsert: SEASON_RATINGS.upsert(),
-                select: SEASON_RATINGS.select(
-                    &["fetched_ms", "settled", "data"],
-                    &["bnet_id", "season"],
-                    None,
-                ),
-                delete_older: SEASON_RATINGS.delete_older_unless("fetched_ms", "settled"),
-                // Run in order, and only if adding the column worked (that is, on a database
-                // made before it): the seasons before the newest one in the table were all
-                // asked for by their number, so they are settled.
-                upgrade: vec![
-                    SEASON_RATINGS.add_column("settled"),
-                    SEASON_RATINGS.flag_below_highest("settled", "season"),
-                ],
-                count_players: SEASON_RATINGS.count_distinct("bnet_id"),
-                delete_all: SEASON_RATINGS.delete_all(),
-            },
             legacy: LegacySql {
                 detail: MATCH_DETAIL.copy_from("legacy", None),
                 list: MATCH_LIST.copy_from("legacy", None),
                 state: LIST_STATE.copy_from("legacy", None),
                 participant: PARTICIPANT.copy_from("legacy", None),
-                ratings: SEASON_RATINGS.copy_columns_from(
-                    "legacy",
-                    &["bnet_id", "season", "fetched_ms", "data"],
-                    Some("fetched_ms"),
-                ),
             },
         }
     }
@@ -542,38 +458,10 @@ impl Sql {
         all.push(self.participant.delete_orphans);
         all
     }
-
-    /// Statements that run against `ratings.db`, for validation.
-    #[cfg(test)]
-    pub fn for_ratings(&self) -> Vec<&str> {
-        let mut all: Vec<&str> = self.ratings_schema.iter().map(String::as_str).collect();
-        all.extend(
-            [
-                &self.rating.upsert,
-                &self.rating.select,
-                &self.rating.delete_older,
-                &self.rating.count_players,
-                &self.rating.delete_all,
-            ]
-            .map(String::as_str),
-        );
-        all
-    }
 }
 
 /// All statements, generated once on first use.
 pub static SQL: LazyLock<Sql> = LazyLock::new(Sql::build);
-
-#[cfg(test)]
-/// A ratings table as an older version made it, without the `settled` column.
-#[cfg(test)]
-pub const OLD_RATINGS_TABLE: &str = "CREATE TABLE season_ratings(bnet_id TEXT NOT NULL,         season INTEGER NOT NULL, fetched_ms INTEGER NOT NULL, data TEXT NOT NULL,         PRIMARY KEY(bnet_id, season))";
-#[cfg(test)]
-pub const OLD_RATINGS_ROW: &str =
-    "INSERT INTO season_ratings VALUES ('1', 25, 1700000000000, '[]')";
-#[cfg(test)]
-pub const OLD_RATINGS_ROW_EARLIER: &str =
-    "INSERT INTO season_ratings VALUES ('1', 24, 1700000000000, '[]')";
 
 #[cfg(test)]
 mod tests {
@@ -582,19 +470,14 @@ mod tests {
     #[test]
     fn generated_statements_have_the_expected_shape() {
         assert_eq!(
-            SEASON_RATINGS.upsert(),
-            "INSERT INTO season_ratings (bnet_id, season, fetched_ms, data, settled) \
-             VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT(bnet_id, season) \
-             DO UPDATE SET fetched_ms = excluded.fetched_ms, data = excluded.data, \
-             settled = excluded.settled"
+            PAST_CAREER.upsert(),
+            "INSERT INTO past_career (subject, mode, season, data) \
+             VALUES (?1, ?2, ?3, ?4) ON CONFLICT(subject, mode, season) \
+             DO UPDATE SET data = excluded.data"
         );
         assert_eq!(
-            SQL.rating.delete_older,
-            "DELETE FROM season_ratings WHERE fetched_ms < ?1 AND settled = 0"
-        );
-        assert_eq!(
-            SQL.rating.select,
-            "SELECT fetched_ms, settled, data FROM season_ratings WHERE bnet_id = ?1 AND season = ?2"
+            SQL.career.select,
+            "SELECT data FROM past_career WHERE subject = ?1 AND mode = ?2 AND season = ?3"
         );
         assert_eq!(
             SQL.list.delete,
@@ -622,6 +505,6 @@ mod tests {
     #[test]
     #[should_panic(expected = "has no column")]
     fn a_statement_naming_a_missing_column_cannot_be_generated() {
-        let _ = SEASON_RATINGS.select(&["data"], &["nobody"], None);
+        let _ = PAST_CAREER.select(&["data"], &["nobody"], None);
     }
 }

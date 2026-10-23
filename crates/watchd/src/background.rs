@@ -17,7 +17,7 @@ use axum::{
 use serde::Serialize;
 use serde_json::Value;
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -25,6 +25,7 @@ use tokio::sync::Notify;
 use watch_core::collect::{self, Fetched, Fetcher};
 use watch_core::dashen::{Endpoint, Mode};
 use watch_core::ir::MatchSummary;
+use watch_core::snapshot::Lookups;
 use watch_core::{Failure, ListKey, StrengthCache as _};
 
 /// How long the other queries must have been quiet before the job asks the upstream again.
@@ -33,6 +34,13 @@ pub(crate) const QUIET: Duration = Duration::from_millis(1500);
 const BATCH: usize = 3;
 /// How many of the newest matches are kept with snapshots.
 pub(crate) const WINDOW: usize = 300;
+/// The pauses before the matches whose lookups failed are tried again; after the last,
+/// they wait for the next start.
+const RETRIES: [Duration; 3] = [
+    Duration::from_secs(30),
+    Duration::from_secs(60),
+    Duration::from_secs(120),
+];
 
 /// The queries running now that are not the background job's, and when the last ended.
 #[derive(Default)]
@@ -99,18 +107,25 @@ impl Foreground {
 #[derive(Clone, Serialize)]
 pub(crate) struct JobStatus {
     /// `waiting` (queued behind another), `running`, `paused` (giving way to a query),
-    /// `done` (every match that can be has its snapshots).
+    /// `retrying` (only matches whose lookups failed are left; tried again after
+    /// `retry_in_s`), `done` (nothing left, or the retries are used up).
     pub state: &'static str,
     /// Matches finished in this job, and still to do.
     pub done: usize,
     pub remaining: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub retry_in_s: Option<u64>,
 }
 
-#[derive(Clone)]
+/// One job: whom it is for, and its own state: who has been asked (so a player is asked
+/// once per job), the matches that failed this round and how many rounds were retried.
 struct Job {
     subject: String,
     mode: Mode,
     session: Session,
+    lookups: Arc<Mutex<Lookups>>,
+    deferred: HashSet<String>,
+    retries: usize,
 }
 
 type JobKey = (String, Mode);
@@ -135,6 +150,7 @@ impl RankJobs {
             state: "waiting",
             done: 0,
             remaining: 0,
+            retry_in_s: None,
         });
         f(status);
     }
@@ -156,6 +172,7 @@ impl RankJobs {
                 state: "waiting",
                 done: 0,
                 remaining: 0,
+                retry_in_s: None,
             });
             if matches!(status.state, "done") {
                 status.state = "waiting";
@@ -225,6 +242,9 @@ pub(crate) fn start(s: &AppState, session: Session, mode: Mode) -> Option<String
         subject: subject.clone(),
         mode,
         session,
+        lookups: Arc::default(),
+        deferred: HashSet::new(),
+        retries: 0,
     });
     Some(subject)
 }
@@ -240,28 +260,69 @@ pub(crate) async fn run(s: AppState) {
     }
 }
 
-async fn run_job(s: &AppState, job: Job) {
+async fn run_job(s: &AppState, mut job: Job) {
     let Some(store) = s.store.clone() else {
         return;
     };
     let key: JobKey = (job.subject.clone(), job.mode);
-    let mut last = usize::MAX;
+    let mut last: Option<usize> = None;
     loop {
         let waiting = pending(&store, &job.subject, job.mode);
         let remaining = waiting.len();
-        if last != usize::MAX {
-            let step = last.saturating_sub(remaining);
+        if let Some(before) = last {
+            let step = before.saturating_sub(remaining);
             s.rank_jobs.set(&key, |st| st.done += step);
         }
-        // Done, or a step that changed nothing (the rest cannot be looked up now).
-        if remaining == 0 || remaining >= last {
+        last = Some(remaining);
+        if remaining == 0 {
             s.rank_jobs.set(&key, |st| {
                 st.state = "done";
-                st.remaining = remaining;
+                st.remaining = 0;
+                st.retry_in_s = None;
             });
             return;
         }
-        last = remaining;
+        // Matches that failed this round wait at the back: the ones behind them go first.
+        let ready: Vec<MatchSummary> = waiting
+            .into_iter()
+            .filter(|m| !job.deferred.contains(&m.id))
+            .collect();
+        if ready.is_empty() {
+            // Only failed ones are left: they go back into the queue after a pause, a few
+            // times; after that they wait for the next start (the next refresh).
+            if job.retries >= RETRIES.len() {
+                s.rank_jobs.set(&key, |st| {
+                    st.state = "done";
+                    st.remaining = remaining;
+                    st.retry_in_s = None;
+                });
+                return;
+            }
+            let pause = RETRIES[job.retries];
+            job.retries += 1;
+            job.deferred.clear();
+            s.rank_jobs.set(&key, |st| {
+                st.state = "retrying";
+                st.remaining = remaining;
+                st.retry_in_s = Some(pause.as_secs());
+            });
+            // Waits out the pause; a job started meanwhile goes first, and this one keeps
+            // its place in the retries and carries on after it. A wake-up with no job
+            // waiting (left over from an earlier start) does not cut the pause short.
+            let until = tokio::time::Instant::now() + pause;
+            loop {
+                tokio::select! {
+                    _ = tokio::time::sleep_until(until) => break,
+                    _ = s.rank_jobs.wake.notified() => {}
+                }
+                if s.rank_jobs.others_waiting() {
+                    s.rank_jobs.set(&key, |st| st.state = "waiting");
+                    s.rank_jobs.put_back(job);
+                    return;
+                }
+            }
+            continue;
+        }
         // A job started since goes first; this one carries on after it.
         if s.rank_jobs.others_waiting() {
             s.rank_jobs.set(&key, |st| {
@@ -274,6 +335,7 @@ async fn run_job(s: &AppState, job: Job) {
         s.rank_jobs.set(&key, |st| {
             st.state = "running";
             st.remaining = remaining;
+            st.retry_in_s = None;
         });
         let fetcher = Yielding {
             inner: SessionFetcher {
@@ -285,8 +347,24 @@ async fn run_job(s: &AppState, job: Job) {
             jobs: &s.rank_jobs,
             key: &key,
         };
-        let batch: Vec<MatchSummary> = waiting.into_iter().take(BATCH).collect();
-        prepare_with(&fetcher, s, &job.session, job.mode, batch, true).await;
+        let batch: Vec<MatchSummary> = ready.into_iter().take(BATCH).collect();
+        let ids: Vec<String> = batch.iter().map(|m| m.id.clone()).collect();
+        prepare_with(
+            &fetcher,
+            s,
+            &job.session,
+            job.mode,
+            batch,
+            true,
+            Some(job.lookups.clone()),
+        )
+        .await;
+        // What is still missing after its step failed somewhere: to the back.
+        for id in ids {
+            if !collect::match_prepared(store.as_ref(), job.mode, &id, &job.subject, 0) {
+                job.deferred.insert(id);
+            }
+        }
     }
 }
 
@@ -477,6 +555,68 @@ mod tests {
             .count();
         assert!(snapped > 0);
         assert!(!watch_core::snapshot::missing(&kept.detail));
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[tokio::test]
+    async fn matches_whose_lookups_fail_go_back_into_the_queue_after_a_pause() {
+        use watch_core::{Policy, SecretsFile, WatchClient};
+        let dir = std::env::temp_dir().join(format!("watchd-retry-{}", uuid::Uuid::new_v4()));
+        let store = crate::store::LocalStore::open(&dir).ok().map(Arc::new);
+        // Nothing listens on port 9 and this is not the sample player: every request fails.
+        let client = WatchClient::with_base(
+            SecretsFile { accounts: vec![] },
+            "http://127.0.0.1:9",
+            Policy::default(),
+        )
+        .unwrap();
+        let s = AppState {
+            client: Arc::new(client),
+            sessions: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
+            settings_lock: Arc::new(tokio::sync::Mutex::new(())),
+            catalog: Arc::new(watch_core::Catalog::bundled()),
+            progress: Arc::new(Mutex::new(HashMap::new())),
+            store: store.clone(),
+            season_checked: Arc::default(),
+            updates: Arc::default(),
+            foreground: Arc::default(),
+            rank_jobs: Arc::default(),
+        };
+        let store = store.unwrap();
+        let session = Session {
+            token: "nobody".into(),
+            identity: json!({"bnetId": "9"}),
+            cache: Arc::default(),
+        };
+        let row: MatchSummary = watch_core::dashen::normalize::match_list(
+            &json!([{"matchId": "m1", "beginTs": 5, "roleType": "tank"}]),
+            Mode::Quick,
+            &watch_core::Catalog::default(),
+        )
+        .remove(0);
+        store.put_match_rows(
+            ListKey {
+                subject: "9",
+                mode: Mode::Quick,
+                season: None,
+            },
+            &[row],
+        );
+        tokio::spawn(run(s.clone()));
+        start(&s, session, Mode::Quick).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(20);
+        loop {
+            let st = s.rank_jobs.status("9", Mode::Quick).unwrap();
+            if st.state == "retrying" {
+                // Not given up: the match waits for its retry, with the pause stated.
+                assert_eq!(st.remaining, 1);
+                assert_eq!(st.retry_in_s, Some(30));
+                break;
+            }
+            assert_ne!(st.state, "done", "gave up without retrying");
+            assert!(Instant::now() < deadline, "never retried: {}", st.state);
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
         let _ = std::fs::remove_dir_all(dir);
     }
 }

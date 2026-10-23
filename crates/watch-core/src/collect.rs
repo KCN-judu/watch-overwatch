@@ -43,8 +43,8 @@ pub struct CollectPlan {
     /// enough or the history is exhausted. `max_details` is ignored.
     pub details_per_role: Option<usize>,
     pub hero_board: bool,
-    /// Look up each detail participant's competitive career rank (one request per
-    /// player, two when the role they played needs a previous-season fallback).
+    /// Take each detail participant's rank snapshot: their competitive ranks this season
+    /// (one request per player, a second when the provider's first answer is empty).
     /// Needed for lobby strength outside competitive, where details carry no ranks.
     pub lobby_ratings: bool,
     pub max_rated_players: usize,
@@ -52,8 +52,6 @@ pub struct CollectPlan {
     /// three. Applies to `details_per_role`: paging and the choice of matches look at
     /// these roles only.
     pub roles: Vec<Role>,
-    /// Look current-season ratings up again even if they are cached.
-    pub refresh_ratings: bool,
     /// Match-list rows the caller has already read (the app's match page). When not
     /// empty, the list is not fetched again: these rows are the history to choose
     /// from, in their own words, and only their details and ratings are looked up.
@@ -71,9 +69,13 @@ pub struct CollectPlan {
     /// Optional live progress sink; never serialised.
     #[serde(skip)]
     pub progress: Option<Arc<Progress>>,
-    /// Optional store for finished-match details and ratings; never serialised.
+    /// Optional store for match lists and finished-match details; never serialised.
     #[serde(skip)]
     pub cache: Option<Arc<dyn StrengthCache>>,
+    /// The lookup state of a longer process (the background rank job), so a player
+    /// answered in one run is not asked again in the next; never serialised.
+    #[serde(skip)]
+    pub lookups: Option<Arc<std::sync::Mutex<crate::snapshot::Lookups>>>,
 }
 
 impl Default for CollectPlan {
@@ -89,13 +91,13 @@ impl Default for CollectPlan {
             lobby_ratings: false,
             max_rated_players: 60,
             roles: Vec::new(),
-            refresh_ratings: false,
             known_matches: Vec::new(),
             list_quota: None,
             match_limit: None,
             profile: true,
             progress: None,
             cache: None,
+            lookups: None,
         }
     }
 }
@@ -633,40 +635,6 @@ fn rating_needs(detail: &MatchDetail) -> Vec<(String, Option<String>, Role)> {
         .collect()
 }
 
-/// Folds the stored ranks of a player into `lookups` and settles them, when the cache
-/// holds every season that could answer (this one, and the one before unless this one
-/// ranks every role). Answers whether it did; otherwise a request is needed.
-fn answer_from_cache(
-    lookups: &mut crate::snapshot::Lookups,
-    cache: &dyn StrengthCache,
-    id: &str,
-    current: u32,
-    previous: Option<u32>,
-    refresh: bool,
-) -> bool {
-    if refresh {
-        return false;
-    }
-    let Some(rows) = cache.season_ratings(id, current) else {
-        return false;
-    };
-    let mut probe = crate::snapshot::Lookups::default();
-    probe.answer(id, &rows);
-    let older = match previous.filter(|_| !probe.complete(id)) {
-        Some(p) => match cache.season_ratings(id, p) {
-            Some(rows) => Some(rows),
-            None => return false,
-        },
-        None => None,
-    };
-    lookups.answer(id, &rows);
-    if let Some(rows) = older {
-        lookups.answer(id, &rows);
-    }
-    lookups.finish(id);
-    true
-}
-
 /// The newest `limit` of `rows` (all of them without a limit), newest first.
 fn newest(mut rows: Vec<MatchSummary>, limit: Option<usize>) -> Vec<MatchSummary> {
     rows.sort_by_key(|m| std::cmp::Reverse(m.started_at_ms));
@@ -695,35 +663,6 @@ pub fn match_prepared(
     cache
         .detail(mode, match_id, subject)
         .is_some_and(|kept| !crate::snapshot::missing(&kept.detail))
-}
-
-/// A player's ranks as stored locally: this season's, and the one before for roles this
-/// season has none in. Nothing is asked of the provider.
-pub fn stored_rating(cache: &dyn StrengthCache, bnet_id: &str, current: u32) -> PlayerRating {
-    let previous = current.checked_sub(1).filter(|s| *s > 0);
-    let mut roles = Vec::new();
-    for season in std::iter::once(current).chain(previous) {
-        if let Some(rows) = cache.season_ratings(bnet_id, season) {
-            merge_ratings(&mut roles, rows, season, current);
-        }
-    }
-    PlayerRating {
-        bnet_id: bnet_id.to_owned(),
-        name: None,
-        roles,
-    }
-}
-
-/// Adds `rows` (read from, or about to be stored for, season `key`) to a player's
-/// ratings: the first rank seen for a role wins, and the season is stated relative to now
-/// (`None` is the current season) however long ago it was stored.
-fn merge_ratings(ratings: &mut Vec<RoleRating>, rows: Vec<RoleRating>, key: u32, current: u32) {
-    for mut r in rows {
-        r.season = (key != current).then_some(key);
-        if !ratings.iter().any(|x| x.role == r.role) {
-            ratings.push(r);
-        }
-    }
 }
 
 /// What reading the player's card and careers gave.
@@ -906,15 +845,17 @@ pub async fn collect_player<F: Fetcher>(
     // Players of each match read in this run who cannot be looked up.
     let mut unreachable_of: std::collections::HashMap<String, Vec<String>> =
         std::collections::HashMap::new();
-    // What this run finds out about players' ranks (crate::snapshot::Lookups).
-    let mut lookups = crate::snapshot::Lookups::default();
+    // What this run (or the background job it is part of) finds out about players' ranks.
+    let mut lookups = match &plan.lookups {
+        Some(shared) => std::mem::take(&mut *shared.lock().unwrap()),
+        None => crate::snapshot::Lookups::default(),
+    };
     // Players whose rank is needed, with their token when the match was fetched this run.
     // Memory only; tokens never reach the cache.
     let mut unrated: Vec<Unrated> = Vec::new();
     let cache = plan.cache.as_deref();
     let subject_id = profile.bnet_id.clone();
     let current = cat.current_season.get();
-    let previous = current.checked_sub(1).filter(|s| *s > 0);
     let mut cache_hits = 0usize;
     let chosen: Vec<usize> = if !plan.known_matches.is_empty() {
         // The caller already chose which matches to look up; take them all.
@@ -955,19 +896,8 @@ pub async fn collect_player<F: Fetcher>(
                 .collect();
             let mut detail = detail;
             let mut covered = !plan.lobby_ratings || !crate::snapshot::missing(&detail);
-            if !covered
-                && needs.iter().all(|(id, _, _)| {
-                    answer_from_cache(
-                        &mut lookups,
-                        cache,
-                        id,
-                        current,
-                        previous,
-                        plan.refresh_ratings,
-                    )
-                })
-            {
-                // Ranks looked up a moment ago for another match: snapshot from them.
+            if !covered && needs.iter().all(|(id, _, _)| lookups.known(id)) {
+                // Everyone was answered earlier in this run or job: snapshot from that.
                 lookups.take(&mut detail);
                 if let Some(subject) = subject_id.as_deref() {
                     cache.put_detail(subject, &detail, &unreachable);
@@ -1040,7 +970,6 @@ pub async fn collect_player<F: Fetcher>(
         }
     }
 
-    let mut player_ratings = Vec::new();
     let to_rate = unrated.len().min(plan.max_rated_players);
     report(plan.progress.as_deref(), |s| {
         s.phase = "ratings".into();
@@ -1048,47 +977,31 @@ pub async fn collect_player<F: Fetcher>(
         s.total = to_rate;
         s.note.clear();
     });
+    let mut rated = Vec::new();
     for u in unrated.into_iter().take(plan.max_rated_players) {
         report(plan.progress.as_deref(), |s| {
             s.done += 1;
             s.note = u.name.clone().unwrap_or_default();
         });
-        let mut ratings: Vec<RoleRating> = Vec::new();
-        // Current season first; the previous season only fills roles still unrated. The
-        // provider's unnumbered "current season" answer is sometimes empty while the same
-        // season asked for by number is not (seen 2026-10-23), so an empty one is asked
-        // again by number.
-        let mut current_empty = false;
-        let numbered_current = Some(Some(current));
-        let attempts = [Some(None), numbered_current, previous.map(Some)];
-        for season in attempts.into_iter().flatten() {
-            if season == Some(current) && !current_empty {
-                continue;
-            }
-            // Every role ranked already: an older season has nothing to add.
-            if lookups.complete(&u.id) {
-                break;
-            }
-            let key = season.unwrap_or(current);
-            // The numbered retry shares the current season's cache key, and that entry is the
-            // empty answer being retried.
-            let skip_cache = (plan.refresh_ratings && season.is_none()) || season == Some(current);
-            if let Some(cache) = cache.filter(|_| !skip_cache)
-                && let Some(rows) = cache.season_ratings(&u.id, key)
-            {
-                cache_hits += 1;
-                report(plan.progress.as_deref(), |s| s.cached += 1);
-                current_empty |= season.is_none() && rows.is_empty();
-                lookups.answer(&u.id, &rows);
-                merge_ratings(&mut ratings, rows, key, current);
-                continue;
-            }
-            let Some(player_token) = u.token.as_deref() else {
-                // Cannot be asked now: what is missing stays to be looked up later.
-                lookups.failed(&u.id);
-                continue;
-            };
-            let endpoint = Mode::Competitive.career();
+        rated.push((u.id.clone(), u.name.clone()));
+        // Answered already in this run or this background job: ask nothing.
+        if lookups.known(&u.id) {
+            cache_hits += 1;
+            report(plan.progress.as_deref(), |s| s.cached += 1);
+            continue;
+        }
+        lookups.begin(&u.id);
+        let Some(player_token) = u.token.as_deref() else {
+            // Cannot be asked now (no token at hand): a later attempt reads the match again.
+            lookups.failed(&u.id);
+            continue;
+        };
+        // This season only: a role without a rank this season is unranked. The provider's
+        // unnumbered "current season" answer is sometimes empty while the same season
+        // asked for by number is not (seen 2026-10-23), so an empty one is asked again by
+        // number.
+        let endpoint = Mode::Competitive.career();
+        for season in [None, Some(current)] {
             let result = f
                 .fetch(
                     endpoint,
@@ -1112,34 +1025,21 @@ pub async fn collect_player<F: Fetcher>(
             let Ok(v) = result else {
                 // No answer is not "no rank": the roles stay to be asked again.
                 lookups.failed(&u.id);
-                continue;
+                break;
             };
-            {
-                let rows = normalize::role_ratings(normalize::payload(&v.value), season);
-                if season.is_none() && rows.is_empty() {
-                    current_empty = true;
-                    continue;
-                }
-                lookups.answer(&u.id, &rows);
-                if let Some(cache) = cache {
-                    // A finished season's ranks never change.
-                    cache.put_season_ratings(
-                        &u.id,
-                        key,
-                        &rows,
-                        season.is_some_and(|n| n < current),
-                    );
-                }
-                merge_ratings(&mut ratings, rows, key, current);
+            let rows = normalize::role_ratings(normalize::payload(&v.value), season);
+            if season.is_none() && rows.is_empty() {
+                continue;
             }
+            lookups.answer(&u.id, &rows);
+            break;
         }
         lookups.finish(&u.id);
-        player_ratings.push(PlayerRating {
-            bnet_id: u.id,
-            name: u.name,
-            roles: ratings,
-        });
     }
+    let player_ratings: Vec<PlayerRating> = rated
+        .into_iter()
+        .map(|(id, name)| lookups.rating(&id, name))
+        .collect();
 
     // Every match read in this run gets the snapshots of the players just looked up, and
     // is stored with them.
@@ -1176,6 +1076,10 @@ pub async fn collect_player<F: Fetcher>(
         if let Ok(v) = result {
             hero_boards = normalize::player_hero_board(normalize::payload(&v.value), cat);
         }
+    }
+
+    if let Some(shared) = &plan.lookups {
+        *shared.lock().unwrap() = lookups;
     }
 
     PlayerDataset {

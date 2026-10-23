@@ -25,7 +25,7 @@ pub mod stadium;
 pub mod stats;
 pub mod strength;
 pub mod update;
-pub use cache::{CachedDetail, ListKey, MemoryCache, RATINGS_TTL, StoredList, StrengthCache};
+pub use cache::{CachedDetail, ListKey, MemoryCache, StoredList, StrengthCache};
 pub use catalog::*;
 pub use credentials::*;
 pub use domain::*;

@@ -397,7 +397,7 @@ mod tests {
         let by_id: HashMap<&str, &PlayerRating> =
             ratings.iter().map(|r| (r.bnet_id.as_str(), r)).collect();
         let mut d = d.clone();
-        crate::snapshot::Lookups::known(&by_id).take(&mut d);
+        crate::snapshot::Lookups::from_ratings(&by_id).take(&mut d);
         match_strength(&d)
     }
 
