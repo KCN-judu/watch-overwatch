@@ -549,6 +549,7 @@ mod tests {
             }),
             career_rank: None,
             career_other_roles: false,
+            career_rank_at_ms: None,
             fleta: None,
             perks: Vec::new(),
             party_bnet_ids: Vec::new(),
@@ -586,7 +587,7 @@ mod tests {
                 )
             })
             .collect();
-        let strength = crate::strength::lobby_strength(&details, &[]);
+        let strength = crate::strength::lobby_strength(&details);
         let ctx = Context {
             strength: Some(&strength),
             benchmarks: &[],

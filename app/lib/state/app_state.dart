@@ -216,34 +216,35 @@ class PlayerWorkspace extends ChangeNotifier {
   final prepareRemaining = <Mode, int>{};
   final _preparing = <Mode>{};
 
-  /// Looks the ranks up for the newest matches a few at a time, after the list has been
-  /// updated, so that the strength analysis (and a match's detail) later only has to
-  /// compute. It waits while an analysis runs, and stops when a batch makes no progress.
+  /// Whether the background rank job of a mode is giving way to another query.
+  final preparePaused = <Mode>{};
+
+  /// After the list has been updated, has the service take the rank snapshots of the
+  /// newest matches in the background, and follows it: the job gives way to every other
+  /// query and carries on by itself, so this only reads where it stands.
   Future<void> prepareInBackground(Mode mode) async {
     if (mode == Mode.stadium || _closed || !_preparing.add(mode)) return;
     try {
-      var last = -1;
-      while (!_closed) {
-        if (strengthFor(mode).loading) {
-          await Future<void>.delayed(const Duration(seconds: 2));
-          continue;
+      RankJob? job = await _call<RankJob?>(
+        (s) => app.api.startRankJob(s, mode),
+      );
+      while (!_closed && job != null && !job.finished) {
+        prepareRemaining[mode] = job.remaining;
+        if (job.paused) {
+          preparePaused.add(mode);
+        } else {
+          preparePaused.remove(mode);
         }
-        // Every match of the list, newest first: the strength analysis can reach any of
-        // them (older ones when a role has too few), and a match's detail shows ranks too.
-        final r = await _call((s) => app.api.prepare(s, mode, window: 300));
-        if (!r.enabled || r.remaining == 0) break;
-        prepareRemaining[mode] = r.remaining;
         notifyListeners();
-        // A batch that left as many waiting as before could not be prepared: stop.
-        if (last != -1 && r.remaining >= last) break;
-        last = r.remaining;
-        await Future<void>.delayed(const Duration(seconds: 1));
+        await Future<void>.delayed(const Duration(milliseconds: 1500));
+        job = await _call<RankJob?>((s) => app.api.rankJob(s, mode));
       }
     } on ApiError {
       // A nicety: whatever is missing is looked up when it is needed.
     } finally {
       _preparing.remove(mode);
       prepareRemaining.remove(mode);
+      preparePaused.remove(mode);
       if (!_closed) notifyListeners();
     }
   }

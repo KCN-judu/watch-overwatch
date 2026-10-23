@@ -19,6 +19,7 @@ pub mod progress;
 pub mod ranks;
 mod report;
 mod scheduler;
+pub mod snapshot;
 pub mod stadium;
 pub mod stats;
 pub mod strength;

@@ -25,7 +25,7 @@ use watch_core::{
     summarize, views,
 };
 
-type QueryCache = Mutex<HashMap<String, (Instant, RequestMetric, Value)>>;
+pub(crate) type QueryCache = Mutex<HashMap<String, (Instant, RequestMetric, Value)>>;
 
 const SESSION_TTL: Duration = Duration::from_secs(3600);
 /// Pages read by multi-page views (summary, sameplay).
@@ -76,10 +76,10 @@ pub(crate) fn redact(mut value: Value) -> Value {
 }
 
 /// Upstream access through one player's short-lived cache.
-struct SessionFetcher<'a> {
-    client: &'a WatchClient,
-    cache: &'a QueryCache,
-    fresh: bool,
+pub(crate) struct SessionFetcher<'a> {
+    pub client: &'a WatchClient,
+    pub cache: &'a QueryCache,
+    pub fresh: bool,
 }
 
 impl Fetcher for SessionFetcher<'_> {
@@ -95,13 +95,14 @@ impl Fetcher for SessionFetcher<'_> {
     }
 }
 
-struct Session {
-    token: String,
-    identity: Value,
-    cache: Arc<QueryCache>,
+#[derive(Clone)]
+pub(crate) struct Session {
+    pub token: String,
+    pub identity: Value,
+    pub cache: Arc<QueryCache>,
 }
 
-async fn session(s: &AppState, id: &str, expired: &str) -> Result<Session, Failure> {
+pub(crate) async fn session(s: &AppState, id: &str, expired: &str) -> Result<Session, Failure> {
     let sessions = s.sessions.lock().await;
     sessions
         .get(id)
@@ -301,10 +302,8 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
     {
         let current = s.catalog.current_season.get();
         let rate = mode != Mode::Stadium;
+        // The rank snapshots are part of the stored detail.
         let mut detail = kept.detail;
-        if rate {
-            collect::attach_career_ranks(&mut detail, store.as_ref(), current);
-        }
         analysis::attach_fleta(&mut detail);
         view.ir = detail_json(&detail);
         view.extra.insert("cached".into(), json!(true));
@@ -385,7 +384,10 @@ async fn load_view(s: &AppState, input: &ViewInput) -> Result<ViewResult, Failur
                 cache.put_detail(subject, &detail, &unreachable);
                 if mode != Mode::Stadium {
                     let current = s.catalog.current_season.get();
-                    collect::attach_career_ranks(&mut shown, cache.as_ref(), current);
+                    // Snapshots of an earlier read of the match carry over when stored.
+                    if let Some(kept) = cache.detail(mode, &detail.id, subject) {
+                        watch_core::snapshot::carry(&mut shown, &kept.detail);
+                    }
                     view.extra.insert(
                         "ratings_pending".into(),
                         json!(!collect::match_prepared(
@@ -603,7 +605,7 @@ async fn details_for(
     details
 }
 
-fn subject_id(identity: &Value) -> Option<String> {
+pub(crate) fn subject_id(identity: &Value) -> Option<String> {
     identity["bnetId"]
         .as_str()
         .map(String::from)
@@ -832,6 +834,20 @@ async fn prepare_matches(
         cache: &player.cache,
         fresh: false,
     };
+    prepare_with(&fetcher, s, player, mode, rows, ratings).await;
+}
+
+/// Reads the details of `rows` that are not stored and, with `ratings`, takes the rank
+/// snapshots still missing, through `fetcher` (the background job passes one that gives
+/// way to other queries).
+pub(crate) async fn prepare_with<F: Fetcher + Sync>(
+    fetcher: &F,
+    s: &AppState,
+    player: &Session,
+    mode: Mode,
+    rows: Vec<MatchSummary>,
+    ratings: bool,
+) {
     let plan = CollectPlan {
         modes: vec![mode],
         known_matches: rows,
@@ -848,7 +864,7 @@ async fn prepare_matches(
     };
     let _ = tokio::time::timeout(
         Duration::from_secs(120),
-        collect::collect_player(&fetcher, &s.catalog, &player.token, &player.identity, &plan),
+        collect::collect_player(fetcher, &s.catalog, &player.token, &player.identity, &plan),
     )
     .await;
 }
@@ -1029,7 +1045,7 @@ pub(crate) async fn player_overview(
             .iter()
             .map(|d| (d.id.clone(), d.clone()))
             .collect();
-        let strength = watch_core::strength::lobby_strength(&by_id, &inputs.ratings);
+        let strength = watch_core::strength::lobby_strength(&by_id);
         let benchmarks = inputs.benchmarks(&subject, mode);
         let context = watch_core::insights::Context {
             strength: Some(&strength),
@@ -1198,7 +1214,7 @@ pub(crate) async fn player_ranks(
             .iter()
             .map(|d| (d.id.clone(), d.clone()))
             .collect();
-        let strength = watch_core::strength::lobby_strength(&by_id, &inputs.ratings);
+        let strength = watch_core::strength::lobby_strength(&by_id);
         let track =
             watch_core::ranks::rank_track(&rows, &input.season_matches, current, Some(&strength));
         json!({"enabled": true, "listed": rows.len(), "current_season": current, "ranks": track})
@@ -1588,6 +1604,8 @@ mod tests {
             store,
             season_checked: Arc::default(),
             updates: Arc::default(),
+            foreground: Arc::default(),
+            rank_jobs: Arc::default(),
         };
         async fn body(r: Response) -> Value {
             let b = axum::body::to_bytes(r.into_body(), usize::MAX)

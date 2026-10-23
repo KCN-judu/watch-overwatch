@@ -374,6 +374,7 @@ fn participant(
         rank: rank(v.get(&["rankInfo"]), mode),
         career_rank: None,
         career_other_roles: false,
+        career_rank_at_ms: None,
         fleta: None,
         perks,
         party_bnet_ids: strings(&v.list(&["friendBnetIds"])),

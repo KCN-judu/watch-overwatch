@@ -132,6 +132,12 @@ pub fn put_detail(
     unreachable: &[String],
     now_ms: i64,
 ) -> rusqlite::Result<()> {
+    // A match read again keeps the rank snapshots taken for it before.
+    let mut detail = detail.clone();
+    if let Some((old, _)) = self::detail(tx, detail.mode.provider_value(), &detail.id, subject)? {
+        watch_core::snapshot::carry(&mut detail, &old.detail);
+    }
+    let detail = &detail;
     let (Ok(data), Ok(unreachable)) = (
         serde_json::to_string(detail),
         serde_json::to_string(unreachable),

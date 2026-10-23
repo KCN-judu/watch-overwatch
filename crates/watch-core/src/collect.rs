@@ -621,18 +621,15 @@ fn note_unrated(
     }
 }
 
-/// Participants of a detail who carry no rank in the match and played a known role:
-/// the ones whose career rank is needed for lobby strength.
+/// Participants of a detail whose rank snapshot is still to be taken (no rank in the
+/// match, a known role, not looked up for it yet): the ones to look up.
 fn rating_needs(detail: &MatchDetail) -> Vec<(String, Option<String>, Role)> {
     detail
         .allies
         .iter()
         .chain(&detail.enemies)
-        .filter_map(|p| {
-            let id = p.bnet_id.clone()?;
-            let ranked = p.rank.as_ref().is_some_and(|r| r.skill_rating.is_some());
-            (!ranked && p.role != Role::Unknown).then(|| (id, p.name.clone(), p.role))
-        })
+        .filter(|p| crate::snapshot::wants(p))
+        .filter_map(|p| Some((p.bnet_id.clone()?, p.name.clone(), p.role)))
         .collect()
 }
 
@@ -687,18 +684,12 @@ pub fn match_prepared(
     subject: &str,
     current: u32,
 ) -> bool {
-    let previous = current.checked_sub(1).filter(|s| *s > 0);
-    cache.detail(mode, match_id, subject).is_some_and(|kept| {
-        rating_needs(&kept.detail)
-            .into_iter()
-            .filter(|(id, _, _)| !kept.unreachable.contains(id))
-            .all(|(id, _, role)| rating_cached(cache, &id, role, current, previous, false))
-    })
+    let _ = current;
+    cache
+        .detail(mode, match_id, subject)
+        .is_some_and(|kept| !crate::snapshot::missing(&kept.detail, &kept.unreachable))
 }
 
-/// Fills each participant's `career_rank` from the ranks stored for lobby strength, by the
-/// same rule the analysis uses ([`PlayerRating::rating_for`]), without any request:
-/// players nobody has looked up stay without one.
 /// A player's ranks as stored locally: this season's, and the one before for roles this
 /// season has none in. Nothing is asked of the provider.
 pub fn stored_rating(cache: &dyn StrengthCache, bnet_id: &str, current: u32) -> PlayerRating {
@@ -713,35 +704,6 @@ pub fn stored_rating(cache: &dyn StrengthCache, bnet_id: &str, current: u32) -> 
         bnet_id: bnet_id.to_owned(),
         name: None,
         roles,
-    }
-}
-
-pub fn attach_career_ranks(detail: &mut MatchDetail, cache: &dyn StrengthCache, current: u32) {
-    for p in detail.allies.iter_mut().chain(detail.enemies.iter_mut()) {
-        let ranked = p.rank.as_ref().is_some_and(|r| r.skill_rating.is_some());
-        let (Some(id), false) = (p.bnet_id.as_deref(), ranked) else {
-            continue;
-        };
-        let player = stored_rating(cache, id, current);
-        match player.rating_for(p.role) {
-            Some((_, RatingFit::SameRole)) => {
-                p.career_rank = player.for_role(p.role).map(|r| r.rank.clone());
-            }
-            Some((best, RatingFit::OtherRoles)) => {
-                // Tier and division from the rating, so the rank shows its emblem like
-                // any other rank instead of only a label.
-                let tier = crate::strength::rating_tier(best);
-                p.career_rank = Some(Rank {
-                    tier: tier.map(|(t, _)| t.to_owned()),
-                    division: tier.map(|(_, d)| d),
-                    score: None,
-                    skill_rating: Some(best.round() as i64),
-                    at_ms: None,
-                });
-                p.career_other_roles = true;
-            }
-            None => {}
-        }
     }
 }
 
@@ -934,6 +896,9 @@ pub async fn collect_player<F: Fetcher>(
     matches.sort_by_key(|m| std::cmp::Reverse(m.started_at_ms));
 
     let mut details = BTreeMap::new();
+    // Players of each match read in this run who cannot be looked up.
+    let mut unreachable_of: std::collections::HashMap<String, Vec<String>> =
+        std::collections::HashMap::new();
     // Players whose rank is needed, with their token when the match was fetched this run.
     // Memory only; tokens never reach the cache.
     let mut unrated: Vec<Unrated> = Vec::new();
@@ -979,10 +944,26 @@ pub async fn collect_player<F: Fetcher>(
                 .into_iter()
                 .filter(|(id, _, _)| !unreachable.contains(id))
                 .collect();
-            let covered = !plan.lobby_ratings
-                || needs.iter().all(|(id, _, role)| {
+            let mut detail = detail;
+            let mut covered =
+                !plan.lobby_ratings || !crate::snapshot::missing(&detail, &unreachable);
+            if !covered
+                && needs.iter().all(|(id, _, role)| {
                     rating_cached(cache, id, *role, current, previous, plan.refresh_ratings)
-                });
+                })
+            {
+                // Ranks looked up a moment ago for another match: snapshot from them.
+                let stored: Vec<PlayerRating> = needs
+                    .iter()
+                    .map(|(id, _, _)| stored_rating(cache, id, current))
+                    .collect();
+                let by_id = stored.iter().map(|r| (r.bnet_id.as_str(), r)).collect();
+                crate::snapshot::take(&mut detail, &by_id, crate::now_ms() as i64);
+                if let Some(subject) = subject_id.as_deref() {
+                    cache.put_detail(subject, &detail, &unreachable);
+                }
+                covered = true;
+            }
             if covered {
                 cache_hits += 1;
                 report(plan.progress.as_deref(), |s| {
@@ -1042,6 +1023,7 @@ pub async fn collect_player<F: Fetcher>(
             if let (Some(cache), Some(subject)) = (cache, subject_id.as_deref()) {
                 cache.put_detail(subject, &detail, &unreachable);
             }
+            unreachable_of.insert(m.id.clone(), unreachable);
             details.insert(m.id.clone(), detail);
         }
     }
@@ -1137,6 +1119,30 @@ pub async fn collect_player<F: Fetcher>(
             name: u.name,
             roles: ratings,
         });
+    }
+
+    // Every match read in this run gets the snapshots of the players just looked up, and
+    // is stored with them.
+    if plan.lobby_ratings && !player_ratings.is_empty() {
+        let by_id: std::collections::HashMap<&str, &PlayerRating> = player_ratings
+            .iter()
+            .map(|r| (r.bnet_id.as_str(), r))
+            .collect();
+        let now = crate::now_ms() as i64;
+        for (id, detail) in details.iter_mut() {
+            if crate::snapshot::take(detail, &by_id, now)
+                && let (Some(cache), Some(subject)) = (cache, subject_id.as_deref())
+            {
+                let unreachable = match unreachable_of.get(id) {
+                    Some(u) => u.clone(),
+                    None => cache
+                        .detail(detail.mode, id, subject)
+                        .map(|k| k.unreachable)
+                        .unwrap_or_default(),
+                };
+                cache.put_detail(subject, detail, &unreachable);
+            }
+        }
     }
 
     let mut hero_boards = Vec::new();

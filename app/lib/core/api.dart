@@ -368,6 +368,23 @@ class Api {
     await post('/api/player/growth', {'session': session, 'mode': mode.id}),
   );
 
+  /// Starts (or moves up) the service's background job that takes the rank snapshots of
+  /// the player's newest matches; null without a local store.
+  Future<RankJob?> startRankJob(String session, Mode mode) async => RankJob.opt(
+    (await post('/api/ranks/start', {
+      'session': session,
+      'mode': mode.id,
+    }))['job'],
+  );
+
+  /// Where that job stands; null when none was started in this run of the service.
+  Future<RankJob?> rankJob(String session, Mode mode) async => RankJob.opt(
+    (await post('/api/ranks/status', {
+      'session': session,
+      'mode': mode.id,
+    }))['job'],
+  );
+
   /// Has the service look up the ranks of the players in a small batch of the newest
   /// matches that are not ready for the strength analysis yet. `remaining` is how many of
   /// the newest [window] matches are still waiting; `enabled` is false without a local store.

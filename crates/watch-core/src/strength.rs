@@ -8,7 +8,7 @@
 use crate::analysis::Record;
 use crate::ir::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 const ROLES: [Role; 3] = [Role::Tank, Role::Damage, Role::Support];
 
@@ -155,28 +155,29 @@ pub struct MatchStrength {
     pub diff: RoleMeans,
 }
 
-fn participant_rating(
-    p: &Participant,
-    ratings: &HashMap<&str, &PlayerRating>,
-) -> Option<(f64, RatingSource, RatingFit)> {
+/// A participant's rating for the lobby: the rank the match reported, else the snapshot
+/// taken for this match (`crate::snapshot`). Never a rank looked up later.
+fn participant_rating(p: &Participant) -> Option<(f64, RatingSource, RatingFit)> {
     if let Some(sr) = p.rank.as_ref().and_then(|r| r.skill_rating) {
         return Some((sr as f64, RatingSource::InMatch, RatingFit::SameRole));
     }
-    let (sr, fit) = ratings.get(p.bnet_id.as_deref()?)?.rating_for(p.role)?;
-    Some((sr, RatingSource::Career, fit))
+    let sr = p.career_rank.as_ref()?.skill_rating?;
+    let fit = if p.career_other_roles {
+        RatingFit::OtherRoles
+    } else {
+        RatingFit::SameRole
+    };
+    Some((sr as f64, RatingSource::Career, fit))
 }
 
-pub fn match_strength(
-    detail: &MatchDetail,
-    ratings: &HashMap<&str, &PlayerRating>,
-) -> MatchStrength {
+pub fn match_strength(detail: &MatchDetail) -> MatchStrength {
     let mut sources = Vec::new();
     let mut side = |players: &[Participant]| {
         let mut other_role = 0;
         let rated: Vec<(Role, f64)> = players
             .iter()
             .filter_map(|p| {
-                let (sr, source, fit) = participant_rating(p, ratings)?;
+                let (sr, source, fit) = participant_rating(p)?;
                 sources.push(source);
                 other_role += usize::from(fit == RatingFit::OtherRoles);
                 Some((p.role, sr))
@@ -259,16 +260,8 @@ fn group(mode: Mode, subject_role: Option<Role>, items: &[&MatchStrength]) -> St
     }
 }
 
-pub fn lobby_strength(
-    details: &BTreeMap<String, MatchDetail>,
-    ratings: &[PlayerRating],
-) -> LobbyStrength {
-    let by_id: HashMap<&str, &PlayerRating> =
-        ratings.iter().map(|r| (r.bnet_id.as_str(), r)).collect();
-    let mut matches: Vec<MatchStrength> = details
-        .values()
-        .map(|d| match_strength(d, &by_id))
-        .collect();
+pub fn lobby_strength(details: &BTreeMap<String, MatchDetail>) -> LobbyStrength {
+    let mut matches: Vec<MatchStrength> = details.values().map(match_strength).collect();
     matches.sort_by_key(|m| std::cmp::Reverse(m.started_at_ms));
     let mut out = LobbyStrength::default();
     for mode in Mode::ALL {
@@ -310,6 +303,7 @@ pub fn rating_tier(skill_rating: f64) -> Option<(&'static str, u8)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     fn rank(sr: i64) -> Rank {
         Rank {
@@ -333,6 +327,7 @@ mod tests {
             rank: in_match.map(rank),
             career_rank: None,
             career_other_roles: false,
+            career_rank_at_ms: None,
             fleta: None,
             perks: Vec::new(),
             party_bnet_ids: Vec::new(),
@@ -389,10 +384,13 @@ mod tests {
         }
     }
 
+    /// Snapshots taken from `ratings`, then the strength: the analysis sees only those.
     fn strength(d: &MatchDetail, ratings: &[PlayerRating]) -> MatchStrength {
         let by_id: HashMap<&str, &PlayerRating> =
             ratings.iter().map(|r| (r.bnet_id.as_str(), r)).collect();
-        match_strength(d, &by_id)
+        let mut d = d.clone();
+        crate::snapshot::take(&mut d, &by_id, 0);
+        match_strength(&d)
     }
 
     #[test]
@@ -505,7 +503,7 @@ mod tests {
                 vec![player("c", Role::Tank, None)],
             ),
         );
-        let out = lobby_strength(&details, &[]);
+        let out = lobby_strength(&details);
         let ids: Vec<&str> = out.matches.iter().map(|m| m.match_id.as_str()).collect();
         assert_eq!(ids, ["blank", "rated"]);
         assert_eq!(out.matches[0].source, RatingSource::None);
@@ -532,7 +530,7 @@ mod tests {
                 ),
             );
         }
-        let out = lobby_strength(&details, &[]);
+        let out = lobby_strength(&details);
         let modes: Vec<Mode> = out.by_mode.iter().map(|g| g.mode).collect();
         assert_eq!(modes, [Mode::Quick, Mode::Stadium]);
         assert!(out.by_mode.iter().all(|g| g.record.matches == 1));

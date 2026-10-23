@@ -738,7 +738,9 @@ class _ScopeLine extends StatelessWidget {
           Tooltip(
             message: tr.matches.preparingTip,
             child: Text(
-              tr.matches.preparing(ws.prepareRemaining[mode]!),
+              ws.preparePaused.contains(mode)
+                  ? tr.matches.preparingPaused(ws.prepareRemaining[mode]!)
+                  : tr.matches.preparing(ws.prepareRemaining[mode]!),
               style: secondary,
             ),
           ),

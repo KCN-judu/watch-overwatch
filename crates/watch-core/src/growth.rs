@@ -334,6 +334,7 @@ mod tests {
             rank: None,
             career_rank: None,
             career_other_roles: false,
+            career_rank_at_ms: None,
             fleta: None,
             perks: Vec::new(),
             party_bnet_ids: Vec::new(),
