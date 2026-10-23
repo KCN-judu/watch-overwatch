@@ -27,6 +27,10 @@ class Sp {
 /// colour: an accent, a result, a severity). Content lines up past it.
 const double accentBar = 3;
 
+/// Room kept free at the right of every vertically scrolling area, so the scrollbar runs
+/// in its own lane and never sits on the content (`test/design_rules_test.dart`).
+const double scrollGutter = Sp.betweenGroups;
+
 /// [fg] moved toward white or black (whichever [bg] is not) just far enough to reach
 /// [ratio] against [bg]: a hero's colour stays itself but stays readable. 4.5 for text,
 /// 3 for icons and bars.
@@ -507,6 +511,22 @@ class Ty {
     leadingDistribution: _even,
   );
   static TextStyle num(TextStyle s) => s.copyWith(fontFeatures: _tab);
+
+  /// Running text read at length (release notes): body size, more air between lines.
+  static const prose = TextStyle(
+    fontSize: 13,
+    height: 1.7,
+    fontWeight: FontWeight.w400,
+    leadingDistribution: _even,
+  );
+
+  /// Names of files, commands and endpoints inside text.
+  static const code = TextStyle(
+    fontFamily: 'Consolas',
+    fontFamilyFallback: [family],
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+  );
 }
 
 ThemeData buildTheme(Brightness b) {

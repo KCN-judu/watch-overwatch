@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/support.dart';
 import '../design/dialog.dart';
+import '../design/release_notes.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
 import '../l10n/strings.dart';
@@ -28,6 +29,14 @@ class _UpdateDialog extends StatefulWidget {
 class _UpdateDialogState extends State<_UpdateDialog> {
   bool _checking = false;
   bool _restarting = false;
+  final _notesScroll = ScrollController();
+
+  @override
+  void dispose() {
+    _notesScroll.dispose();
+    super.dispose();
+  }
+
   String? _error;
 
   @override
@@ -120,12 +129,26 @@ class _UpdateDialogState extends State<_UpdateDialog> {
           Flexible(
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(Sp.betweenItems),
               decoration: BoxDecoration(
                 color: c.raised,
                 border: Border.all(color: c.border),
               ),
-              child: SingleChildScrollView(child: _Notes(release.notes)),
+              // The bar runs in its own lane at the box's right edge; the text keeps
+              // its full padding beside it and never runs under the bar.
+              child: Scrollbar(
+                controller: _notesScroll,
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  controller: _notesScroll,
+                  padding: const EdgeInsets.fromLTRB(
+                    Sp.betweenGroups,
+                    Sp.betweenGroups,
+                    Sp.betweenGroups + scrollGutter,
+                    Sp.betweenGroups,
+                  ),
+                  child: ReleaseNotes(release.notes),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: Sp.betweenGroups),
@@ -159,7 +182,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
     final ready = d != null && d.ready && d.version == release?.version;
     return AppDialog(
       title: tr.update.title,
-      width: 600,
+      width: 680,
       actions: [
         if (newer && release.pageUrl != null)
           AppButton(
@@ -194,7 +217,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 460),
+            constraints: const BoxConstraints(maxHeight: 520),
             child: body,
           ),
           const SizedBox(height: Sp.betweenGroups),
@@ -202,64 +225,5 @@ class _UpdateDialogState extends State<_UpdateDialog> {
         ],
       ),
     );
-  }
-}
-
-/// Release notes in Markdown, drawn plainly: headings bold, list items with a dot,
-/// emphasis and links reduced to their text.
-class _Notes extends StatelessWidget {
-  const _Notes(this.text);
-  final String text;
-
-  static String _plain(String s) => s
-      .replaceAllMapped(RegExp(r'\[([^\]]+)\]\([^)]+\)'), (m) => m[1]!)
-      .replaceAllMapped(RegExp(r'<(https?://[^>]+)>'), (m) => m[1]!)
-      .replaceAll(RegExp(r'\*\*|__|`'), '');
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final lines = text.replaceAll('\r', '').split('\n');
-    if (lines.every((l) => l.trim().isEmpty)) {
-      return Text(
-        tr.update.noNotes,
-        style: Ty.body.copyWith(color: c.textSecondary),
-      );
-    }
-    final out = <Widget>[];
-    for (final raw in lines) {
-      final line = raw.trimRight();
-      if (line.trim().isEmpty) {
-        if (out.isNotEmpty) out.add(const SizedBox(height: Sp.withinControl));
-        continue;
-      }
-      final heading = RegExp(r'^#{1,6}\s+(.*)$').firstMatch(line);
-      final item = RegExp(r'^(\s*)[-*]\s+(.*)$').firstMatch(line);
-      if (heading != null) {
-        out.add(
-          Padding(
-            padding: const EdgeInsets.only(top: Sp.withinGroup),
-            child: Text(_plain(heading[1]!), style: Ty.bodyStrong),
-          ),
-        );
-      } else if (item != null) {
-        final indent = item[1]!.length >= 2 ? Sp.betweenGroups : 0.0;
-        out.add(
-          Padding(
-            padding: EdgeInsets.only(left: indent, top: Sp.hairline),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('·  ', style: Ty.body.copyWith(color: c.textSecondary)),
-                Expanded(child: Text(_plain(item[2]!), style: Ty.body)),
-              ],
-            ),
-          ),
-        );
-      } else {
-        out.add(Text(_plain(line.trim()), style: Ty.body));
-      }
-    }
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: out);
   }
 }

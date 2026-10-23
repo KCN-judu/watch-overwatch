@@ -282,7 +282,7 @@ class _CardListState<T> extends State<CardList<T>> {
                   controller: _scroll,
                   itemExtent: extent,
                   itemCount: widget.rows.length,
-                  padding: const EdgeInsets.only(right: Sp.betweenItems),
+                  padding: const EdgeInsets.only(right: scrollGutter),
                   itemBuilder: (context, i) {
                     final row = widget.rows[i];
                     final state = CardState(

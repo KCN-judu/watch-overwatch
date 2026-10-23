@@ -63,7 +63,7 @@ class OverviewPage extends StatelessWidget {
       );
     }
     return ListView(
-      padding: const EdgeInsets.only(right: Sp.betweenGroups, bottom: Sp.page),
+      padding: const EdgeInsets.only(right: scrollGutter, bottom: Sp.page),
       children: [
         _Headline(workspace: ws, mode: mode, o: o, listed: result.listed),
         const SizedBox(height: Sp.betweenSections),

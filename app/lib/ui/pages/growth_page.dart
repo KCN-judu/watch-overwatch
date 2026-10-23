@@ -206,7 +206,7 @@ class _GrowthPageState extends State<GrowthPage> {
     ];
 
     return ListView(
-      padding: const EdgeInsets.only(right: Sp.betweenGroups),
+      padding: const EdgeInsets.only(right: scrollGutter),
       children: [
         Wrap(
           spacing: Sp.betweenGroups,

@@ -111,6 +111,35 @@ void main() {
     expect(found, isEmpty);
   });
 
+  test('every vertical scroll area leaves the scrollbar its lane', () {
+    // A scroll view's arguments (the lines up to its first child) name scrollGutter,
+    // or it does not scroll vertically / shows no bar.
+    final opener = RegExp(
+      r'\b(ListView|ListView\.builder|ListView\.separated|GridView\.builder|SingleChildScrollView)\(',
+    );
+    final found = <String>[];
+    for (final MapEntry(key: path, value: text) in sources().entries) {
+      final lines = text.split('\n');
+      for (final (i, line) in lines.indexed) {
+        final m = opener.firstMatch(line);
+        if (m == null || line.trimLeft().startsWith('//')) continue;
+        final args = [
+          line.substring(m.start),
+          ...lines.skip(i + 1).take(8),
+        ].join('\n');
+        final head = args
+            .split(RegExp(r'\b(children|child|itemBuilder):'))
+            .first;
+        if (!RegExp(
+          r'scrollGutter|NeverScrollableScrollPhysics|Axis\.horizontal|EdgeInsets\.all\(Sp\.page\)',
+        ).hasMatch(head)) {
+          found.add('$path:${i + 1}: ${line.trim()}');
+        }
+      }
+    }
+    expect(found, isEmpty, reason: found.join('\n'));
+  });
+
   test('type sizes come from Ty', () {
     final found = offenders(RegExp(r'fontSize: \d'), {
       'lib/design/tokens.dart',

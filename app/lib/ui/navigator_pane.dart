@@ -238,6 +238,7 @@ class _PlayerListState extends State<_PlayerList> {
         builder: (context, _) {
           final focused = _focus.hasFocus && keyboardModality;
           return ListView.builder(
+            padding: const EdgeInsets.only(right: scrollGutter),
             itemCount: players.length,
             itemExtent: 40,
             itemBuilder: (context, i) {
@@ -363,6 +364,7 @@ class _Rail extends StatelessWidget {
           const Divider(height: 16, indent: 12, endIndent: 12),
           Expanded(
             child: ListView(
+              padding: const EdgeInsets.only(right: scrollGutter),
               children: [
                 for (final name in app.players)
                   Builder(

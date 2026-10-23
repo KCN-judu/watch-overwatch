@@ -87,10 +87,12 @@ class _PeoplePageState extends State<PeoplePage> {
         : _Duo(workspace: ws, mode: mode, mate: picked);
     return LayoutBuilder(
       builder: (context, box) {
-        const pad = EdgeInsets.only(right: Sp.betweenGroups, bottom: Sp.page);
         if (box.maxWidth < 1000) {
           return ListView(
-            padding: pad,
+            padding: const EdgeInsets.only(
+              right: scrollGutter,
+              bottom: Sp.page,
+            ),
             children: [
               list,
               const SizedBox(height: Sp.betweenSections),
@@ -103,12 +105,24 @@ class _PeoplePageState extends State<PeoplePage> {
           children: [
             Expanded(
               flex: 2,
-              child: ListView(padding: pad, children: [list]),
+              child: ListView(
+                padding: const EdgeInsets.only(
+                  right: scrollGutter,
+                  bottom: Sp.page,
+                ),
+                children: [list],
+              ),
             ),
             const SizedBox(width: Sp.betweenSections),
             Expanded(
               flex: 3,
-              child: ListView(padding: pad, children: [duo]),
+              child: ListView(
+                padding: const EdgeInsets.only(
+                  right: scrollGutter,
+                  bottom: Sp.page,
+                ),
+                children: [duo],
+              ),
             ),
           ],
         );

@@ -71,7 +71,7 @@ class HeroComparePage extends StatelessWidget {
         const SizedBox(height: Sp.withinGroup),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.only(right: Sp.betweenGroups, bottom: 28),
+            padding: const EdgeInsets.only(right: scrollGutter, bottom: 28),
             children: [
               if (other == null)
                 _Picker(workspace: workspace, a: a, all: all)

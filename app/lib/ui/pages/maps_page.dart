@@ -88,7 +88,7 @@ class _MapsPageState extends State<MapsPage> {
         if (box.maxWidth < 1000) {
           return ListView(
             padding: const EdgeInsets.only(
-              right: Sp.betweenGroups,
+              right: scrollGutter,
               bottom: Sp.page,
             ),
             children: [
@@ -105,7 +105,7 @@ class _MapsPageState extends State<MapsPage> {
               flex: 3,
               child: ListView(
                 padding: const EdgeInsets.only(
-                  right: Sp.betweenGroups,
+                  right: scrollGutter,
                   bottom: Sp.page,
                 ),
                 children: [list],
@@ -116,7 +116,7 @@ class _MapsPageState extends State<MapsPage> {
               flex: 2,
               child: ListView(
                 padding: const EdgeInsets.only(
-                  right: Sp.betweenGroups,
+                  right: scrollGutter,
                   bottom: Sp.page,
                 ),
                 children: [detail],

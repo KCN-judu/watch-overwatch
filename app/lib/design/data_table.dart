@@ -192,7 +192,7 @@ class _AppTableState<T> extends State<AppTable<T>> {
     return LayoutBuilder(
       builder: (context, box) {
         // The scrollbar gets its own column at the right, so it never covers a cell.
-        const gutter = 12.0;
+        const gutter = scrollGutter;
         final minTotal =
             widget.columns.fold<double>(0, (s, col) => s + col.width) + 3;
         final scrollsX = minTotal + gutter > box.maxWidth;
@@ -271,7 +271,7 @@ class _AppTableState<T> extends State<AppTable<T>> {
                       controller: _scroll,
                       itemExtent: rowH,
                       itemCount: widget.rows.length,
-                      padding: const EdgeInsets.only(right: gutter),
+                      padding: const EdgeInsets.only(right: scrollGutter),
                       itemBuilder: (context, i) {
                         final row = widget.rows[i];
                         final isActive = i == active;

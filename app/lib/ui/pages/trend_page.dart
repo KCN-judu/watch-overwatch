@@ -72,7 +72,7 @@ class _TrendPageState extends State<TrendPage> {
         .toList();
 
     return ListView(
-      padding: const EdgeInsets.only(right: Sp.betweenGroups),
+      padding: const EdgeInsets.only(right: scrollGutter),
       children: [
         Wrap(
           spacing: Sp.betweenGroups,
