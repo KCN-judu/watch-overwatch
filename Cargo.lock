@@ -3404,7 +3404,7 @@ dependencies = [
 
 [[package]]
 name = "watch-core"
-version = "1.2.0"
+version = "1.3.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -3423,7 +3423,7 @@ dependencies = [
 
 [[package]]
 name = "watchd"
-version = "1.2.0"
+version = "1.3.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -3961,7 +3961,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "1.2.0"
+version = "1.3.0"
 dependencies = [
  "anyhow",
  "serde_json",
