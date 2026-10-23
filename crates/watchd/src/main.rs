@@ -1,3 +1,4 @@
+mod background;
 mod cli;
 mod community;
 mod players;
@@ -38,6 +39,10 @@ pub(crate) struct AppState {
     season_checked: Arc<std::sync::atomic::AtomicBool>,
     /// The latest release seen and the download of it (`/api/update/*`).
     updates: update::UpdateBook,
+    /// Queries running now, which the background rank job gives way to.
+    foreground: Arc<background::Foreground>,
+    /// The background rank-snapshot jobs (`/api/ranks/*`).
+    rank_jobs: Arc<background::RankJobs>,
 }
 /// Opens the on-disk local store; without it everything still works, just without reuse.
 pub(crate) fn open_store() -> Option<Arc<store::LocalStore>> {
@@ -134,22 +139,33 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/player/replies", post(service::player_replies))
         .route("/api/catalog", get(community::catalog))
         .route("/api/community", post(community::query))
+        .route("/api/ranks/start", post(background::start_handler))
+        .route("/api/ranks/status", post(background::status_handler))
         .route("/api/update/check", post(update::check))
         .route("/api/update/status", post(update::status))
         .route("/api/update/download", post(update::download))
         .route("/api/update/apply", post(update::apply))
         .layer(axum::extract::DefaultBodyLimit::max(64 * 1024))
-        .layer(middleware::from_fn(local_guard))
-        .with_state(AppState {
-            client,
-            sessions: Arc::new(Mutex::new(HashMap::new())),
-            settings_lock: Arc::new(Mutex::new(())),
-            catalog: Arc::new(watch_core::Catalog::load()),
-            progress: Arc::new(std::sync::Mutex::new(HashMap::new())),
-            store: open_store(),
-            season_checked: Arc::default(),
-            updates: Arc::default(),
-        });
+        .layer(middleware::from_fn(local_guard));
+    let state = AppState {
+        client,
+        sessions: Arc::new(Mutex::new(HashMap::new())),
+        settings_lock: Arc::new(Mutex::new(())),
+        catalog: Arc::new(watch_core::Catalog::load()),
+        progress: Arc::new(std::sync::Mutex::new(HashMap::new())),
+        store: open_store(),
+        season_checked: Arc::default(),
+        updates: Arc::default(),
+        foreground: Arc::default(),
+        rank_jobs: Arc::default(),
+    };
+    tokio::spawn(background::run(state.clone()));
+    let app = app
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            mark_foreground,
+        ))
+        .with_state(state);
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", port())).await?;
     tracing::info!("Watch Overwatch: http://127.0.0.1:{}", port());
     axum::serve(listener, app)
@@ -170,6 +186,18 @@ fn port() -> u16 {
             .unwrap_or(18180)
     })
 }
+/// Marks every query the app makes as running, so the background rank job waits for it.
+/// The job's own progress, the service state and update checks do not count.
+async fn mark_foreground(State(s): State<AppState>, req: Request, next: Next) -> Response {
+    let path = req.uri().path();
+    let quiet = !path.starts_with("/api/")
+        || path.starts_with("/api/ranks/")
+        || path.starts_with("/api/update/")
+        || matches!(path, "/api/state" | "/api/progress" | "/api/cache");
+    let _busy = (!quiet).then(|| s.foreground.enter());
+    next.run(req).await
+}
+
 async fn local_guard(req: Request, next: Next) -> Response {
     let host = req
         .headers()

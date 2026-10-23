@@ -311,16 +311,19 @@ pub struct Participant {
     pub stats: StatLine,
     /// The rank the match itself reported (competitive and Stadium only).
     pub rank: Option<Rank>,
-    /// The player's own competitive rank for this role, current season or else the one
-    /// before, taken from what was looked up for the lobby-strength analysis. Not stored
-    /// with the match: it is attached when a detail is shown, and it is the rank *now*,
-    /// not at the time of the match.
+    /// The player's own competitive rank for this role (current season, or else the one
+    /// before), as looked up for this match: a snapshot stored with it, taken when the
+    /// match was read in and never changed after (`crate::snapshot`).
     #[serde(default)]
     pub career_rank: Option<Rank>,
     /// `career_rank` is the highest of the player's ranks in other roles (they have none for
     /// the role they played).
     #[serde(default)]
     pub career_other_roles: bool,
+    /// When the snapshot was taken (ms since the epoch); `None` while it has not been.
+    /// Set with `career_rank` empty, the player was looked up and has no rank.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub career_rank_at_ms: Option<i64>,
     /// Fleta index, worked out from the match when a detail is shown; see
     /// [`crate::analysis::attach_fleta`].
     #[serde(default)]

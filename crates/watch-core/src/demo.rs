@@ -588,6 +588,11 @@ impl Match {
             if self.competitive {
                 p["rankInfo"] = rank_info(sr, self.at_ms);
             }
+            // As the provider does: each player's token, to look their ranks up with.
+            p["customerToken"] = match id.strip_prefix("demo-p") {
+                Some(tag) => json!(format!("{DEMO_TOKEN}:{tag}")),
+                None => json!(DEMO_TOKEN),
+            };
             p
         };
         let mut allies = Vec::new();

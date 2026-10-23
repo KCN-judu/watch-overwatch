@@ -310,7 +310,7 @@ class ShellStrings {
   String rankWithRating(String rank, String rating) => '$rank · $rating 分';
   String rankFromOtherRole(String rank) =>
       '没有这个职责的段位，取其他职责里最高的竞技段位（不是这场对局时的）：$rank';
-  String currentRankNotThen(String rank) => '当前竞技段位（不是这场对局时的）：$rank';
+  String rankSnapshot(String rank, String at) => '竞技段位快照（$at 读取这场时取的）：$rank';
   String heroPortrait(String hero) => '$hero 立绘';
   String masteryLevel(int level) => '熟练度 $level';
 

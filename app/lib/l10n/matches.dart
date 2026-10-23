@@ -74,8 +74,10 @@ class MatchStrings {
   String get notAllRead => '未读完';
   String get continueReading => '继续读取';
   String get continueReadingTip => '读取全部更早的对局';
-  String get preparingTip => '正在后台查询新对局里玩家的段位，之后分析对局强度时就不用再等了。';
-  String preparing(int remaining) => '正在准备对局数据，还剩 $remaining 场…';
+  String get preparingTip => '正在后台给对局里的玩家取段位快照，存进对局信息；打开别的页面时会先让路，之后自动继续。';
+  String preparing(int remaining) => '正在后台读取段位，还剩 $remaining 场…';
+  String preparingPaused(int remaining) =>
+      '段位读取已暂停，等其他查询完成后继续（还剩 $remaining 场）';
   String get sortOldestFirst => '时间顺序：最早在前，点击改为最新在前';
   String get sortNewestFirst => '时间顺序：最新在前，点击改为最早在前';
   String get listInfo => '筛选与排序只作用于已读取的对局。点击一行（或按 Enter）打开这一局的详细数据。';
@@ -124,7 +126,7 @@ class MatchStrings {
   String get healingTip => '治疗量。条形长度按全场 10 人的最大值';
   String get mitigationTip => '阻挡或减免的伤害量，不是次数。条形长度按全场 10 人的最大值';
   String get rank => '段位';
-  String get rankTip => '竞技、角斗显示该场的段位；快速比赛显示玩家当前的竞技段位。查不到的显示 —';
+  String get rankTip => '竞技、角斗显示该场的段位；快速比赛显示读取这场时取的竞技段位快照，之后不再变。查不到的显示 —';
   String get rankLookupTip => '正在查询这名玩家的竞技段位';
   String get rankLookup => '查询中';
   String get portrait => '英雄立绘';

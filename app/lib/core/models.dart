@@ -357,6 +357,7 @@ class Participant {
       rank = Rank.opt(j['rank']),
       careerRank = Rank.opt(j['career_rank']),
       careerOtherRoles = _b(j['career_other_roles']),
+      careerRankAtMs = (j['career_rank_at_ms'] as num?)?.toInt(),
       fleta = _d(j['fleta']),
       endorsedBy = [
         for (final e in (j['endorsed_by_bnet_ids'] as List? ?? const [])) '$e',
@@ -384,6 +385,10 @@ class Participant {
 
   /// [careerRank] is the highest of the player's ranks in other roles.
   final bool careerOtherRoles;
+
+  /// When [careerRank] was looked up for this match (a snapshot kept with it); null while
+  /// it has not been.
+  final int? careerRankAtMs;
 
   /// Final blows as a percentage of half the player's team's final blows; null when
   /// either is unknown.
@@ -1043,4 +1048,20 @@ class GrowthResult {
     for (final r in Role.playable)
       if (points.any((p) => p.role == r)) r,
   ];
+}
+
+/// The background rank-snapshot job of one player and mode (`/api/ranks/status`).
+class RankJob {
+  RankJob(Json j)
+    : state = '${j['state'] ?? 'done'}',
+      done = (j['done'] as num?)?.toInt() ?? 0,
+      remaining = (j['remaining'] as num?)?.toInt() ?? 0;
+  static RankJob? opt(Object? j) =>
+      j is Map ? RankJob(j.cast<String, dynamic>()) : null;
+
+  /// `waiting`, `running`, `paused` (giving way to another query), `done`.
+  final String state;
+  final int done, remaining;
+  bool get finished => state == 'done';
+  bool get paused => state == 'paused';
 }

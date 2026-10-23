@@ -141,9 +141,9 @@ class PlayerDetailPage extends StatelessWidget {
                             stadium:
                                 detail.mode == Mode.stadium &&
                                 player.rank != null,
-                            current:
-                                player.rank == null &&
-                                player.careerRank != null,
+                            snapshotMs: player.rank == null
+                                ? player.careerRankAtMs
+                                : null,
                             otherRoles:
                                 player.rank == null && player.careerOtherRoles,
                             showText: true,

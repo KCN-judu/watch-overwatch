@@ -635,7 +635,7 @@ pub fn analyze(ds: &PlayerDataset, options: &AnalysisOptions) -> PlayerAnalysis 
         team_share: team_share_summary(ds.details.values()),
         companions: companions(&ds.details, options.min_companion_matches),
         season_trend: season_trend(&ds.careers),
-        lobby_strength: crate::strength::lobby_strength(&ds.details, &ds.player_ratings),
+        lobby_strength: crate::strength::lobby_strength(&ds.details),
     }
 }
 
@@ -857,6 +857,7 @@ mod tests {
             rank: None,
             career_rank: None,
             career_other_roles: false,
+            career_rank_at_ms: None,
             fleta: None,
             perks: Vec::new(),
             party_bnet_ids: Vec::new(),

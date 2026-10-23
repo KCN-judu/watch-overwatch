@@ -535,7 +535,7 @@ fn lobby_strength_is_split_by_role_and_side() {
         &cat,
     );
     d.started_at_ms = Some(1);
-    let ratings = vec![
+    let ratings = [
         rating("1001", Role::Support, 2000, None),
         rating("1002", Role::Damage, 3200, None),
         rating("1003", Role::Tank, 2500, Some(24)),
@@ -543,9 +543,12 @@ fn lobby_strength_is_split_by_role_and_side() {
         // A rating for a role they did not play this match is ignored.
         rating("9999", Role::Tank, 4800, None),
     ];
+    // The analysis reads the snapshots taken from these ranks, nothing else.
+    let by_id = ratings.iter().map(|r| (r.bnet_id.as_str(), r)).collect();
+    watch_core::snapshot::take(&mut d, &by_id, 0);
     let mut details = std::collections::BTreeMap::new();
     details.insert(d.id.clone(), d);
-    let lobby = strength::lobby_strength(&details, &ratings);
+    let lobby = strength::lobby_strength(&details);
     let m = &lobby.matches[0];
     assert_eq!(
         (m.source, m.subject_role),
@@ -657,7 +660,7 @@ async fn competitive_lobbies_use_in_match_ranks_without_extra_requests() {
         Some("1001"),
         &cat,
     );
-    let m = strength::match_strength(&d, &HashMap::new());
+    let m = strength::match_strength(&d);
     assert_eq!(
         (m.source, m.ally.mean.overall, m.ally.mean.tank),
         (RatingSource::InMatch, Some(1900.0), Some(1900.0))
@@ -858,9 +861,10 @@ async fn a_repeat_run_is_served_from_the_cache_with_the_same_result() {
     );
     assert!(second.coverage.cache_hits > 0);
     assert_eq!(lobby_means(&first), lobby_means(&second));
+    // The second run reads the snapshots kept with the match: nobody is looked up.
     assert_eq!(
         (first.player_ratings.len(), second.player_ratings.len()),
-        (3, 3)
+        (3, 0)
     );
     assert!(
         !serde_json::to_string(&second).unwrap().contains("SECRET"),
@@ -869,7 +873,7 @@ async fn a_repeat_run_is_served_from_the_cache_with_the_same_result() {
 }
 
 #[tokio::test]
-async fn a_cached_match_is_fetched_again_only_when_a_rating_is_missing() {
+async fn a_match_with_its_snapshots_is_not_read_again_when_the_stored_ranks_are_gone() {
     let mem = std::sync::Arc::new(watch_core::MemoryCache::new());
     let cache: std::sync::Arc<dyn watch_core::StrengthCache> = mem.clone();
     let fake = Counting::new();
@@ -878,18 +882,17 @@ async fn a_cached_match_is_fetched_again_only_when_a_rating_is_missing() {
     let first = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
     let (_, careers1) = fake.counts();
 
-    // The ratings are gone but the match is kept: the match is read again for the
-    // participants' tokens, then everyone is looked up again.
+    // The stored ranks are gone but the match keeps its snapshots: nothing is asked.
     mem.clear_ratings();
     let second = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
     let (info2, careers2) = fake.counts();
-    assert_eq!(info2, 2);
-    assert_eq!(careers2, careers1 * 2);
+    assert_eq!(info2, 1);
+    assert_eq!(careers2, careers1);
     assert_eq!(lobby_means(&first), lobby_means(&second));
 }
 
 #[tokio::test]
-async fn refreshing_ratings_looks_the_current_season_up_again() {
+async fn refreshing_ratings_leaves_a_snapshotted_match_as_it_was() {
     let mem = std::sync::Arc::new(watch_core::MemoryCache::new());
     let cache: std::sync::Arc<dyn watch_core::StrengthCache> = mem;
     let fake = Counting::new();
@@ -903,7 +906,7 @@ async fn refreshing_ratings_looks_the_current_season_up_again() {
     };
     let ds = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &refresh).await;
     let (_, after) = fake.counts();
-    assert!(after > before, "a refresh asks the upstream again");
+    assert_eq!(after, before, "the match's lobby is its snapshot");
     assert_eq!(lobby_means(&ds), (Some(2000.0), Some(3200.0)));
 }
 
@@ -1388,19 +1391,20 @@ fn a_match_is_prepared_once_its_detail_and_every_lookup_are_stored() {
         !collect::match_prepared(&cache, Mode::Quick, "m3", "1001", 25),
         "the detail alone is not enough: nobody has been rated"
     );
+    // Looked up and snapshotted, everyone: ready.
     let mut rated = 0;
+    let mut looked_up = Vec::new();
     for p in detail.allies.iter().chain(&detail.enemies) {
         let (Some(id), true) = (p.bnet_id.as_deref(), p.role != Role::Unknown) else {
             continue;
         };
-        cache.put_season_ratings(
-            id,
-            25,
-            &[rating(id, p.role, 2000 + rated, None).roles[0].clone()],
-            false,
-        );
+        looked_up.push(rating(id, p.role, 2000 + rated, None));
         rated += 100;
     }
+    let by_id = looked_up.iter().map(|r| (r.bnet_id.as_str(), r)).collect();
+    let mut snapped = detail.clone();
+    watch_core::snapshot::take(&mut snapped, &by_id, 1);
+    cache.put_detail("1001", &snapped, &[]);
     assert!(collect::match_prepared(
         &cache,
         Mode::Quick,
@@ -1427,7 +1431,8 @@ fn a_match_is_prepared_once_its_detail_and_every_lookup_are_stored() {
 }
 
 #[test]
-fn career_ranks_come_from_the_stored_lookups_and_never_replace_the_match_rank() {
+fn a_rank_snapshot_is_taken_once_kept_when_the_match_is_stored_again_and_never_replaces_the_match_rank()
+ {
     use watch_core::StrengthCache as _;
     let mut detail = fixture_detail(Mode::Quick);
     for p in detail.allies.iter_mut().chain(detail.enemies.iter_mut()) {
@@ -1440,40 +1445,55 @@ fn career_ranks_come_from_the_stored_lookups_and_never_replace_the_match_rank() 
         .unwrap()
         .clone();
     let id = target.bnet_id.clone().unwrap();
-    let cache = watch_core::MemoryCache::new();
-    // Nothing stored: no career rank.
-    let mut shown = detail.clone();
-    collect::attach_career_ranks(&mut shown, &cache, 25);
-    assert!(shown.allies.iter().all(|p| p.career_rank.is_none()));
-    // Only last season has a rank for the role: it is used.
-    cache.put_season_ratings(
-        &id,
-        24,
-        &[rating(&id, target.role, 1700, None).roles[0].clone()],
-        true,
-    );
-    let mut shown = detail.clone();
-    collect::attach_career_ranks(&mut shown, &cache, 25);
     let got = |d: &MatchDetail| {
         d.allies
             .iter()
             .find(|p| p.bnet_id.as_deref() == Some(&id))
             .unwrap()
-            .career_rank
             .clone()
     };
-    assert_eq!(got(&shown).and_then(|r| r.skill_rating), Some(1700));
-    // The current season wins when it has one.
-    cache.put_season_ratings(
-        &id,
-        25,
-        &[rating(&id, target.role, 2100, None).roles[0].clone()],
-        false,
+    assert!(watch_core::snapshot::missing(&detail, &[]));
+    // Looked up at 2100: the snapshot says 2100 and when it was taken.
+    let first = rating(&id, target.role, 2100, None);
+    let by_id = std::iter::once((id.as_str(), &first)).collect();
+    let mut snapped = detail.clone();
+    assert!(watch_core::snapshot::take(&mut snapped, &by_id, 1_000));
+    let p = got(&snapped);
+    assert_eq!(p.career_rank.and_then(|r| r.skill_rating), Some(2100));
+    assert_eq!(p.career_rank_at_ms, Some(1_000));
+    // A later lookup at 2600 does not move it: it is this match's lobby.
+    let later = rating(&id, target.role, 2600, None);
+    let by_id = std::iter::once((id.as_str(), &later)).collect();
+    watch_core::snapshot::take(&mut snapped, &by_id, 2_000);
+    assert_eq!(
+        got(&snapped).career_rank.and_then(|r| r.skill_rating),
+        Some(2100)
     );
-    let mut shown = detail.clone();
-    collect::attach_career_ranks(&mut shown, &cache, 25);
-    assert_eq!(got(&shown).and_then(|r| r.skill_rating), Some(2100));
-    // A rank the match itself reported is left alone and gets no career rank.
+    // The match read in again (no snapshots in it) keeps the stored one.
+    let cache = watch_core::MemoryCache::new();
+    cache.put_detail("1001", &snapped, &[]);
+    cache.put_detail("1001", &detail, &[]);
+    let kept = cache
+        .detail(Mode::Quick, &detail.id, "1001")
+        .unwrap()
+        .detail;
+    assert_eq!(
+        got(&kept).career_rank.and_then(|r| r.skill_rating),
+        Some(2100)
+    );
+    assert_eq!(got(&kept).career_rank_at_ms, Some(1_000));
+    // Looked up and unranked is a snapshot too.
+    let none = PlayerRating {
+        bnet_id: id.clone(),
+        name: None,
+        roles: Vec::new(),
+    };
+    let by_id = std::iter::once((id.as_str(), &none)).collect();
+    let mut unranked = detail.clone();
+    watch_core::snapshot::take(&mut unranked, &by_id, 3_000);
+    assert!(got(&unranked).career_rank.is_none());
+    assert_eq!(got(&unranked).career_rank_at_ms, Some(3_000));
+    // A rank the match itself reported needs no snapshot and gets none.
     let mut with_rank = detail.clone();
     for p in with_rank.allies.iter_mut() {
         if p.bnet_id.as_deref() == Some(&id) {
@@ -1486,8 +1506,9 @@ fn career_ranks_come_from_the_stored_lookups_and_never_replace_the_match_rank() 
             });
         }
     }
-    collect::attach_career_ranks(&mut with_rank, &cache, 25);
-    assert!(got(&with_rank).is_none());
+    let by_id = std::iter::once((id.as_str(), &first)).collect();
+    watch_core::snapshot::take(&mut with_rank, &by_id, 4_000);
+    assert!(got(&with_rank).career_rank_at_ms.is_none());
 }
 
 #[test]
@@ -1592,7 +1613,7 @@ fn fleta_is_a_players_share_of_half_their_teams_final_blows() {
 }
 
 #[tokio::test]
-async fn once_ranks_expire_only_the_current_season_is_looked_up_again() {
+async fn once_ranks_expire_a_snapshotted_match_still_asks_nothing() {
     struct Counter(Mutex<Vec<Option<u64>>>);
     impl Fetcher for Counter {
         async fn fetch(&self, endpoint: Endpoint, payload: Value) -> Result<Fetched, Failure> {
@@ -1638,14 +1659,7 @@ async fn once_ranks_expire_only_the_current_season_is_looked_up_again() {
     std::thread::sleep(std::time::Duration::from_millis(20));
     run().await;
     let second = fake.0.lock().unwrap().clone();
-    assert!(
-        second.contains(&None),
-        "the current season is looked up again"
-    );
-    assert!(
-        !second.contains(&Some(24)),
-        "a finished season is settled: {second:?}"
-    );
+    assert!(second.is_empty(), "the snapshots answer: {second:?}");
 }
 
 #[tokio::test]

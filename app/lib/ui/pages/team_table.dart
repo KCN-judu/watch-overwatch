@@ -357,7 +357,7 @@ class TeamTable extends StatelessWidget {
             p.rank ?? p.careerRank,
             catalog: catalog,
             stadium: stadium && p.rank != null,
-            current: p.rank == null && p.careerRank != null,
+            snapshotMs: p.rank == null ? p.careerRankAtMs : null,
             otherRoles: p.rank == null && p.careerOtherRoles,
           );
         },

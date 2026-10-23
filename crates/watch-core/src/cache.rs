@@ -157,10 +157,16 @@ impl StrengthCache for MemoryCache {
     }
     fn put_detail(&self, subject: &str, detail: &MatchDetail, unreachable: &[String]) {
         if let Ok(mut d) = self.details.lock() {
+            let key = (detail.mode, detail.id.clone(), subject.to_owned());
+            // A match read again keeps the rank snapshots taken for it before.
+            let mut detail = detail.clone();
+            if let Some(old) = d.get(&key) {
+                crate::snapshot::carry(&mut detail, &old.detail);
+            }
             d.insert(
-                (detail.mode, detail.id.clone(), subject.to_owned()),
+                key,
                 CachedDetail {
-                    detail: detail.clone(),
+                    detail,
                     unreachable: unreachable.to_vec(),
                 },
             );
