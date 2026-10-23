@@ -340,7 +340,8 @@ class TeamTable extends StatelessWidget {
         cell: (_, l) {
           if (l.isTotal) return const SizedBox.shrink();
           return RankCell(
-            l.player!.rankState,
+            l.player!.shown,
+            career: l.player!.career,
             catalog: catalog,
             stadium: stadium,
           );

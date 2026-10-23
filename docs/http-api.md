@@ -60,7 +60,7 @@ Invoke-RestMethod http://127.0.0.1:18180/api/player/growth -Method Post -Headers
 | `profile` | 某模式某赛季的生涯：各职责数据、英雄使用统计、省榜、行为与荣誉 |
 | `card` | 玩家资料卡 |
 | `matches` | 一页对局列表 |
-| `detail` | 一场对局的详情，需要 `match_id`。立刻返回，带 Fleta 指数和每名玩家的段位状态 `rank_state`（`ranked` / `unranked` / `querying`，见数据结构）；`ratings_pending` 说明段位是否还没查完（用 `prepare` 带 `match_id` 把这一场查完） |
+| `detail` | 一场对局的详情，需要 `match_id`。立刻返回，带 Fleta 指数和每名玩家的显示段位 `shown_rank`（`ranked` / `unranked` / `querying`，见数据结构）；`ratings_pending` 说明段位是否还没查完（用 `prepare` 带 `match_id` 把这一场查完） |
 | `heroes` | 英雄榜 |
 | `summary`、`history`、`sameplay` | 汇总、往期赛季、和另一名玩家的共同对局 |
 

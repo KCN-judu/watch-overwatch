@@ -142,14 +142,22 @@ fn per10(detail: &MatchDetail, p: &Participant) -> Option<(String, BTreeMap<Benc
     Some((hero, figures))
 }
 
-/// A participant's tier: the rank in the match, else their career rank for the role.
-fn tier_of(p: &Participant, ratings: &HashMap<&str, &PlayerRating>) -> Option<&'static str> {
-    let sr = p.rating().map(|(v, _)| v).or_else(|| {
-        ratings
-            .get(p.bnet_id.as_deref()?)
-            .and_then(|r| r.rating_for(p.role))
-            .map(|(sr, _)| sr)
-    })?;
+/// A participant's tier: the rank they are shown with (`crate::rank_view`), else their
+/// career rank for the role.
+fn tier_of(
+    p: &Participant,
+    mode: Mode,
+    ratings: &HashMap<&str, &PlayerRating>,
+) -> Option<&'static str> {
+    let sr = crate::rank_view::shown(p, mode)
+        .rating()
+        .map(|(v, _)| v)
+        .or_else(|| {
+            ratings
+                .get(p.bnet_id.as_deref()?)
+                .and_then(|r| r.rating_for(p.role))
+                .map(|(sr, _)| sr)
+        })?;
     rating_tier(sr).map(|(t, _)| t)
 }
 
@@ -221,7 +229,8 @@ pub fn benchmarks(
                     .or_insert_with(|| (p.hero.clone().unwrap(), p.role, Vec::new()));
                 entry.2.push(figures);
             } else {
-                let tier = tier_of(p, &by_id).and_then(|t| TIERS.iter().position(|x| *x == t));
+                let tier =
+                    tier_of(p, d.mode, &by_id).and_then(|t| TIERS.iter().position(|x| *x == t));
                 peers.push(PeerMatch {
                     hero,
                     tier,

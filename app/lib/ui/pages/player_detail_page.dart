@@ -125,7 +125,8 @@ class PlayerDetailPage extends StatelessWidget {
                     RoleIcon(player.role, size: 16, showLabel: true),
                     Text(hero?.label ?? tr.common.unknownHero, style: Ty.body),
                     RankCell(
-                      player.rankState,
+                      player.shown,
+                      career: player.career,
                       catalog: catalog,
                       stadium: detail.mode == Mode.stadium,
                       long: true,
