@@ -1,5 +1,6 @@
 //! The store's dealings with the file system, kept out of the database code: where the
-//! files are, how big they are, and carrying an older single-file store over.
+//! file is, how big it is, carrying an older single-file store over and deleting the rank
+//! cache earlier versions kept.
 use std::path::{Path, PathBuf};
 
 use super::{
@@ -8,7 +9,8 @@ use super::{
 };
 
 const MATCHES_FILE: &str = "matches.db";
-const RATINGS_FILE: &str = "ratings.db";
+/// The rank cache of versions before 1.4.0; ranks now live in the match snapshots.
+const RANK_CACHE_FILE: &str = "ratings.db";
 /// The single file older versions kept everything in.
 const LEGACY_FILE: &str = "strength.db";
 
@@ -33,15 +35,17 @@ impl Layout {
         self.dir.join(MATCHES_FILE)
     }
 
-    pub fn ratings_db(&self) -> PathBuf {
-        self.dir.join(RATINGS_FILE)
+    /// Deletes the rank cache of earlier versions, if it is still there.
+    pub fn remove_rank_cache(&self) {
+        for suffix in ["", "-wal", "-shm"] {
+            let _ = std::fs::remove_file(self.dir.join(format!("{RANK_CACHE_FILE}{suffix}")));
+        }
     }
 
-    /// Bytes both databases take, with their write-ahead logs.
+    /// Bytes the database takes, with its write-ahead log.
     pub fn bytes(&self) -> u64 {
-        [MATCHES_FILE, RATINGS_FILE]
+        [MATCHES_FILE.to_string(), format!("{MATCHES_FILE}-wal")]
             .iter()
-            .flat_map(|f| [f.to_string(), format!("{f}-wal")])
             .map(|name| std::fs::metadata(self.dir.join(name)).map_or(0, |m| m.len()))
             .sum()
     }
@@ -58,34 +62,28 @@ impl Layout {
     }
 }
 
-/// Moves what an older version kept in the single `strength.db` into the two current
-/// databases, then deletes it. Ranks fetched before `ratings_since_ms` are not carried
-/// over. Nothing happens when there is no old file; the old file stays if copying failed.
-pub fn migrate_legacy(layout: &Layout, matches: &Db, ratings: &Db, ratings_since_ms: i64) {
+/// Moves the matches an older version kept in the single `strength.db` into the current
+/// database, then deletes it (its ranks are not carried over: ranks live in the match
+/// snapshots now). Nothing happens when there is no old file; the old file stays if
+/// copying failed.
+pub fn migrate_legacy(layout: &Layout, matches: &Db) {
     let Some(legacy) = layout.legacy() else {
         return;
     };
     let path = legacy.to_string_lossy().into_owned();
-    let copied = (|| -> rusqlite::Result<()> {
-        matches.with(|c| {
-            c.execute(ATTACH_LEGACY, [&path])?;
-            // A table the old file never had is nothing to carry over.
-            for sql in [
-                &SQL.legacy.detail,
-                &SQL.legacy.list,
-                &SQL.legacy.state,
-                &SQL.legacy.participant,
-            ] {
-                let _ = c.execute(sql, []);
-            }
-            c.execute(DETACH_LEGACY, []).map(|_| ())
-        })?;
-        ratings.with(|c| {
-            c.execute(ATTACH_LEGACY, [&path])?;
-            let _ = c.execute(&SQL.legacy.ratings, [ratings_since_ms]);
-            c.execute(DETACH_LEGACY, []).map(|_| ())
-        })
-    })();
+    let copied = matches.with(|c| {
+        c.execute(ATTACH_LEGACY, [&path])?;
+        // A table the old file never had is nothing to carry over.
+        for sql in [
+            &SQL.legacy.detail,
+            &SQL.legacy.list,
+            &SQL.legacy.state,
+            &SQL.legacy.participant,
+        ] {
+            let _ = c.execute(sql, []);
+        }
+        c.execute(DETACH_LEGACY, []).map(|_| ())
+    });
     match copied {
         Ok(()) => layout.remove_legacy(),
         Err(e) => tracing::warn!("local store: could not move the old cache over: {e}"),

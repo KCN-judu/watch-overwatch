@@ -211,13 +211,9 @@ class PlayerWorkspace extends ChangeNotifier {
 
   bool _closed = false;
 
-  /// Matches of a mode still waiting for their players' ranks to be looked up in the
-  /// background; absent when nothing is running.
-  final prepareRemaining = <Mode, int>{};
+  /// The background rank job of each mode while it runs; absent when nothing does.
+  final prepareJobs = <Mode, RankJob>{};
   final _preparing = <Mode>{};
-
-  /// Whether the background rank job of a mode is giving way to another query.
-  final preparePaused = <Mode>{};
 
   /// After the list has been updated, has the service take the rank snapshots of the
   /// newest matches in the background, and follows it: the job gives way to every other
@@ -229,12 +225,7 @@ class PlayerWorkspace extends ChangeNotifier {
         (s) => app.api.startRankJob(s, mode),
       );
       while (!_closed && job != null && !job.finished) {
-        prepareRemaining[mode] = job.remaining;
-        if (job.paused) {
-          preparePaused.add(mode);
-        } else {
-          preparePaused.remove(mode);
-        }
+        prepareJobs[mode] = job;
         notifyListeners();
         await Future<void>.delayed(const Duration(milliseconds: 1500));
         job = await _call<RankJob?>((s) => app.api.rankJob(s, mode));
@@ -243,8 +234,7 @@ class PlayerWorkspace extends ChangeNotifier {
       // A nicety: whatever is missing is looked up when it is needed.
     } finally {
       _preparing.remove(mode);
-      prepareRemaining.remove(mode);
-      preparePaused.remove(mode);
+      prepareJobs.remove(mode);
       if (!_closed) notifyListeners();
     }
   }

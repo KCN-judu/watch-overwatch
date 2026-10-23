@@ -215,9 +215,8 @@ class ShellStrings {
     Object listed,
     Object matches,
     Object participants,
-    Object players,
     String size,
-  ) => '$listed 场对局记录、$matches 场详情、$participants 名队友与对手、$players 名玩家段位，$size';
+  ) => '$listed 场对局记录、$matches 场详情（含段位快照）、$participants 名队友与对手，$size';
   String get localCache => '本地缓存';
   String get clearCache => '清除缓存';
   String get accountReady => '可用';

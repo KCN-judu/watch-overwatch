@@ -41,9 +41,9 @@ Invoke-RestMethod http://127.0.0.1:18180/api/player/growth -Method Post -Headers
 | `POST /api/player/growth` | 成长面板：逐局的存活时长、Fleta、KDA、治疗量、阻挡量和各指标的走势（整体和分职责） |
 | `POST /api/player/stored` | 本机已有的某个名字的对局列表和最近的玩家资料，不发任何上游请求 |
 | `POST /api/player/prepare` | 把已读取的对局里还没准备好的，每次取一小批：读详情并（可选）取参与者的段位快照，存进本机（导出用；打开一场对局时补这一场） |
-| `POST /api/ranks/start`、`POST /api/ranks/status` | 段位快照的后台任务：`{session, mode}`。`start` 给这个玩家和模式排一个任务（已有则提前），从新到旧给最新 300 场里缺快照的对局读详情、取段位快照；`status` 返回 `job`：`state`（`waiting` 排在别的任务后 / `running` / `paused` 正在给其他查询让路 / `done`）、`done`、`remaining`。其他任何查询进行中，任务在下一个上游请求前暂停，空闲 1.5 秒后自动继续；进度存在对局详情里，重启服务后再 `start` 会接着读 |
+| `POST /api/ranks/start`、`POST /api/ranks/status` | 段位快照的后台任务：`{session, mode}`。`start` 给这个玩家和模式排一个任务（已有则提前），从新到旧给最新 300 场里缺快照的对局读详情、取段位快照；`status` 返回 `job`：`state`（`waiting` 排在别的任务后 / `running` / `paused` 正在给其他查询让路 / `retrying` 只剩查询失败的对局，`retry_in_s` 秒后重试 / `done`）、`done`、`remaining`。其他任何查询进行中，任务在下一个上游请求前暂停，空闲 1.5 秒后自动继续；查询失败的对局重新排队，最多重试三轮；进度存在对局详情里，重启服务后再 `start` 会接着读 |
 | `GET /api/progress?id=…` | 一次采集的实时进度 |
-| `GET /api/cache`、`POST /api/cache/clear` | 查看、清除本机保存的对局和段位（`matches.db`、`ratings.db`） |
+| `GET /api/cache`、`POST /api/cache/clear` | 查看、清除本机保存的对局（`matches.db`，含段位快照） |
 | `POST /api/player/export` | 导出数据集 |
 | `GET /api/catalog` | 目录（英雄、地图、统计项、威能、段位图标与名称；`stadium_upgrades`：角斗领域的异能与装备，按 `0x…` 编号给出名称、图标、说明、分类和稀有度） |
 | `POST /api/request` | 白名单内的原始接口转发（调试用） |

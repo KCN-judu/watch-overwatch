@@ -142,22 +142,10 @@ fn per10(detail: &MatchDetail, p: &Participant) -> Option<(String, BTreeMap<Benc
     Some((hero, figures))
 }
 
-/// A participant's tier: the rank they are shown with (`crate::rank_view`), else their
-/// career rank for the role.
-fn tier_of(
-    p: &Participant,
-    mode: Mode,
-    ratings: &HashMap<&str, &PlayerRating>,
-) -> Option<&'static str> {
-    let sr = crate::rank_view::shown(p, mode)
-        .rating()
-        .map(|(v, _)| v)
-        .or_else(|| {
-            ratings
-                .get(p.bnet_id.as_deref()?)
-                .and_then(|r| r.rating_for(p.role))
-                .map(|(sr, _)| sr)
-        })?;
+/// A participant's tier: the rank they are shown with (`crate::rank_view`), the same one
+/// the match table draws and the lobby strength counts.
+fn tier_of(p: &Participant, mode: Mode) -> Option<&'static str> {
+    let (sr, _) = crate::rank_view::shown(p, mode).rating()?;
     rating_tier(sr).map(|(t, _)| t)
 }
 
@@ -197,7 +185,6 @@ struct PeerMatch {
 /// own tier per role, when known.
 pub fn benchmarks(
     details: &[MatchDetail],
-    ratings: &[PlayerRating],
     subject: &str,
     mode: Mode,
     subject_tiers: &HashMap<Role, String>,
@@ -205,8 +192,6 @@ pub fn benchmarks(
     if mode == Mode::Stadium {
         return Vec::new();
     }
-    let by_id: HashMap<&str, &PlayerRating> =
-        ratings.iter().map(|r| (r.bnet_id.as_str(), r)).collect();
     let mut seen = std::collections::HashSet::new();
     let mut peers: Vec<PeerMatch> = Vec::new();
     // The subject's own matches on each hero: role, figures.
@@ -229,8 +214,7 @@ pub fn benchmarks(
                     .or_insert_with(|| (p.hero.clone().unwrap(), p.role, Vec::new()));
                 entry.2.push(figures);
             } else {
-                let tier =
-                    tier_of(p, d.mode, &by_id).and_then(|t| TIERS.iter().position(|x| *x == t));
+                let tier = tier_of(p, d.mode).and_then(|t| TIERS.iter().position(|x| *x == t));
                 peers.push(PeerMatch {
                     hero,
                     tier,
@@ -324,16 +308,14 @@ pub fn benchmarks(
     out
 }
 
-/// The subject's tier per role, from the ranks of the matches stored for them (the newest
-/// rank seen in each role), else their career rank.
-pub fn subject_tiers(
-    details: &[MatchDetail],
-    rating: Option<&PlayerRating>,
-) -> HashMap<Role, String> {
+/// The subject's own tier in each role: the rank their newest match reported for the role
+/// they played, else the newest rank snapshot of that role (from their matches' own
+/// snapshots, `Participant::career`).
+pub fn subject_tiers(details: &[MatchDetail]) -> HashMap<Role, String> {
     let mut out = HashMap::new();
     let mut newest: Vec<&MatchDetail> = details.iter().collect();
     newest.sort_by_key(|d| std::cmp::Reverse(d.started_at_ms));
-    for d in newest {
+    for d in &newest {
         if let Some(me) = d.subject()
             && let Some(sr) = me.rank.as_ref().and_then(|r| r.skill_rating)
             && let Some((t, _)) = rating_tier(sr as f64)
@@ -341,17 +323,18 @@ pub fn subject_tiers(
             out.entry(me.role).or_insert_with(|| t.to_owned());
         }
     }
-    if let Some(r) = rating {
-        for role in Role::PLAYABLE {
-            if out.contains_key(&role) {
-                continue;
-            }
-            if let Some((sr, analysis_fit)) = r.rating_for(role)
-                && analysis_fit == RatingFit::SameRole
-                && let Some((t, _)) = rating_tier(sr)
-            {
-                out.insert(role, t.to_owned());
-            }
+    for role in Role::PLAYABLE {
+        if out.contains_key(&role) {
+            continue;
+        }
+        let snapshot = newest
+            .iter()
+            .find_map(|d| match d.subject()?.career.get(role)? {
+                crate::ir::RankState::Ranked(rank) => rank.skill_rating,
+                _ => None,
+            });
+        if let Some((t, _)) = snapshot.and_then(|sr| rating_tier(sr as f64)) {
+            out.insert(role, t.to_owned());
         }
     }
     out
@@ -445,7 +428,7 @@ mod tests {
     #[test]
     fn the_typical_match_is_placed_among_peers_at_the_same_tier() {
         let tiers = HashMap::from([(Role::Damage, "Gold".to_owned())]);
-        let b = benchmarks(&fixture(), &[], "me", Mode::Competitive, &tiers);
+        let b = benchmarks(&fixture(), "me", Mode::Competitive, &tiers);
         assert_eq!(b.len(), 1);
         let h = &b[0];
         assert_eq!(h.matches, 3);
@@ -472,7 +455,7 @@ mod tests {
     #[test]
     fn too_few_peers_at_the_tier_widens_to_any_rank() {
         let tiers = HashMap::from([(Role::Damage, "Diamond".to_owned())]);
-        let b = benchmarks(&fixture(), &[], "me", Mode::Competitive, &tiers);
+        let b = benchmarks(&fixture(), "me", Mode::Competitive, &tiers);
         let dmg = b[0]
             .metrics
             .iter()
@@ -487,8 +470,8 @@ mod tests {
         let mut few = fixture();
         few.remove(0);
         few.remove(0);
-        assert!(benchmarks(&few, &[], "me", Mode::Competitive, &HashMap::new()).is_empty());
-        assert!(benchmarks(&fixture(), &[], "me", Mode::Stadium, &HashMap::new()).is_empty());
+        assert!(benchmarks(&few, "me", Mode::Competitive, &HashMap::new()).is_empty());
+        assert!(benchmarks(&fixture(), "me", Mode::Stadium, &HashMap::new()).is_empty());
     }
 
     #[test]

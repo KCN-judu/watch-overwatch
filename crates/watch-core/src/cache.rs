@@ -6,19 +6,17 @@
 //!  - a finished match's detail never changes, so it is kept as long as the player
 //!    asked about it (the detail's "allies" and "enemies" are relative to that
 //!    player, so it is stored per player);
-//!  - a player's competitive ranks for one season: past seasons never change, the
-//!    current one is reused for a while.
 //!
-//! Other players' tokens are never kept: when a cached match still needs a rating that
-//! is not cached, the match is fetched again to get the tokens.
+//! Players' ranks are not kept apart from the matches: each match keeps the snapshot
+//! taken for it (`crate::snapshot`), and within one lookup run (or background job) a
+//! player is asked once (`crate::snapshot::Lookups`).
+//!
+//! Other players' tokens are never kept: when a cached match still needs a rank, the
+//! match is fetched again to get the tokens.
 use crate::dashen::Mode;
-use crate::ir::{MatchDetail, MatchSummary, RoleRating};
+use crate::ir::{MatchDetail, MatchSummary};
 use std::collections::HashMap;
 use std::sync::Mutex;
-use std::time::Duration;
-
-/// How long a player's ranks (any season) are used before they are looked up again.
-pub const RATINGS_TTL: Duration = Duration::from_secs(3 * 24 * 3600);
 
 /// A kept match detail, and the participants who could not be looked up when it was
 /// fetched (the upstream gave no token for them), so they are not asked about again.
@@ -58,56 +56,21 @@ pub trait StrengthCache: Send + Sync + std::fmt::Debug {
     /// The detail of `match_id` as seen by `subject` (their bnet id).
     fn detail(&self, mode: Mode, match_id: &str, subject: &str) -> Option<CachedDetail>;
     fn put_detail(&self, subject: &str, detail: &MatchDetail, unreachable: &[String]);
-    /// Ranks of one player in one season, or `None` when there are none stored or they
-    /// are older than [`RATINGS_TTL`]. The age is checked here, in one place, so every
-    /// caller gets either fresh data or a miss. Ranks stored as `settled` never expire.
-    fn season_ratings(&self, bnet_id: &str, season: u32) -> Option<Vec<RoleRating>>;
-    /// Stores ranks stamped with the current time, replacing what was there. `settled` is
-    /// for a season that is over and was asked for by its number: what a finished season
-    /// says about a player cannot change, so it is never looked up again.
-    fn put_season_ratings(&self, bnet_id: &str, season: u32, ratings: &[RoleRating], settled: bool);
 }
-
-/// When the ranks were stored (ms since the epoch), and the ranks.
-type StoredRatings = (u128, bool, Vec<RoleRating>);
 
 /// Subject, mode and season of a stored list.
 type ListId = (String, Mode, Option<u32>);
 
 /// In-memory cache: for tests, and a fallback when the disk cache cannot be opened.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct MemoryCache {
-    ttl: Duration,
     lists: Mutex<HashMap<ListId, StoredList>>,
     details: Mutex<HashMap<(Mode, String, String), CachedDetail>>,
-    ratings: Mutex<HashMap<(String, u32), StoredRatings>>,
-}
-
-impl Default for MemoryCache {
-    fn default() -> Self {
-        Self {
-            ttl: RATINGS_TTL,
-            lists: Mutex::default(),
-            details: Mutex::default(),
-            ratings: Mutex::default(),
-        }
-    }
 }
 
 impl MemoryCache {
     pub fn new() -> Self {
         Self::default()
-    }
-    /// Uses `ttl` instead of [`RATINGS_TTL`] (tests).
-    pub fn with_ratings_ttl(mut self, ttl: Duration) -> Self {
-        self.ttl = ttl;
-        self
-    }
-    /// Forgets every rating but keeps the match details.
-    pub fn clear_ratings(&self) {
-        if let Ok(mut r) = self.ratings.lock() {
-            r.clear();
-        }
     }
 }
 
@@ -169,26 +132,6 @@ impl StrengthCache for MemoryCache {
                     detail,
                     unreachable: unreachable.to_vec(),
                 },
-            );
-        }
-    }
-    fn season_ratings(&self, bnet_id: &str, season: u32) -> Option<Vec<RoleRating>> {
-        let r = self.ratings.lock().ok()?;
-        let (at, settled, rows) = r.get(&(bnet_id.to_owned(), season))?;
-        let fresh = *settled || crate::now_ms().saturating_sub(*at) <= self.ttl.as_millis();
-        fresh.then(|| rows.clone())
-    }
-    fn put_season_ratings(
-        &self,
-        bnet_id: &str,
-        season: u32,
-        ratings: &[RoleRating],
-        settled: bool,
-    ) {
-        if let Ok(mut r) = self.ratings.lock() {
-            r.insert(
-                (bnet_id.to_owned(), season),
-                (crate::now_ms(), settled, ratings.to_vec()),
             );
         }
     }

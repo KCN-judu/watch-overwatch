@@ -63,22 +63,48 @@ pub struct Lookups {
 #[derive(Debug, Default)]
 struct Lookup {
     ranks: RoleRanks,
+    /// A request for the player failed in the current attempt.
     failed: bool,
+    /// The current attempt ended with every request answered.
+    answered: bool,
 }
 
 impl Lookups {
-    /// A finished run from ranks already looked up (each player's newest season first).
-    pub fn known(ratings: &HashMap<&str, &PlayerRating>) -> Self {
+    /// A finished run from ranks already looked up.
+    pub fn from_ratings(ratings: &HashMap<&str, &PlayerRating>) -> Self {
         let mut l = Self::default();
         for (id, r) in ratings {
+            l.begin(id);
             l.answer(id, &r.roles);
             l.finish(id);
         }
         l
     }
 
-    /// A season's answer for a player: each role with a rank becomes ranked, unless a
-    /// newer season (folded in earlier) already gave it one.
+    /// A player's ranks as the dataset lists them (`PlayerRating`): the ranked roles.
+    pub fn rating(&self, id: &str, name: Option<String>) -> PlayerRating {
+        PlayerRating {
+            bnet_id: id.to_owned(),
+            name,
+            roles: self
+                .ranks(id)
+                .map(|r| {
+                    r.iter()
+                        .filter_map(|(role, s)| match s {
+                            RankState::Ranked(rank) => Some(RoleRating {
+                                role,
+                                season: None,
+                                rank: rank.clone(),
+                            }),
+                            _ => None,
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+        }
+    }
+
+    /// This season's answer for a player: each role with a rank becomes ranked.
     pub fn answer(&mut self, id: &str, rows: &[RoleRating]) {
         let l = self.players.entry(id.to_owned()).or_default();
         for r in rows {
@@ -91,16 +117,33 @@ impl Lookups {
         }
     }
 
-    /// A request for the player failed: the roles it would have answered stay unknown.
+    /// Whether the player was asked and every request answered: nothing to ask again.
+    /// A player whose request failed is not, so a later attempt asks again.
+    pub fn known(&self, id: &str) -> bool {
+        self.players.get(id).is_some_and(|l| l.answered)
+    }
+
+    /// An attempt for the player begins: a failure of an earlier one is forgotten.
+    pub fn begin(&mut self, id: &str) {
+        self.players.entry(id.to_owned()).or_default().failed = false;
+    }
+
+    /// A request for the player failed: the roles it would have answered stay unknown,
+    /// and the player is asked again by a later attempt.
     pub fn failed(&mut self, id: &str) {
         self.players.entry(id.to_owned()).or_default().failed = true;
     }
 
-    /// Every season that could answer for the player has been asked: with no failure, a
-    /// role still without a rank has none (unranked); after a failure it stays querying,
-    /// to be asked again another time.
+    /// Players whose last attempt failed.
+    pub fn failures(&self) -> usize {
+        self.players.values().filter(|l| l.failed).count()
+    }
+
+    /// The player's attempt is over: with no failure, a role still without a rank this
+    /// season has none (unranked); after a failure it stays querying, to be asked again.
     pub fn finish(&mut self, id: &str) {
         let l = self.players.entry(id.to_owned()).or_default();
+        l.answered = !l.failed;
         if !l.failed {
             for role in Role::PLAYABLE {
                 if let Some(slot) = l.ranks.get_mut(role)
@@ -116,18 +159,10 @@ impl Lookups {
     /// unranked in every role.
     pub fn unreachable(&mut self, ids: &[String]) {
         for id in ids {
-            self.players.entry(id.clone()).or_default().ranks = RoleRanks::unranked();
+            let l = self.players.entry(id.clone()).or_default();
+            l.ranks = RoleRanks::unranked();
+            l.answered = true;
         }
-    }
-
-    /// Whether every role of this player is ranked already, so an older season is not
-    /// needed.
-    pub fn complete(&self, id: &str) -> bool {
-        self.players.get(id).is_some_and(|l| {
-            l.ranks
-                .iter()
-                .all(|(_, s)| matches!(s, RankState::Ranked(_)))
-        })
     }
 
     /// What is known of a player so far (after [`Lookups::finish`], their snapshot).
@@ -174,24 +209,34 @@ mod tests {
     }
 
     #[test]
-    fn a_newer_season_wins_and_a_failure_leaves_the_rest_unknown() {
+    fn this_season_decides_and_a_failure_is_asked_again() {
         let mut l = Lookups::default();
-        // This season: damage only; last season: damage and support.
+        // This season ranks damage only: the other two are unranked, whatever earlier
+        // seasons said.
+        l.begin("a");
         l.answer("a", &[row(Role::Damage, 3000)]);
-        l.answer("a", &[row(Role::Damage, 2500), row(Role::Support, 2200)]);
         l.finish("a");
         let a = l.ranks("a").unwrap();
         assert!(matches!(&a.damage, RankState::Ranked(r) if r.skill_rating == Some(3000)));
-        assert!(matches!(&a.support, RankState::Ranked(r) if r.skill_rating == Some(2200)));
-        assert_eq!(a.tank, RankState::Unranked);
-        // A request failed: what did not answer stays to be asked again.
-        l.answer("b", &[row(Role::Tank, 2000)]);
+        assert_eq!(
+            (&a.tank, &a.support),
+            (&RankState::Unranked, &RankState::Unranked)
+        );
+        assert!(l.known("a"));
+        // A request failed: nothing is concluded, and the player is asked again.
+        l.begin("b");
         l.failed("b");
         l.finish("b");
-        let b = l.ranks("b").unwrap();
-        assert!(matches!(b.tank, RankState::Ranked(_)));
-        assert_eq!(b.damage, RankState::Querying);
-        assert!(!b.settled());
+        assert_eq!(l.ranks("b").unwrap(), &RoleRanks::default());
+        assert!(!l.known("b"));
+        assert_eq!(l.failures(), 1);
+        // The next attempt answers: settled.
+        l.begin("b");
+        l.answer("b", &[row(Role::Tank, 2000)]);
+        l.finish("b");
+        assert!(l.known("b"));
+        assert!(l.ranks("b").unwrap().settled());
+        assert_eq!(l.failures(), 0);
         // No token: unranked everywhere, settled.
         l.unreachable(&["c".into()]);
         assert_eq!(l.ranks("c"), Some(&RoleRanks::unranked()));

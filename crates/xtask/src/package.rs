@@ -26,7 +26,7 @@ fn readme() -> String {
   详细说明见“使用指引.md”。
 
 数据存放
-  账号凭据、界面状态、图片缓存、本地对局库（matches.db）和段位库（ratings.db）
+  账号凭据、界面状态、图片缓存和本地对局库（matches.db，含段位快照）
   都在 %LOCALAPPDATA%\\Watch Overwatch\\ 下，不在本目录里。
   删除本目录不会删除它们；要彻底清理，一并删除那个文件夹。
 

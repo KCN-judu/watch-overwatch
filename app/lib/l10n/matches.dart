@@ -76,6 +76,8 @@ class MatchStrings {
   String get continueReadingTip => '读取全部更早的对局';
   String get preparingTip => '正在后台给对局里的玩家取段位快照，存进对局信息；打开别的页面时会先让路，之后自动继续。';
   String preparing(int remaining) => '正在后台读取段位，还剩 $remaining 场…';
+  String preparingRetry(int seconds, int remaining) =>
+      '部分段位没查到，$seconds 秒后重试（还剩 $remaining 场）';
   String preparingPaused(int remaining) =>
       '段位读取已暂停，等其他查询完成后继续（还剩 $remaining 场）';
   String get sortOldestFirst => '时间顺序：最早在前，点击改为最新在前';

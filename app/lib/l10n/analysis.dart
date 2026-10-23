@@ -14,7 +14,7 @@ class AnalysisStrings {
   /// The page's InfoTip; quick play borrows competitive ranks.
   String strengthInfo({required bool quick}) =>
       '比较己方与对方的平均段位。重装、输出、支援只平均打这个职责的玩家，综合是全部。'
-      '${quick ? '快速比赛没有段位，用每名玩家本赛季的竞技段位代替（没有取上赛季），职责按他这局所打的。' : '使用每名参与者在这一局里的段位。'}';
+      '${quick ? '快速比赛没有段位，用读取这场时每名玩家本赛季的竞技段位快照代替，职责按他这局所打的。' : '使用每名参与者在这一局里的段位。'}';
 
   String get strengthFailed => '无法完成对局强度分析';
   String get scope => '范围';

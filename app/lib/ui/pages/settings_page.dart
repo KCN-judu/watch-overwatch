@@ -516,7 +516,6 @@ class _SettingsPageState extends State<SettingsPage> {
             s['listed'],
             s['matches'],
             s['participants'],
-            s['players'],
             size,
           );
     return Padding(

@@ -545,7 +545,7 @@ fn lobby_strength_is_split_by_role_and_side() {
     ];
     // The analysis reads the snapshots taken from these ranks, nothing else.
     let by_id = ratings.iter().map(|r| (r.bnet_id.as_str(), r)).collect();
-    watch_core::snapshot::Lookups::known(&by_id).take(&mut d);
+    watch_core::snapshot::Lookups::from_ratings(&by_id).take(&mut d);
     let mut details = std::collections::BTreeMap::new();
     details.insert(d.id.clone(), d);
     let lobby = strength::lobby_strength(&details);
@@ -579,7 +579,7 @@ fn lobby_strength_is_split_by_role_and_side() {
 }
 
 #[tokio::test]
-async fn collector_rates_unranked_participants_with_previous_season_fallback() {
+async fn collector_takes_this_seasons_ranks_only() {
     struct Careers(Mutex<Vec<(String, Option<u64>)>>);
     impl Fetcher for Careers {
         async fn fetch(&self, endpoint: Endpoint, payload: Value) -> Result<Fetched, Failure> {
@@ -621,16 +621,21 @@ async fn collector_rates_unranked_participants_with_previous_season_fallback() {
         collect::collect_player(&fake, &catalog(), "TOKEN", &json!({"bnetId":"1001"}), &plan).await;
     let calls = fake.0.lock().unwrap().clone();
     assert!(calls.contains(&("SECRET-1".into(), None)));
-    // The snapshot is all three roles: last season is asked for the roles this one
-    // left without a rank, even though it already ranks the role played.
-    assert!(calls.contains(&("SECRET-1".into(), Some(24))));
-    assert!(calls.contains(&("SECRET-2".into(), Some(24))));
+    // This season only: no earlier season is ever asked for. SECRET-2's empty answer is
+    // asked again by number (the provider's quirk), and is empty again: unranked.
+    let current = Some(u64::from(catalog().current_season.get()));
+    assert!(
+        calls.iter().all(|(_, s)| s.is_none() || *s == current),
+        "{calls:?}"
+    );
+    assert!(calls.contains(&("SECRET-2".into(), current)));
     assert_eq!(ds.player_ratings.len(), 3, "Tank#1003 has no token");
     let a = analysis::analyze(&ds, &AnalysisOptions::default());
     let m = &a.lobby_strength.matches[0];
+    // 1002 has a damage rank only last season: unranked this season, not counted.
     assert_eq!(
         (m.ally.mean.support, m.ally.mean.damage),
-        (Some(2000.0), Some(3200.0))
+        (Some(2000.0), None)
     );
     assert_eq!(
         (m.enemy.rated.overall, m.enemy.other_role),
@@ -872,7 +877,7 @@ async fn a_repeat_run_is_served_from_the_cache_with_the_same_result() {
 }
 
 #[tokio::test]
-async fn a_match_with_its_snapshots_is_not_read_again_when_the_stored_ranks_are_gone() {
+async fn a_match_with_its_snapshots_is_not_read_again() {
     let mem = std::sync::Arc::new(watch_core::MemoryCache::new());
     let cache: std::sync::Arc<dyn watch_core::StrengthCache> = mem.clone();
     let fake = Counting::new();
@@ -881,32 +886,12 @@ async fn a_match_with_its_snapshots_is_not_read_again_when_the_stored_ranks_are_
     let first = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
     let (_, careers1) = fake.counts();
 
-    // The stored ranks are gone but the match keeps its snapshots: nothing is asked.
-    mem.clear_ratings();
+    // The match keeps its snapshots: nothing is asked again.
     let second = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
     let (info2, careers2) = fake.counts();
     assert_eq!(info2, 1);
     assert_eq!(careers2, careers1);
     assert_eq!(lobby_means(&first), lobby_means(&second));
-}
-
-#[tokio::test]
-async fn refreshing_ratings_leaves_a_snapshotted_match_as_it_was() {
-    let mem = std::sync::Arc::new(watch_core::MemoryCache::new());
-    let cache: std::sync::Arc<dyn watch_core::StrengthCache> = mem;
-    let fake = Counting::new();
-    let id = json!({"bnetId":"1001"});
-    let plan = cached_plan(&cache);
-    collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
-    let (_, before) = fake.counts();
-    let refresh = CollectPlan {
-        refresh_ratings: true,
-        ..cached_plan(&cache)
-    };
-    let ds = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &refresh).await;
-    let (_, after) = fake.counts();
-    assert_eq!(after, before, "the match's lobby is its snapshot");
-    assert_eq!(lobby_means(&ds), (Some(2000.0), Some(3200.0)));
 }
 
 #[tokio::test]
@@ -1402,7 +1387,7 @@ fn a_match_is_prepared_once_its_detail_and_every_lookup_are_stored() {
     }
     let by_id = looked_up.iter().map(|r| (r.bnet_id.as_str(), r)).collect();
     let mut snapped = detail.clone();
-    watch_core::snapshot::Lookups::known(&by_id).take(&mut snapped);
+    watch_core::snapshot::Lookups::from_ratings(&by_id).take(&mut snapped);
     cache.put_detail("1001", &snapped, &[]);
     assert!(collect::match_prepared(
         &cache,
@@ -1469,7 +1454,7 @@ fn a_rank_snapshot_is_taken_once_kept_when_the_match_is_stored_again_and_never_r
     let first = rating(&id, target.role, 2100, None);
     let by_id = std::iter::once((id.as_str(), &first)).collect();
     let mut snapped = detail.clone();
-    assert!(Lookups::known(&by_id).take(&mut snapped));
+    assert!(Lookups::from_ratings(&by_id).take(&mut snapped));
     assert!(got(&snapped).career.settled());
     assert!(matches!(
         got(&snapped).career.get(target.role),
@@ -1479,7 +1464,7 @@ fn a_rank_snapshot_is_taken_once_kept_when_the_match_is_stored_again_and_never_r
     // A later lookup at 2600 does not move it: it is this match's lobby.
     let later = rating(&id, target.role, 2600, None);
     let by_id = std::iter::once((id.as_str(), &later)).collect();
-    Lookups::known(&by_id).take(&mut snapped);
+    Lookups::from_ratings(&by_id).take(&mut snapped);
     assert_eq!(label(&snapped), "Role Some(2100)");
     // The match read in again (no snapshots in it) keeps the stored one.
     let cache = watch_core::MemoryCache::new();
@@ -1498,7 +1483,7 @@ fn a_rank_snapshot_is_taken_once_kept_when_the_match_is_stored_again_and_never_r
     };
     let by_id = std::iter::once((id.as_str(), &none)).collect();
     let mut unranked = detail.clone();
-    Lookups::known(&by_id).take(&mut unranked);
+    Lookups::from_ratings(&by_id).take(&mut unranked);
     assert_eq!(got(&unranked).career, RoleRanks::unranked());
     assert_eq!(label(&unranked), "unranked");
     // Ranked only in another role: shown with it, and counted as borrowed.
@@ -1509,7 +1494,7 @@ fn a_rank_snapshot_is_taken_once_kept_when_the_match_is_stored_again_and_never_r
     let elsewhere = rating(&id, other, 2800, None);
     let by_id = std::iter::once((id.as_str(), &elsewhere)).collect();
     let mut borrowed = detail.clone();
-    Lookups::known(&by_id).take(&mut borrowed);
+    Lookups::from_ratings(&by_id).take(&mut borrowed);
     assert_eq!(label(&borrowed), "OtherRoles Some(2800)");
     assert_eq!(
         shown(&got(&borrowed), Mode::Quick).rating(),
@@ -1529,7 +1514,7 @@ fn a_rank_snapshot_is_taken_once_kept_when_the_match_is_stored_again_and_never_r
         }
     }
     let by_id = std::iter::once((id.as_str(), &first)).collect();
-    Lookups::known(&by_id).take(&mut with_rank);
+    Lookups::from_ratings(&by_id).take(&mut with_rank);
     assert_eq!(got(&with_rank).career, RoleRanks::default());
     assert!(matches!(
         shown(&got(&with_rank), Mode::Quick),
@@ -1642,56 +1627,6 @@ fn fleta_is_a_players_share_of_half_their_teams_final_blows() {
 }
 
 #[tokio::test]
-async fn once_ranks_expire_a_snapshotted_match_still_asks_nothing() {
-    struct Counter(Mutex<Vec<Option<u64>>>);
-    impl Fetcher for Counter {
-        async fn fetch(&self, endpoint: Endpoint, payload: Value) -> Result<Fetched, Failure> {
-            let value = match endpoint {
-                Endpoint::MatchList if payload["gameMode"] == "leisure" => {
-                    json!({"code":0,"data":[{"matchId":"q1","matchRet":1,"beginTs":5,"gameMode":"LeisurePreset"}]})
-                }
-                Endpoint::MatchInfo => fixture("queryMatchInfo"),
-                Endpoint::CareerCount if payload["token"] != "TOKEN" => {
-                    self.0.lock().unwrap().push(payload["season"].as_u64());
-                    // Nobody has a rank: every player needs the previous season too.
-                    json!({"code":0,"data":{"guideCountData":[]}})
-                }
-                _ => json!({"code":0,"data":[]}),
-            };
-            Ok(Fetched {
-                value,
-                cached: false,
-            })
-        }
-    }
-    let fake = Counter(Mutex::new(Vec::new()));
-    let cache: std::sync::Arc<dyn watch_core::StrengthCache> = std::sync::Arc::new(
-        watch_core::MemoryCache::new().with_ratings_ttl(std::time::Duration::from_millis(1)),
-    );
-    let plan = CollectPlan {
-        modes: vec![Mode::Quick],
-        lobby_ratings: true,
-        hero_board: false,
-        cache: Some(cache),
-        ..CollectPlan::default()
-    };
-    let cat = catalog();
-    let identity = json!({"bnetId":"1001"});
-    let run = || collect::collect_player(&fake, &cat, "TOKEN", &identity, &plan);
-    run().await;
-    let first = std::mem::take(&mut *fake.0.lock().unwrap());
-    assert!(
-        first.contains(&None) && first.contains(&Some(24)),
-        "the first run needs both"
-    );
-    // Past the lifetime of the current season's ranks.
-    std::thread::sleep(std::time::Duration::from_millis(20));
-    run().await;
-    let second = fake.0.lock().unwrap().clone();
-    assert!(second.is_empty(), "the snapshots answer: {second:?}");
-}
-
-#[tokio::test]
 async fn without_the_profile_no_card_or_career_is_requested() {
     let fake = FakeDashen {
         calls: Mutex::new(Vec::new()),
@@ -1718,4 +1653,83 @@ async fn without_the_profile_no_card_or_career_is_requested() {
         Some("1001"),
         "the identity is enough for who it is"
     );
+}
+
+#[tokio::test]
+async fn a_failed_lookup_stays_querying_and_is_asked_again_by_the_next_attempt() {
+    use watch_core::ir::RankState;
+    /// Career requests for SECRET-1 fail while `down` is set.
+    struct Flaky {
+        down: Mutex<bool>,
+        asked: Mutex<Vec<String>>,
+    }
+    impl Fetcher for Flaky {
+        async fn fetch(&self, endpoint: Endpoint, payload: Value) -> Result<Fetched, Failure> {
+            let value = match endpoint {
+                Endpoint::MatchList if payload["gameMode"] == "leisure" => {
+                    json!({"code":0,"data":[{"matchId":"q1","matchRet":1,"beginTs":5,"gameMode":"LeisurePreset"}]})
+                }
+                Endpoint::MatchInfo => fixture("queryMatchInfo"),
+                Endpoint::CareerCount if payload["token"] != "TOKEN" => {
+                    let token = payload["token"].as_str().unwrap().to_string();
+                    self.asked.lock().unwrap().push(token.clone());
+                    if token == "SECRET-1" && *self.down.lock().unwrap() {
+                        return Err(Failure {
+                            kind: "network",
+                            message: "down".into(),
+                            retry_after_ms: None,
+                        });
+                    }
+                    let row = json!({"roleType":"healer","lastRankInfo":{"rankScore":395}});
+                    json!({"code":0,"data":{"guideCountData":[row]}})
+                }
+                _ => json!({"code":0,"data":[]}),
+            };
+            Ok(Fetched {
+                value,
+                cached: false,
+            })
+        }
+    }
+    let mem = std::sync::Arc::new(watch_core::MemoryCache::new());
+    let cache: std::sync::Arc<dyn watch_core::StrengthCache> = mem;
+    let fake = Flaky {
+        down: Mutex::new(true),
+        asked: Mutex::new(Vec::new()),
+    };
+    // One background job: its lookup state is shared by every run it makes.
+    let job = std::sync::Arc::new(Mutex::new(watch_core::snapshot::Lookups::default()));
+    let plan = CollectPlan {
+        lookups: Some(job.clone()),
+        ..cached_plan(&cache)
+    };
+    let id = json!({"bnetId":"1001"});
+    let one_of = |ds: &PlayerDataset| {
+        ds.details["q1"]
+            .allies
+            .iter()
+            .chain(&ds.details["q1"].enemies)
+            .find(|p| p.bnet_id.as_deref() == Some("1001"))
+            .unwrap()
+            .career
+            .clone()
+    };
+    let first = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
+    // The failure is not "no rank": still being looked up.
+    assert_eq!(one_of(&first), watch_core::ir::RoleRanks::default());
+    assert!(!collect::match_prepared(
+        cache.as_ref(),
+        Mode::Quick,
+        "q1",
+        "1001",
+        25
+    ));
+    let others_first = fake.asked.lock().unwrap().len();
+    // The next attempt of the same job asks the failed player again, and only them.
+    *fake.down.lock().unwrap() = false;
+    let second = collect::collect_player(&fake, &catalog(), "TOKEN", &id, &plan).await;
+    let asked = fake.asked.lock().unwrap().clone();
+    assert_eq!(&asked[others_first..], ["SECRET-1"], "{asked:?}");
+    assert!(matches!(one_of(&second).support, RankState::Ranked(_)));
+    assert!(one_of(&second).settled());
 }

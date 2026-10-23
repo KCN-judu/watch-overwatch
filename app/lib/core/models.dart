@@ -1044,20 +1044,44 @@ class GrowthResult {
   ];
 }
 
+/// Where the background rank-snapshot job stands.
+enum RankJobState {
+  /// Queued behind another job.
+  waiting,
+  running,
+
+  /// Giving way to another query; carries on by itself.
+  paused,
+
+  /// Only matches whose lookups failed are left; tried again after a pause.
+  retrying,
+
+  /// Nothing left, or the retries are used up (the rest waits for the next refresh).
+  done,
+}
+
 /// The background rank-snapshot job of one player and mode (`/api/ranks/status`).
 class RankJob {
   RankJob(Json j)
-    : state = '${j['state'] ?? 'done'}',
+    : state = switch (j['state']) {
+        'waiting' => RankJobState.waiting,
+        'running' => RankJobState.running,
+        'paused' => RankJobState.paused,
+        'retrying' => RankJobState.retrying,
+        _ => RankJobState.done,
+      },
       done = (j['done'] as num?)?.toInt() ?? 0,
-      remaining = (j['remaining'] as num?)?.toInt() ?? 0;
+      remaining = (j['remaining'] as num?)?.toInt() ?? 0,
+      retryInS = (j['retry_in_s'] as num?)?.toInt();
   static RankJob? opt(Object? j) =>
       j is Map ? RankJob(j.cast<String, dynamic>()) : null;
 
-  /// `waiting`, `running`, `paused` (giving way to another query), `done`.
-  final String state;
+  final RankJobState state;
   final int done, remaining;
-  bool get finished => state == 'done';
-  bool get paused => state == 'paused';
+
+  /// While [RankJobState.retrying]: the pause before the next try.
+  final int? retryInS;
+  bool get finished => state == RankJobState.done;
 }
 
 /// One role's competitive rank as looked up: one of three states.

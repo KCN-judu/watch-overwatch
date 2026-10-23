@@ -834,7 +834,7 @@ async fn prepare_matches(
         cache: &player.cache,
         fresh: false,
     };
-    prepare_with(&fetcher, s, player, mode, rows, ratings).await;
+    prepare_with(&fetcher, s, player, mode, rows, ratings, None).await;
 }
 
 /// Reads the details of `rows` that are not stored and, with `ratings`, takes the rank
@@ -847,6 +847,7 @@ pub(crate) async fn prepare_with<F: Fetcher + Sync>(
     mode: Mode,
     rows: Vec<MatchSummary>,
     ratings: bool,
+    lookups: Option<Arc<std::sync::Mutex<watch_core::snapshot::Lookups>>>,
 ) {
     let plan = CollectPlan {
         modes: vec![mode],
@@ -860,6 +861,7 @@ pub(crate) async fn prepare_with<F: Fetcher + Sync>(
             .store
             .clone()
             .map(|c| c as std::sync::Arc<dyn watch_core::StrengthCache>),
+        lookups,
         ..CollectPlan::default()
     };
     let _ = tokio::time::timeout(
@@ -1035,11 +1037,10 @@ pub(crate) async fn player_overview(
             season: None,
         })
         .rows;
-    let current = s.catalog.current_season.get();
     let result = tokio::task::spawn_blocking(move || {
         // The findings also draw on lobby strength and the peer benchmarks, both from
         // what is stored: still no upstream request.
-        let inputs = PeerInputs::read(&store, &subject, mode, current);
+        let inputs = PeerInputs::read(&store, &subject, mode);
         let by_id: BTreeMap<String, MatchDetail> = inputs
             .mine
             .iter()
@@ -1215,7 +1216,7 @@ pub(crate) async fn player_ranks(
         .rows;
     let current = s.catalog.current_season.get();
     let result = tokio::task::spawn_blocking(move || {
-        let inputs = PeerInputs::read(&store, &subject, mode, current);
+        let inputs = PeerInputs::read(&store, &subject, mode);
         let by_id: BTreeMap<String, MatchDetail> = inputs
             .mine
             .iter()
@@ -1364,45 +1365,30 @@ pub(crate) async fn player_daily(
 }
 
 /// What the peer benchmarks and the overview's findings are worked out from: every stored
-/// detail of `mode`, the stored ranks of everyone in them, and the subject's own details.
+/// detail of `mode` (with the rank snapshots of everyone in them) and the subject's own.
 struct PeerInputs {
     details: Vec<MatchDetail>,
-    ratings: Vec<watch_core::ir::PlayerRating>,
     mine: Vec<MatchDetail>,
 }
 
 impl PeerInputs {
-    fn read(store: &crate::store::LocalStore, subject: &str, mode: Mode, current: u32) -> Self {
+    fn read(store: &crate::store::LocalStore, subject: &str, mode: Mode) -> Self {
         let details: Vec<MatchDetail> = store
             .all_details()
             .into_iter()
             .filter(|d| d.mode == mode && same_world(d, subject))
-            .collect();
-        let ids: std::collections::BTreeSet<String> = details
-            .iter()
-            .flat_map(|d| d.allies.iter().chain(&d.enemies))
-            .filter_map(|p| p.bnet_id.clone())
-            .collect();
-        let ratings = ids
-            .iter()
-            .map(|id| collect::stored_rating(store, id, current))
             .collect();
         let mine = details
             .iter()
             .filter(|d| d.subject().and_then(|p| p.bnet_id.as_deref()) == Some(subject))
             .cloned()
             .collect();
-        Self {
-            details,
-            ratings,
-            mine,
-        }
+        Self { details, mine }
     }
 
     fn benchmarks(&self, subject: &str, mode: Mode) -> Vec<watch_core::benchmark::HeroBench> {
-        let own = self.ratings.iter().find(|r| r.bnet_id == subject);
-        let tiers = watch_core::benchmark::subject_tiers(&self.mine, own);
-        watch_core::benchmark::benchmarks(&self.details, &self.ratings, subject, mode, &tiers)
+        let tiers = watch_core::benchmark::subject_tiers(&self.mine);
+        watch_core::benchmark::benchmarks(&self.details, subject, mode, &tiers)
     }
 }
 
@@ -1424,9 +1410,8 @@ pub(crate) async fn player_benchmark(
     let (Some(store), Some(subject)) = (s.store.clone(), subject_id(&player.identity)) else {
         return Json(json!({"enabled":false})).into_response();
     };
-    let current = s.catalog.current_season.get();
     let result = tokio::task::spawn_blocking(move || {
-        let inputs = PeerInputs::read(&store, &subject, mode, current);
+        let inputs = PeerInputs::read(&store, &subject, mode);
         let heroes = inputs.benchmarks(&subject, mode);
         json!({
             "enabled": true,
@@ -1465,8 +1450,6 @@ pub(crate) async fn player_dataset(
         .store
         .clone()
         .map(|c| c as std::sync::Arc<dyn watch_core::StrengthCache>);
-    // "Refresh" asks the upstream for current-season ranks again, not just for pages.
-    plan.refresh_ratings = input.fresh;
     let tracker = input.progress_id.as_ref().map(|id| {
         let p = std::sync::Arc::new(watch_core::Progress::default());
         if let Ok(mut m) = s.progress.lock() {
