@@ -131,7 +131,8 @@ class MatchStrings {
   String get rankLookup => '查询中';
   String get unranked => '未定级';
   String get unrankedTip => '这名玩家没有竞技段位，或查不到';
-  String unrankedAt(String at) => '$at 查过：这名玩家没有竞技段位';
+  String roleRank(String role, String rank) => '$role $rank';
+  String roleRanks(List<String> roles) => '读取这场时的竞技段位：${roles.join(' · ')}';
   String get portrait => '英雄立绘';
   String playerCount(int n) => '$n 人';
   String teamTableLabel(String team) => '$team队伍';

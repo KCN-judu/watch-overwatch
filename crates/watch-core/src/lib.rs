@@ -16,6 +16,7 @@ pub mod ir;
 pub mod maps;
 pub mod party;
 pub mod progress;
+pub mod rank_view;
 pub mod ranks;
 mod report;
 mod scheduler;

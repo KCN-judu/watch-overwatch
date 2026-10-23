@@ -155,11 +155,18 @@ pub struct MatchStrength {
     pub diff: RoleMeans,
 }
 
-/// A participant's rating for the lobby: the rank the match reported, else the snapshot
-/// taken for this match (`crate::snapshot`). Never a rank looked up later.
-fn participant_rating(p: &Participant) -> Option<(f64, RatingSource, RatingFit)> {
-    let in_match = p.rank.as_ref().is_some_and(|r| r.skill_rating.is_some());
-    let (sr, other) = p.rating()?;
+/// A participant's rating for the lobby: the rank they are shown with
+/// (`crate::rank_view`), so the lobby counts exactly what the match shows.
+fn participant_rating(p: &Participant, mode: Mode) -> Option<(f64, RatingSource, RatingFit)> {
+    let shown = crate::rank_view::shown(p, mode);
+    let in_match = matches!(
+        shown,
+        crate::rank_view::ShownRank::Ranked {
+            basis: crate::rank_view::Basis::Match,
+            ..
+        }
+    );
+    let (sr, other) = shown.rating()?;
     let fit = if other {
         RatingFit::OtherRoles
     } else {
@@ -180,7 +187,7 @@ pub fn match_strength(detail: &MatchDetail) -> MatchStrength {
         let rated: Vec<(Role, f64)> = players
             .iter()
             .filter_map(|p| {
-                let (sr, source, fit) = participant_rating(p)?;
+                let (sr, source, fit) = participant_rating(p, detail.mode)?;
                 sources.push(source);
                 other_role += usize::from(fit == RatingFit::OtherRoles);
                 Some((p.role, sr))
@@ -390,7 +397,7 @@ mod tests {
         let by_id: HashMap<&str, &PlayerRating> =
             ratings.iter().map(|r| (r.bnet_id.as_str(), r)).collect();
         let mut d = d.clone();
-        crate::snapshot::take(&mut d, &by_id, 0);
+        crate::snapshot::Lookups::known(&by_id).take(&mut d);
         match_strength(&d)
     }
 

@@ -473,13 +473,10 @@ mod tests {
             .allies
             .iter()
             .chain(&kept.detail.enemies)
-            .filter(|p| p.career != watch_core::ir::CareerRank::Querying)
+            .filter(|p| p.career.settled())
             .count();
         assert!(snapped > 0);
-        assert!(!watch_core::snapshot::missing(
-            &kept.detail,
-            &kept.unreachable
-        ));
+        assert!(!watch_core::snapshot::missing(&kept.detail));
         let _ = std::fs::remove_dir_all(dir);
     }
 }

@@ -130,7 +130,7 @@ class RankBadge extends StatelessWidget {
     this.stadium = false,
     this.size = 20,
     this.showText = false,
-    this.snapshotMs,
+    this.snapshot = false,
     this.otherRoles = false,
   });
   final Rank? rank;
@@ -138,9 +138,9 @@ class RankBadge extends StatelessWidget {
   /// The rank is the highest of the player's ranks in other roles (none for the role played).
   final bool otherRoles;
 
-  /// The rank is the player's competitive rank as looked up for the match at this time
-  /// (a snapshot), not one the match itself reported.
-  final int? snapshotMs;
+  /// The rank is the player's competitive rank as looked up for the match (a snapshot),
+  /// not one the match itself reported.
+  final bool snapshot;
   final Catalog catalog;
   final bool stadium;
   final double size;
@@ -163,8 +163,8 @@ class RankBadge extends StatelessWidget {
         : tr.shell.rankWithRating(text, fmtInt(r.skillRating));
     final detail = otherRoles
         ? tr.shell.rankFromOtherRole(base)
-        : snapshotMs != null
-        ? tr.shell.rankSnapshot(base, fmtDateTime(snapshotMs))
+        : snapshot
+        ? tr.shell.rankSnapshot(base)
         : base;
     if (url == null) {
       return Tooltip(
@@ -201,16 +201,19 @@ class RankBadge extends StatelessWidget {
   }
 }
 
-/// A participant's rank in one of its three states: the badge, “未定级”, or “查询中”.
+/// A participant's rank as the service decided it ([ShownRank]): the badge, “未定级”, or
+/// “查询中”. Hovering names the three roles of the snapshot.
 class RankCell extends StatelessWidget {
   const RankCell(
-    this.state, {
+    this.shown, {
     super.key,
+    required this.career,
     required this.catalog,
     this.stadium = false,
     this.long = false,
   });
-  final RankState state;
+  final ShownRank shown;
+  final RoleRanks career;
   final Catalog catalog;
 
   /// A Stadium match: a rank it reported is on the Stadium ladder.
@@ -219,28 +222,34 @@ class RankCell extends StatelessWidget {
   /// First-class surfaces: the tier name and the longer words.
   final bool long;
 
+  String _roles() => tr.matches.roleRanks([
+    for (final (role, state) in career.roles)
+      tr.matches.roleRank(role.label, switch (state) {
+        Ranked(:final rank) => rank.label,
+        Unranked() => tr.matches.unranked,
+        Querying() => tr.matches.rankLookup,
+      }),
+  ]);
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final style = (long ? Ty.body : Ty.cell).copyWith(color: c.textSecondary);
-    return switch (state) {
-      Ranked(:final rank, :final fromMatch, :final otherRoles, :final atMs) =>
-        RankBadge(
-          rank,
-          catalog: catalog,
-          stadium: stadium && fromMatch,
-          snapshotMs: fromMatch ? null : atMs,
-          otherRoles: otherRoles,
-          showText: long,
-        ),
-      Unranked(:final atMs) => Tooltip(
-        message: atMs == null
-            ? tr.matches.unrankedTip
-            : tr.matches.unrankedAt(fmtDateTime(atMs)),
+    return switch (shown) {
+      ShownRanked(:final rank, :final basis) => RankBadge(
+        rank,
+        catalog: catalog,
+        stadium: stadium && basis == RankBasis.match,
+        snapshot: basis != RankBasis.match,
+        otherRoles: basis == RankBasis.otherRoles,
+        showText: long,
+      ),
+      ShownUnranked() => Tooltip(
+        message: stadium ? tr.matches.unrankedTip : _roles(),
         child: Text(tr.matches.unranked, style: style),
       ),
-      Querying() => Tooltip(
-        message: tr.matches.rankLookupTip,
+      ShownQuerying() => Tooltip(
+        message: _roles(),
         child: Text(
           long ? tr.matches.rankLookupLong : tr.matches.rankLookup,
           style: style,

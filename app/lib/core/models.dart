@@ -355,7 +355,8 @@ class Participant {
       role = Role.parse(_s(j['role'])),
       stats = StatLine.fromJson(_o(j['stats'])),
       rank = Rank.opt(j['rank']),
-      rankState = RankState.fromJson(j['rank_state'], Rank.opt(j['rank'])),
+      career = RoleRanks.fromJson(j['career']),
+      shown = ShownRank.fromJson(j['shown_rank'], Rank.opt(j['rank'])),
       fleta = _d(j['fleta']),
       endorsedBy = [
         for (final e in (j['endorsed_by_bnet_ids'] as List? ?? const [])) '$e',
@@ -377,9 +378,11 @@ class Participant {
   /// The rank the match itself reported (competitive and Stadium).
   final Rank? rank;
 
-  /// The rank the player is shown with: the match's own, the snapshot looked up for the
-  /// match, unranked, or still being looked up (decided by the service).
-  final RankState rankState;
+  /// The player's ranks in the three roles as looked up for this match (the snapshot).
+  final RoleRanks career;
+
+  /// What the player is shown with, worked out by the service.
+  final ShownRank shown;
 
   /// Final blows as a percentage of half the player's team's final blows; null when
   /// either is unknown.
@@ -1057,51 +1060,102 @@ class RankJob {
   bool get paused => state == 'paused';
 }
 
-/// A participant's rank, one of three states (`rank_state` from the service): every
-/// screen draws all three, and a `switch` on it is checked to cover them.
+/// One role's competitive rank as looked up: one of three states.
 sealed class RankState {
   const RankState();
-
-  /// [inMatch] stands in when the service sent no state (an older answer).
-  factory RankState.fromJson(Object? j, Rank? inMatch) {
+  factory RankState.fromJson(Object? j) {
     final m = j is Map ? j.cast<String, dynamic>() : null;
-    final at = (m?['at_ms'] as num?)?.toInt();
     return switch (m?['state']) {
       'ranked' when Rank.opt(m!['rank']) != null => Ranked(
         Rank.opt(m['rank'])!,
-        fromMatch: m['source'] == 'match',
-        otherRoles: _b(m['other_roles']),
-        atMs: at,
       ),
-      'unranked' => Unranked(atMs: at),
-      'querying' => const Querying(),
-      _ when inMatch != null => Ranked(inMatch, fromMatch: true),
+      'unranked' => const Unranked(),
       _ => const Querying(),
     };
   }
 }
 
-/// Has a rank: the one the match reported ([fromMatch]), or the snapshot taken for the
-/// match at [atMs]; [otherRoles] when it is the highest of the player's other roles.
 final class Ranked extends RankState {
-  const Ranked(
-    this.rank, {
-    required this.fromMatch,
-    this.otherRoles = false,
-    this.atMs,
-  });
+  const Ranked(this.rank);
   final Rank rank;
-  final bool fromMatch, otherRoles;
-  final int? atMs;
 }
 
-/// Looked up (at [atMs], when known) and has no rank, or cannot be looked up.
+/// The answer came and has no rank in this role.
 final class Unranked extends RankState {
-  const Unranked({this.atMs});
-  final int? atMs;
+  const Unranked();
 }
 
-/// Still being looked up.
+/// Not known yet.
 final class Querying extends RankState {
   const Querying();
+}
+
+/// A player's ranks in the three roles as looked up for a match (`career`).
+class RoleRanks {
+  const RoleRanks(this.tank, this.damage, this.support);
+  factory RoleRanks.fromJson(Object? j) {
+    final m = j is Map ? j.cast<String, dynamic>() : const <String, dynamic>{};
+    return RoleRanks(
+      RankState.fromJson(m['tank']),
+      RankState.fromJson(m['damage']),
+      RankState.fromJson(m['support']),
+    );
+  }
+  final RankState tank, damage, support;
+  List<(Role, RankState)> get roles => [
+    (Role.tank, tank),
+    (Role.damage, damage),
+    (Role.support, support),
+  ];
+}
+
+/// How a shown rank was reached (`watch_core::rank_view::Basis`).
+enum RankBasis {
+  /// Reported by the match itself.
+  match,
+
+  /// The snapshot's rank in the role played.
+  role,
+
+  /// None in the role played: the highest of the snapshot's other roles.
+  otherRoles,
+}
+
+/// What a participant is shown with, as the service worked it out (`shown_rank`, from
+/// the module that also feeds the lobby strength): drawn as it is, never re-derived here.
+sealed class ShownRank {
+  const ShownRank();
+
+  /// [inMatch] stands in when the service sent nothing (an older answer).
+  factory ShownRank.fromJson(Object? j, Rank? inMatch) {
+    final m = j is Map ? j.cast<String, dynamic>() : null;
+    return switch (m?['state']) {
+      'ranked' when Rank.opt(m!['rank']) != null => ShownRanked(
+        Rank.opt(m['rank'])!,
+        switch (m['basis']) {
+          'match' => RankBasis.match,
+          'other_roles' => RankBasis.otherRoles,
+          _ => RankBasis.role,
+        },
+      ),
+      'unranked' => const ShownUnranked(),
+      'querying' => const ShownQuerying(),
+      _ when inMatch != null => ShownRanked(inMatch, RankBasis.match),
+      _ => const ShownQuerying(),
+    };
+  }
+}
+
+final class ShownRanked extends ShownRank {
+  const ShownRanked(this.rank, this.basis);
+  final Rank rank;
+  final RankBasis basis;
+}
+
+final class ShownUnranked extends ShownRank {
+  const ShownUnranked();
+}
+
+final class ShownQuerying extends ShownRank {
+  const ShownQuerying();
 }

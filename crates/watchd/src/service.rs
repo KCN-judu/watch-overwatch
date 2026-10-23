@@ -1125,10 +1125,11 @@ pub(crate) async fn player_maps(
 /// A match detail as the app reads it: the IR, plus a Stadium match round by round.
 fn detail_json(detail: &MatchDetail) -> Value {
     let mut v = json!(detail);
-    // Each participant's rank as one of three states, decided here for every screen.
+    // What each participant is shown with, from the one module that also feeds the
+    // lobby strength: the app only draws it.
     for (side, people) in [("allies", &detail.allies), ("enemies", &detail.enemies)] {
         for (i, p) in people.iter().enumerate() {
-            v[side][i]["rank_state"] = json!(p.rank_state(detail.mode));
+            v[side][i]["shown_rank"] = json!(watch_core::rank_view::shown(p, detail.mode));
         }
     }
     if detail.mode == Mode::Stadium {

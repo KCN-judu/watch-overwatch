@@ -301,9 +301,9 @@ pub fn delete_all(tx: &Transaction<'_>) -> rusqlite::Result<()> {
     Ok(())
 }
 
-/// Rank snapshots stored by a development build of 1.4.0 (`career_rank`,
-/// `career_other_roles`, `career_rank_at_ms` on each participant) rewritten once into the
-/// three states (`career`): ranked with the rank, or unranked, both with when.
+/// Rank snapshots stored by development builds of 1.4.0, before they became a triple of
+/// the three roles (`career` as `{state, …}`, or `career_rank*` fields), are dropped once:
+/// those participants are looked up again, from the rank cache where it still holds them.
 pub fn upgrade_rank_snapshots(tx: &Transaction<'_>) -> rusqlite::Result<()> {
     let old: Vec<(String, String, String, String)> = tx
         .prepare(super::sql::OLD_RANK_SNAPSHOTS)?
@@ -319,22 +319,13 @@ pub fn upgrade_rank_snapshots(tx: &Transaction<'_>) -> rusqlite::Result<()> {
             let Some(people) = v[side].as_array_mut() else {
                 continue;
             };
-            for p in people {
-                let Some(p) = p.as_object_mut() else { continue };
-                let at = p.remove("career_rank_at_ms").filter(|a| !a.is_null());
-                let rank = p.remove("career_rank").filter(|r| !r.is_null());
-                let other = p.remove("career_other_roles").and_then(|o| o.as_bool());
-                let Some(at) = at else { continue };
-                p.insert(
-                    "career".into(),
-                    match rank {
-                        Some(rank) => serde_json::json!({
-                            "state": "ranked", "rank": rank,
-                            "other_roles": other.unwrap_or(false), "at_ms": at,
-                        }),
-                        None => serde_json::json!({"state": "unranked", "at_ms": at}),
-                    },
-                );
+            for p in people.iter_mut().filter_map(|p| p.as_object_mut()) {
+                for key in ["career_rank", "career_other_roles", "career_rank_at_ms"] {
+                    p.remove(key);
+                }
+                if p.get("career").is_some_and(|c| c.get("damage").is_none()) {
+                    p.remove("career");
+                }
             }
         }
         update.execute(params![v.to_string(), mode, match_id, subject])?;
