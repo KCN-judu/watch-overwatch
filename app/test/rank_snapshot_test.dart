@@ -34,4 +34,52 @@ void main() {
     expect(RankJob.opt(null), isNull);
     expect(RankJob.opt({'state': 'done'})!.finished, isTrue);
   });
+
+  test(
+    'the three states come from the service, an older answer from the match',
+    () {
+      final ranked = RankState.fromJson({
+        'state': 'ranked',
+        'source': 'snapshot',
+        'rank': {'skill_rating': 2600},
+        'other_roles': true,
+        'at_ms': 5,
+      }, null);
+      expect(
+        ranked,
+        isA<Ranked>()
+            .having((r) => r.fromMatch, 'fromMatch', false)
+            .having((r) => r.otherRoles, 'otherRoles', true)
+            .having((r) => r.atMs, 'atMs', 5),
+      );
+      expect(
+        RankState.fromJson({'state': 'unranked', 'at_ms': 7}, null),
+        isA<Unranked>().having((u) => u.atMs, 'atMs', 7),
+      );
+      expect(RankState.fromJson({'state': 'querying'}, null), isA<Querying>());
+      const inMatch = Rank('Gold', 2, null, 1850);
+      expect(
+        RankState.fromJson(null, inMatch),
+        isA<Ranked>().having((r) => r.fromMatch, 'fromMatch', true),
+      );
+      expect(RankState.fromJson(null, null), isA<Querying>());
+    },
+  );
+
+  testWidgets('each state draws its own cell', (tester) async {
+    Future<void> show(RankState s) => tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(extensions: [AppColors.dark]),
+        home: Scaffold(body: RankCell(s, catalog: Catalog(null))),
+      ),
+    );
+    await show(const Unranked(atMs: 0));
+    expect(find.text('未定级'), findsOneWidget);
+    await show(const Querying());
+    expect(find.text('查询中'), findsOneWidget);
+    await show(const Ranked(Rank(null, null, null, 2600), fromMatch: false));
+    expect(find.text('未定级'), findsNothing);
+    expect(find.text('查询中'), findsNothing);
+    expect(find.byType(RankBadge), findsOneWidget);
+  });
 }

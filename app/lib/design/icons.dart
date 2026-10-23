@@ -201,6 +201,55 @@ class RankBadge extends StatelessWidget {
   }
 }
 
+/// A participant's rank in one of its three states: the badge, “未定级”, or “查询中”.
+class RankCell extends StatelessWidget {
+  const RankCell(
+    this.state, {
+    super.key,
+    required this.catalog,
+    this.stadium = false,
+    this.long = false,
+  });
+  final RankState state;
+  final Catalog catalog;
+
+  /// A Stadium match: a rank it reported is on the Stadium ladder.
+  final bool stadium;
+
+  /// First-class surfaces: the tier name and the longer words.
+  final bool long;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final style = (long ? Ty.body : Ty.cell).copyWith(color: c.textSecondary);
+    return switch (state) {
+      Ranked(:final rank, :final fromMatch, :final otherRoles, :final atMs) =>
+        RankBadge(
+          rank,
+          catalog: catalog,
+          stadium: stadium && fromMatch,
+          snapshotMs: fromMatch ? null : atMs,
+          otherRoles: otherRoles,
+          showText: long,
+        ),
+      Unranked(:final atMs) => Tooltip(
+        message: atMs == null
+            ? tr.matches.unrankedTip
+            : tr.matches.unrankedAt(fmtDateTime(atMs)),
+        child: Text(tr.matches.unranked, style: style),
+      ),
+      Querying() => Tooltip(
+        message: tr.matches.rankLookupTip,
+        child: Text(
+          long ? tr.matches.rankLookupLong : tr.matches.rankLookup,
+          style: style,
+        ),
+      ),
+    };
+  }
+}
+
 /// Hero head-and-shoulders for the right end of a row. The source is a square bust
 /// with the face filling the frame, so it is drawn as a square the height of the row,
 /// flush with the right edge: the whole face shows and the picture's right edge is the

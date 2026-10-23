@@ -22,7 +22,7 @@
 | `CareerSnapshot` | 某模式某赛季的生涯：各职责数据、英雄使用统计、省榜、行为与荣誉 |
 | `MatchSummary` | 列表里的一场：地图、结果、比分、英雄、职责、统计 |
 | `MatchDetail` | 一场的详情：时长、比分、禁用、查询对象用过的英雄、双方各 5 人；角斗还有回合 |
-| `Participant` | 一名参与者：英雄、职责、统计、对局报告的段位、威能、组队成员、点赞者；`career_rank`（段位快照：为这场对局查到的竞技段位，和对局一起存，取到后不再变）、`career_rank_at_ms`（取快照的时间；有时间而 `career_rank` 为空表示查过、没有段位）、`career_other_roles`（该段位是其他职责里最高的）；详情展示时另带 `fleta` |
+| `Participant` | 一名参与者：英雄、职责、统计、对局报告的段位、威能、组队成员、点赞者；`career`（段位快照，三种状态之一：`{state: "querying"}` 还没查；`{state: "unranked", at_ms}` 查过、没有段位或查不到；`{state: "ranked", rank, other_roles, at_ms}` 查到的段位，`other_roles` 表示是其他职责里最高的。和对局一起存，取到后不再变）；详情展示时另带 `rank_state`（这名玩家显示的段位，同样三种状态：`ranked` 带 `source` 为 `match` 对局自带或 `snapshot` 快照，`unranked`，`querying`；角斗领域、身份或职责未知的玩家没有可查的段位，算 `unranked`）和 `fleta` |
 | `StatLine` | 一场的统计：消灭、助攻、阵亡、伤害、治疗、阻挡、最后一击、单独消灭、承受伤害、承受治疗、目标时间 |
 | `HeroUsage` | 一个英雄的赛季统计：场次、胜率、时长、熟练度、每场平均、每 10 分钟 |
 | `EntityRef` | 英雄、地图、统计项、威能的引用：大神 `guid`、官方 `official_id`（`0x…`）、名称 |

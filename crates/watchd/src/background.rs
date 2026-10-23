@@ -473,7 +473,7 @@ mod tests {
             .allies
             .iter()
             .chain(&kept.detail.enemies)
-            .filter(|p| p.career_rank_at_ms.is_some())
+            .filter(|p| p.career != watch_core::ir::CareerRank::Querying)
             .count();
         assert!(snapped > 0);
         assert!(!watch_core::snapshot::missing(

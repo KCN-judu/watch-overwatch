@@ -300,3 +300,44 @@ pub fn delete_all(tx: &Transaction<'_>) -> rusqlite::Result<()> {
     }
     Ok(())
 }
+
+/// Rank snapshots stored by a development build of 1.4.0 (`career_rank`,
+/// `career_other_roles`, `career_rank_at_ms` on each participant) rewritten once into the
+/// three states (`career`): ranked with the rank, or unranked, both with when.
+pub fn upgrade_rank_snapshots(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    let old: Vec<(String, String, String, String)> = tx
+        .prepare(super::sql::OLD_RANK_SNAPSHOTS)?
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?
+        .filter_map(Result::ok)
+        .collect();
+    let mut update = tx.prepare(super::sql::SET_DETAIL_DATA)?;
+    for (mode, match_id, subject, data) in old {
+        let Ok(mut v) = serde_json::from_str::<serde_json::Value>(&data) else {
+            continue;
+        };
+        for side in ["allies", "enemies"] {
+            let Some(people) = v[side].as_array_mut() else {
+                continue;
+            };
+            for p in people {
+                let Some(p) = p.as_object_mut() else { continue };
+                let at = p.remove("career_rank_at_ms").filter(|a| !a.is_null());
+                let rank = p.remove("career_rank").filter(|r| !r.is_null());
+                let other = p.remove("career_other_roles").and_then(|o| o.as_bool());
+                let Some(at) = at else { continue };
+                p.insert(
+                    "career".into(),
+                    match rank {
+                        Some(rank) => serde_json::json!({
+                            "state": "ranked", "rank": rank,
+                            "other_roles": other.unwrap_or(false), "at_ms": at,
+                        }),
+                        None => serde_json::json!({"state": "unranked", "at_ms": at}),
+                    },
+                );
+            }
+        }
+        update.execute(params![v.to_string(), mode, match_id, subject])?;
+    }
+    Ok(())
+}

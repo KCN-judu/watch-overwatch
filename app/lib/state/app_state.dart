@@ -694,10 +694,6 @@ class PlayerWorkspace extends ChangeNotifier {
 
   final _completing = <String>{};
 
-  /// Whether the ranks of the players in this match are being looked up right now.
-  bool ratingsLoading(Mode mode, String id) =>
-      _completing.contains('${mode.id}:$id');
-
   Future<void> _completeRatings(Mode mode, String id) async {
     final key = '${mode.id}:$id';
     if (_closed || !_completing.add(key)) return;

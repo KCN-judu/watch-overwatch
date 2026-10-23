@@ -355,9 +355,7 @@ class Participant {
       role = Role.parse(_s(j['role'])),
       stats = StatLine.fromJson(_o(j['stats'])),
       rank = Rank.opt(j['rank']),
-      careerRank = Rank.opt(j['career_rank']),
-      careerOtherRoles = _b(j['career_other_roles']),
-      careerRankAtMs = (j['career_rank_at_ms'] as num?)?.toInt(),
+      rankState = RankState.fromJson(j['rank_state'], Rank.opt(j['rank'])),
       fleta = _d(j['fleta']),
       endorsedBy = [
         for (final e in (j['endorsed_by_bnet_ids'] as List? ?? const [])) '$e',
@@ -379,16 +377,9 @@ class Participant {
   /// The rank the match itself reported (competitive and Stadium).
   final Rank? rank;
 
-  /// The player's own competitive rank now for this role, from what was looked up for the
-  /// strength analysis; not the rank at the time of the match.
-  final Rank? careerRank;
-
-  /// [careerRank] is the highest of the player's ranks in other roles.
-  final bool careerOtherRoles;
-
-  /// When [careerRank] was looked up for this match (a snapshot kept with it); null while
-  /// it has not been.
-  final int? careerRankAtMs;
+  /// The rank the player is shown with: the match's own, the snapshot looked up for the
+  /// match, unranked, or still being looked up (decided by the service).
+  final RankState rankState;
 
   /// Final blows as a percentage of half the player's team's final blows; null when
   /// either is unknown.
@@ -1064,4 +1055,53 @@ class RankJob {
   final int done, remaining;
   bool get finished => state == 'done';
   bool get paused => state == 'paused';
+}
+
+/// A participant's rank, one of three states (`rank_state` from the service): every
+/// screen draws all three, and a `switch` on it is checked to cover them.
+sealed class RankState {
+  const RankState();
+
+  /// [inMatch] stands in when the service sent no state (an older answer).
+  factory RankState.fromJson(Object? j, Rank? inMatch) {
+    final m = j is Map ? j.cast<String, dynamic>() : null;
+    final at = (m?['at_ms'] as num?)?.toInt();
+    return switch (m?['state']) {
+      'ranked' when Rank.opt(m!['rank']) != null => Ranked(
+        Rank.opt(m['rank'])!,
+        fromMatch: m['source'] == 'match',
+        otherRoles: _b(m['other_roles']),
+        atMs: at,
+      ),
+      'unranked' => Unranked(atMs: at),
+      'querying' => const Querying(),
+      _ when inMatch != null => Ranked(inMatch, fromMatch: true),
+      _ => const Querying(),
+    };
+  }
+}
+
+/// Has a rank: the one the match reported ([fromMatch]), or the snapshot taken for the
+/// match at [atMs]; [otherRoles] when it is the highest of the player's other roles.
+final class Ranked extends RankState {
+  const Ranked(
+    this.rank, {
+    required this.fromMatch,
+    this.otherRoles = false,
+    this.atMs,
+  });
+  final Rank rank;
+  final bool fromMatch, otherRoles;
+  final int? atMs;
+}
+
+/// Looked up (at [atMs], when known) and has no rank, or cannot be looked up.
+final class Unranked extends RankState {
+  const Unranked({this.atMs});
+  final int? atMs;
+}
+
+/// Still being looked up.
+final class Querying extends RankState {
+  const Querying();
 }

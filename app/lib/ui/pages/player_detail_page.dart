@@ -18,7 +18,6 @@ class PlayerDetailPage extends StatelessWidget {
     required this.player,
     required this.ally,
     required this.catalog,
-    required this.ratingsLoading,
   });
   final MatchDetail detail;
   final Participant player;
@@ -26,9 +25,6 @@ class PlayerDetailPage extends StatelessWidget {
   /// Whether the player is on the queried player's own team.
   final bool ally;
   final Catalog catalog;
-
-  /// The ranks of the match's players are still being looked up.
-  final bool ratingsLoading;
 
   List<Participant> get _team => ally ? detail.allies : detail.enemies;
 
@@ -128,26 +124,12 @@ class PlayerDetailPage extends StatelessWidget {
                       ),
                     RoleIcon(player.role, size: 16, showLabel: true),
                     Text(hero?.label ?? tr.common.unknownHero, style: Ty.body),
-                    ratingsLoading &&
-                            player.rank == null &&
-                            player.careerRank == null
-                        ? Text(
-                            tr.matches.rankLookupLong,
-                            style: Ty.body.copyWith(color: c.textSecondary),
-                          )
-                        : RankBadge(
-                            player.rank ?? player.careerRank,
-                            catalog: catalog,
-                            stadium:
-                                detail.mode == Mode.stadium &&
-                                player.rank != null,
-                            snapshotMs: player.rank == null
-                                ? player.careerRankAtMs
-                                : null,
-                            otherRoles:
-                                player.rank == null && player.careerOtherRoles,
-                            showText: true,
-                          ),
+                    RankCell(
+                      player.rankState,
+                      catalog: catalog,
+                      stadium: detail.mode == Mode.stadium,
+                      long: true,
+                    ),
                     if (player.suspended)
                       Tooltip(
                         message: tr.matches.restrictedTip,

@@ -136,6 +136,7 @@ impl LocalStore {
             matches::prune_details(tx, now - DETAIL_KEEP_MS)
         });
         matches.write("index participants", matches::backfill_participants);
+        matches.write("upgrade rank snapshots", matches::upgrade_rank_snapshots);
         // Expired ranks would only ever be overwritten: do not keep them.
         ratings.write("drop expired ranks", |tx| {
             ratings::prune(tx, now - ratings_ttl_ms)
@@ -613,6 +614,72 @@ mod tests {
             .filter(|p| p.bnet_id.is_some())
             .count();
         assert_eq!(store.stats().participants > 0, people > 0);
+        drop(store);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn snapshots_in_the_old_format_become_the_three_states_on_opening() {
+        use watch_core::ir::CareerRank;
+        let path = format!(
+            "{}/../watch-core/tests/fixtures/fightQueryMatchInfo.json",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let Ok(bytes) = std::fs::read(&path) else {
+            return;
+        };
+        let payload: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let detail = normalize::match_detail(
+            "m1",
+            normalize::payload(&payload),
+            Mode::Quick,
+            None,
+            &Catalog::default(),
+        );
+        let dir = temp_dir("old-snapshots");
+        let store = LocalStore::open(&dir).unwrap();
+        store.put_detail("1001", &detail, &[]);
+        drop(store);
+        // As a development build of 1.4.0 left it: one ranked, one looked up and unranked.
+        let conn = Connection::open(dir.join("matches.db")).unwrap();
+        let keys = rusqlite::params![Mode::Quick.provider_value(), detail.id, "1001"];
+        let data: String = conn
+            .query_row(&sql::SQL.detail.select, keys, |r| r.get(0))
+            .unwrap();
+        let mut v: serde_json::Value = serde_json::from_str(&data).unwrap();
+        v["allies"][0]["career_rank"] = serde_json::json!({
+            "tier": "Gold", "division": 2, "score": null, "skill_rating": 1850, "at_ms": null
+        });
+        v["allies"][0]["career_other_roles"] = serde_json::json!(true);
+        v["allies"][0]["career_rank_at_ms"] = serde_json::json!(1000);
+        v["enemies"][0]["career_rank"] = serde_json::Value::Null;
+        v["enemies"][0]["career_rank_at_ms"] = serde_json::json!(2000);
+        conn.execute(
+            sql::SET_DETAIL_DATA,
+            rusqlite::params![
+                v.to_string(),
+                Mode::Quick.provider_value(),
+                detail.id,
+                "1001"
+            ],
+        )
+        .unwrap();
+        drop(conn);
+
+        let store = LocalStore::open(&dir).unwrap();
+        let kept = store
+            .detail(Mode::Quick, &detail.id, "1001")
+            .unwrap()
+            .detail;
+        assert!(matches!(
+            &kept.allies[0].career,
+            CareerRank::Ranked { rank, other_roles: true, at_ms: Some(1000) }
+                if rank.skill_rating == Some(1850)
+        ));
+        assert_eq!(
+            kept.enemies[0].career,
+            CareerRank::Unranked { at_ms: Some(2000) }
+        );
         drop(store);
         let _ = std::fs::remove_dir_all(&dir);
     }

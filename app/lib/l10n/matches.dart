@@ -129,6 +129,9 @@ class MatchStrings {
   String get rankTip => '竞技、角斗显示该场的段位；快速比赛显示读取这场时取的竞技段位快照，之后不再变。查不到的显示 —';
   String get rankLookupTip => '正在查询这名玩家的竞技段位';
   String get rankLookup => '查询中';
+  String get unranked => '未定级';
+  String get unrankedTip => '这名玩家没有竞技段位，或查不到';
+  String unrankedAt(String at) => '$at 查过：这名玩家没有竞技段位';
   String get portrait => '英雄立绘';
   String playerCount(int n) => '$n 人';
   String teamTableLabel(String team) => '$team队伍';

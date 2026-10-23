@@ -158,16 +158,19 @@ pub struct MatchStrength {
 /// A participant's rating for the lobby: the rank the match reported, else the snapshot
 /// taken for this match (`crate::snapshot`). Never a rank looked up later.
 fn participant_rating(p: &Participant) -> Option<(f64, RatingSource, RatingFit)> {
-    if let Some(sr) = p.rank.as_ref().and_then(|r| r.skill_rating) {
-        return Some((sr as f64, RatingSource::InMatch, RatingFit::SameRole));
-    }
-    let sr = p.career_rank.as_ref()?.skill_rating?;
-    let fit = if p.career_other_roles {
+    let in_match = p.rank.as_ref().is_some_and(|r| r.skill_rating.is_some());
+    let (sr, other) = p.rating()?;
+    let fit = if other {
         RatingFit::OtherRoles
     } else {
         RatingFit::SameRole
     };
-    Some((sr as f64, RatingSource::Career, fit))
+    let source = if in_match {
+        RatingSource::InMatch
+    } else {
+        RatingSource::Career
+    };
+    Some((sr, source, fit))
 }
 
 pub fn match_strength(detail: &MatchDetail) -> MatchStrength {
@@ -325,9 +328,7 @@ mod tests {
             role,
             stats: StatLine::default(),
             rank: in_match.map(rank),
-            career_rank: None,
-            career_other_roles: false,
-            career_rank_at_ms: None,
+            career: Default::default(),
             fleta: None,
             perks: Vec::new(),
             party_bnet_ids: Vec::new(),
