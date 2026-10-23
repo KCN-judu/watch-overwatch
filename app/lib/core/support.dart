@@ -278,6 +278,7 @@ class UiState {
 
   static UiState load() {
     final s = UiState();
+    if (_testing) return s;
     try {
       final j = jsonDecode(_file().readAsStringSync());
       // A different layout version is discarded rather than half-applied.
@@ -307,7 +308,11 @@ class UiState {
     return s;
   }
 
+  /// A test run never reads or writes the user's real layout file.
+  static bool get _testing => Platform.environment.containsKey('FLUTTER_TEST');
+
   void save() {
+    if (_testing) return;
     try {
       final f = _file();
       f.parent.createSync(recursive: true);

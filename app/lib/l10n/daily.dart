@@ -17,6 +17,8 @@ class DailyStrings {
   String get record => '战绩';
   String get winRate => '胜率';
   String get matches => '场次';
+  String matchCount(int n) => '$n 场';
+  String rateRange(String low, String high) => '可能在 $low – $high';
   String sittings(int n) => '$n 次连着打';
   String get playTime => '游戏时长';
   String playNote(int n, int all) => n == all ? '$n 场合计' : '有详情的 $n / $all 场';
@@ -32,6 +34,7 @@ class DailyStrings {
       '这一天最亮眼的地方：全场最高、单场最佳、刷新本机纪录的单场、连胜、无阵亡、最好的一局。点一条打开对应对局。';
   String get noHighlights => '这一天没有特别突出的数据。';
   String lobbyTop(String stat) => '全场最高$stat';
+  String get lobbyTopTitle => '全场 10 人里最高';
   String lobbyTopNote(int n) =>
       n == 1 ? '有 1 场是全场 10 人里最高' : '有 $n 场是全场 10 人里最高';
   String dayBest(String stat) => '单场最高$stat';

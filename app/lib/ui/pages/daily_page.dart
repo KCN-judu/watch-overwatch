@@ -5,6 +5,8 @@ import '../../core/models.dart';
 import '../../core/overview.dart';
 import '../../core/support.dart';
 import '../../design/cards.dart';
+import '../../design/faces.dart';
+import '../../design/headline.dart';
 import '../../design/icons.dart';
 import '../../design/share.dart';
 import '../../design/tokens.dart';
@@ -202,6 +204,22 @@ class _Summary extends StatelessWidget {
     final span = s.firstMs == null || s.lastMs == null
         ? null
         : tr.daily.timeSpan(fmtTimeOfDay(s.firstMs), fmtTimeOfDay(s.lastMs));
+    // The hero played most that day: the headline's picture and colour.
+    final counts = <String, (EntityRef, int)>{};
+    for (final id in s.matchIds) {
+      final h = rows[id]?.hero;
+      if (h == null) continue;
+      counts[h.guid] = (h, (counts[h.guid]?.$2 ?? 0) + 1);
+    }
+    final top = counts.isEmpty
+        ? null
+        : (counts.values.toList()..sort((a, b) => b.$2.compareTo(a.$2)))
+              .first
+              .$1;
+    final lobbyTop = [
+      for (final h in s.highlights)
+        if (h.kind == HighlightKind.lobbyTop) h,
+    ];
     final caption = tr.daily.caption(
       app.maskName(workspace.name),
       mode.label,
@@ -230,35 +248,44 @@ class _Summary extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            spacing: Sp.withinGroup,
-            runSpacing: Sp.withinGroup,
-            children: [
-              KpiTile(
-                tr.daily.record,
-                tr.overview.record(r.wins, r.losses, r.draws),
-                note: tr.daily.sittings(s.sittings),
-              ),
-              KpiTile(
-                tr.daily.winRate,
-                fmtPct(r.winRatePct, digits: 0),
+          HeadlineBand(
+            art: app.catalog.heroBanner(top),
+            tint: heroTint(context, top),
+            eyebrow: Text(
+              [?span, tr.daily.sittings(s.sittings)].join(' · '),
+              style: Ty.meta.copyWith(color: c.textSecondary),
+            ),
+            figures: [
+              HeadlineFigure(
+                label: tr.daily.winRate,
+                value: fmtPct(r.winRatePct, digits: 0),
                 note: r.lowPct == null
                     ? null
-                    : '${fmtPct(r.lowPct, digits: 0)}–${fmtPct(r.highPct, digits: 0)}',
+                    : tr.daily.rateRange(
+                        fmtPct(r.lowPct, digits: 0),
+                        fmtPct(r.highPct, digits: 0),
+                      ),
               ),
-              KpiTile(tr.daily.matches, '${r.matches}', note: span),
-              KpiTile(
-                tr.daily.playTime,
-                s.playS == null ? missing : fmtPlayTime(s.playS),
+              HeadlineFigure(
+                label: tr.daily.record,
+                note: tr.daily.matchCount(r.matches),
+                child: RecordText(r.wins, r.losses, draws: r.draws),
+              ),
+              HeadlineFigure(
+                label: tr.daily.kda,
+                value: fmtTwo(s.aggregate.kda),
+              ),
+              HeadlineFigure(
+                label: tr.daily.playTime,
+                value: s.playS == null ? missing : fmtPlayTime(s.playS),
                 note: s.playSamples == 0
                     ? tr.daily.noPlayTime
                     : tr.daily.playNote(s.playSamples, r.matches),
               ),
-              KpiTile(tr.daily.kda, fmtTwo(s.aggregate.kda)),
               for (final rc in s.rankChanges)
-                KpiTile(
-                  rc.role.label,
-                  ratingLabel(rc.to) ?? fmtInt(rc.to),
+                HeadlineFigure(
+                  label: rc.role.label,
+                  value: ratingLabel(rc.to) ?? fmtInt(rc.to),
                   note: rc.to == rc.from
                       ? tr.daily.rankSame
                       : tr.daily.rankFrom(
@@ -266,12 +293,31 @@ class _Summary extends StatelessWidget {
                           rc.to > rc.from ? '+' : '−',
                           (rc.to - rc.from).abs(),
                         ),
-                  color: rc.to > rc.from
+                  noteColor: rc.to > rc.from
                       ? c.positive
                       : rc.to < rc.from
                       ? c.negative
                       : null,
                 ),
+            ],
+          ),
+          const SizedBox(height: Sp.betweenGroups),
+          FaceStrip(
+            maxSize: 44,
+            faces: [
+              for (final id in s.matchIds.reversed)
+                if (rows[id] case final m?)
+                  (
+                    portrait: app.catalog.heroPortrait(m.hero),
+                    outcome: m.outcome,
+                    tip: tr.overview.formTip(
+                      m.outcome.label,
+                      m.map?.label ?? tr.common.unknownMap,
+                      m.hero?.label ?? tr.common.unknownHero,
+                      fmtDateTime(m.startedAtMs),
+                    ),
+                    onTap: () => _open(app, id),
+                  ),
             ],
           ),
           const SizedBox(height: Sp.betweenSections),
@@ -282,20 +328,38 @@ class _Summary extends StatelessWidget {
               tr.daily.noHighlights,
               style: Ty.body.copyWith(color: c.textSecondary),
             )
-          else
-            Wrap(
-              spacing: Sp.withinGroup,
-              runSpacing: Sp.withinGroup,
-              children: [
-                for (final h in s.highlights)
-                  _HighlightCard(
-                    h: h,
-                    onOpen: h.matchId == null
-                        ? null
-                        : () => _open(app, h.matchId!),
-                  ),
-              ],
+          else ...[
+            if (lobbyTop.isNotEmpty) ...[
+              IntrinsicHeight(child: _LobbyTop(lobbyTop)),
+              const SizedBox(height: Sp.withinGroup),
+            ],
+            LayoutBuilder(
+              builder: (context, box) {
+                // As many columns as fit at 240 or more; the cards share the width.
+                const gap = Sp.withinGroup;
+                final cols = ((box.maxWidth + gap) / (240 + gap)).floor().clamp(
+                  1,
+                  4,
+                );
+                final width = (box.maxWidth - gap * (cols - 1)) / cols;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: [
+                    for (final h in s.highlights)
+                      if (h.kind != HighlightKind.lobbyTop)
+                        _HighlightCard(
+                          h: h,
+                          width: width,
+                          onOpen: h.matchId == null
+                              ? null
+                              : () => _open(app, h.matchId!),
+                        ),
+                  ],
+                );
+              },
             ),
+          ],
           if (s.versus.isNotEmpty && s.versusRole != null) ...[
             const SizedBox(height: Sp.betweenSections),
             SectionHeader(
@@ -314,7 +378,9 @@ class _Summary extends StatelessWidget {
                 icon: (g) => NetImage(
                   app.catalog.heroIcon(
                     rows.values
-                        .where((m) => m.hero != null && _key(m.hero!) == g.key)
+                        .where(
+                          (m) => m.hero != null && groupKey(m.hero!) == g.key,
+                        )
                         .firstOrNull
                         ?.hero,
                   ),
@@ -328,7 +394,9 @@ class _Summary extends StatelessWidget {
                 icon: (g) => MapThumb(
                   app.catalog.mapImage(
                     rows.values
-                        .where((m) => m.map != null && _key(m.map!) == g.key)
+                        .where(
+                          (m) => m.map != null && groupKey(m.map!) == g.key,
+                        )
                         .firstOrNull
                         ?.map,
                   ),
@@ -384,13 +452,65 @@ class _Summary extends StatelessWidget {
   }
 }
 
-String _key(EntityRef e) => e.officialId != null
-    ? 'overwatch:${e.kind}:${e.officialId!.toLowerCase()}'
-    : 'dashen:${e.kind}:${e.guid}';
+/// The day's "best of the ten" counts on one strip: how many matches the player led the
+/// lobby in each stat.
+class _LobbyTop extends StatelessWidget {
+  const _LobbyTop(this.list);
+  final List<DayHighlight> list;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return CardSurface(
+      accent: c.warning,
+      child: Wrap(
+        spacing: Sp.page,
+        runSpacing: Sp.withinGroup,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.emoji_events_outlined, color: c.warning, size: 20),
+              const SizedBox(width: Sp.iconGap),
+              Text(tr.daily.lobbyTopTitle, style: Ty.bodyStrong),
+            ],
+          ),
+          for (final h in list)
+            Semantics(
+              container: true,
+              label: tr.daily.lobbyTopNote(h.value.round()),
+              child: ExcludeSemantics(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '${_stat(h.stat)} ',
+                        style: Ty.body.copyWith(color: c.textSecondary),
+                      ),
+                      TextSpan(
+                        text: '× ${h.value.round()}',
+                        style: Ty.num(Ty.figure).copyWith(color: c.warning),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
 
 class _HighlightCard extends StatelessWidget {
-  const _HighlightCard({required this.h, required this.onOpen});
+  const _HighlightCard({
+    required this.h,
+    required this.width,
+    required this.onOpen,
+  });
   final DayHighlight h;
+  final double width;
   final VoidCallback? onOpen;
 
   @override
@@ -462,38 +582,86 @@ class _HighlightCard extends StatelessWidget {
             h.hero?.label ?? tr.common.unknownHero,
             h.map?.label ?? tr.common.unknownMap,
           );
+    final portrait = AppScope.of(context).catalog.heroPortrait(h.hero);
     // One size for every card, so the grid reads as a grid.
     final card = SizedBox(
-      width: 236,
-      height: 112,
-      child: SizedBox.expand(
-        child: CardSurface(
-          accent: color,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      width: width,
+      height: 116,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: c.raised,
+          border: Border.all(color: c.border),
+        ),
+        child: ClipRect(
+          child: Stack(
             children: [
-              Icon(icon, color: color, size: 24),
-              const SizedBox(width: Sp.withinGroup),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: Ty.bodyStrong),
-                    Text(value, style: Ty.num(Ty.title)),
-                    if (note != null)
-                      Text(
-                        note,
-                        style: Ty.meta.copyWith(color: c.textSecondary),
-                      ),
-                    if (where != null)
-                      Text(
-                        where,
-                        style: Ty.meta.copyWith(color: c.textSecondary),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                  ],
+              if (portrait != null)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: 116,
+                  child: ShaderMask(
+                    blendMode: BlendMode.dstIn,
+                    shaderCallback: (rect) => const LinearGradient(
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                      colors: AppColors.artFade,
+                      stops: [0, 0.6, 1],
+                    ).createShader(rect),
+                    child: Opacity(opacity: 0.7, child: PortraitCell(portrait)),
+                  ),
                 ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(width: accentBar, color: color),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(Sp.betweenItems),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(icon, color: color, size: 16),
+                              const SizedBox(width: Sp.iconGap),
+                              Flexible(
+                                child: Text(
+                                  title,
+                                  style: Ty.meta.copyWith(
+                                    color: c.textSecondary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          Text(
+                            value,
+                            style: Ty.num(Ty.figure).copyWith(color: color),
+                          ),
+                          if (note != null)
+                            Text(
+                              note,
+                              style: Ty.meta.copyWith(color: c.textSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          if (where != null)
+                            Text(
+                              where,
+                              style: Ty.meta.copyWith(color: c.textSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

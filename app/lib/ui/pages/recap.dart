@@ -4,6 +4,7 @@ import '../../core/models.dart';
 import '../../core/overview.dart';
 import '../../core/support.dart';
 import '../../design/dialog.dart';
+import '../../design/headline.dart';
 import '../../design/share.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
@@ -40,8 +41,16 @@ Future<void> showRecap(
   );
 }
 
-/// One step: a heading, the big figure and what it means.
-typedef _Step = ({String title, String value, String note, Widget? extra});
+/// One step: a heading, the big figure and what it means, over the step's picture (a
+/// hero's banner, a map) in the hero's colour.
+typedef _Step = ({
+  String title,
+  String value,
+  String note,
+  Widget? extra,
+  String? art,
+  EntityRef? hero,
+});
 
 class _Recap extends StatefulWidget {
   const _Recap({
@@ -129,6 +138,10 @@ class _RecapState extends State<_Recap> {
         if (m.metric != null && m.growth?.trend == Trend.up) m,
     ]..sort((a, b) => b.growth!.changePct.compareTo(a.growth!.changePct));
     final match = _bestMatch;
+    final catalog = widget.workspace.app.catalog;
+    final heroRef = hero == null ? null : _heroRef(hero.key);
+    final banner = catalog.heroBanner(heroRef);
+    final shown = !(_guess == null && !_all);
     return [
       (
         title: tr.recap.stepMatches,
@@ -142,6 +155,8 @@ class _RecapState extends State<_Recap> {
               : tr.overview.record(week.wins, week.losses, week.draws),
         ),
         extra: null,
+        art: banner,
+        hero: heroRef,
       ),
       if (hero != null)
         (
@@ -152,6 +167,8 @@ class _RecapState extends State<_Recap> {
             fmtPct(hero.aggregate.record.winRatePct, digits: 0),
           ),
           extra: null,
+          art: banner,
+          hero: heroRef,
         ),
       if (best != null)
         (
@@ -180,6 +197,8 @@ class _RecapState extends State<_Recap> {
                   ],
                 )
               : null,
+          art: shown ? catalog.mapImage(_mapRef(best.key)) : null,
+          hero: null,
         ),
       if (improved.isNotEmpty)
         (
@@ -190,6 +209,8 @@ class _RecapState extends State<_Recap> {
             improved.first.growth!.matches,
           ),
           extra: null,
+          art: null,
+          hero: null,
         ),
       if (match != null)
         (
@@ -209,34 +230,51 @@ class _RecapState extends State<_Recap> {
               widget.workspace.app.setTab('matches');
             },
           ),
+          art: catalog.heroBanner(match.hero),
+          hero: match.hero,
         ),
     ];
   }
 
+  /// A group's key back to the hero (or map) of a stored match, for its picture.
+  EntityRef? _heroRef(String key) => _find(key, (m) => m.hero);
+  EntityRef? _mapRef(String key) => _find(key, (m) => m.map);
+  EntityRef? _find(String key, EntityRef? Function(MatchSummary) of) {
+    for (final m
+        in widget.workspace.matchesFor(widget.mode).value?.matches ??
+            const <MatchSummary>[]) {
+      final e = of(m);
+      if (e != null && groupKey(e) == key) return e;
+    }
+    return null;
+  }
+
   Widget _card(BuildContext context, _Step s, {bool big = false}) {
     final c = context.c;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(Sp.betweenSections),
-      decoration: BoxDecoration(
-        color: c.raised,
-        border: Border.all(color: c.border),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(s.title, style: Ty.meta.copyWith(color: c.textSecondary)),
-          const SizedBox(height: Sp.withinControl),
-          Text(s.value, style: big ? Ty.display : Ty.title),
-          const SizedBox(height: Sp.withinControl),
-          Text(s.note, style: Ty.body),
-          if (s.extra != null) ...[
-            const SizedBox(height: Sp.betweenGroups),
-            s.extra!,
+    final style = big ? Ty.display : Ty.figure;
+    final hasDigits = s.value.contains(RegExp('[0-9]'));
+    return HeadlineBand(
+      art: s.art,
+      tint: heroTint(context, s.hero),
+      eyebrow: Text(s.title, style: Ty.meta.copyWith(color: c.textSecondary)),
+      figures: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (hasDigits)
+              FigureText(s.value, style: style)
+            else
+              Text(s.value, style: big ? Ty.display : Ty.title),
+            const SizedBox(height: Sp.withinControl),
+            Text(s.note, style: Ty.body),
+            if (s.extra != null) ...[
+              const SizedBox(height: Sp.betweenGroups),
+              s.extra!,
+            ],
           ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 

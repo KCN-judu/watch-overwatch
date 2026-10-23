@@ -392,7 +392,7 @@ class _SeasonCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: Ty.meta.copyWith(color: c.textSecondary)),
-        Text(value, style: Ty.num(Ty.figure)),
+        FigureText(value, style: Ty.figure),
       ],
     );
     return Panel(

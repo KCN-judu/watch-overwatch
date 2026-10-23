@@ -47,6 +47,12 @@ class OverviewAggregate {
   final int streak;
 }
 
+/// The key `watch_core::overview` groups a hero or map under: its official id when it has
+/// one, otherwise the provider's guid.
+String groupKey(EntityRef e) => e.officialId != null
+    ? 'overwatch:${e.kind}:${e.officialId!.toLowerCase()}'
+    : 'dashen:${e.kind}:${e.guid}';
+
 class OverviewGroup {
   OverviewGroup(Json j)
     : key = _s(j['key']) ?? '',

@@ -127,8 +127,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('65%'), findsOneWidget); // 13 of 20
     expect(find.text('比之前 20 场 +20%'), findsOneWidget);
-    expect(find.text('13 胜 7 负'), findsOneWidget);
-    expect(find.text('2 胜 1 负'), findsOneWidget); // today
+    expect(find.text('13 胜 7 负', findRichText: true), findsOneWidget);
+    expect(find.text('2 胜 1 负', findRichText: true), findsOneWidget); // today
     expect(find.textContaining('努巴尼 是该玩家的强图'), findsOneWidget);
     expect(find.text('什么时候打得好'), findsOneWidget);
   });

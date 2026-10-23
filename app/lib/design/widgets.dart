@@ -988,6 +988,62 @@ class Splitter extends StatelessWidget {
 Widget gap(double h) => SizedBox(height: h);
 Widget hgap(double w) => SizedBox(width: w);
 
+/// Whether a figure carries words ("5 小时 8 分钟") rather than being a number alone.
+bool hasWords(String s) => s.runes.any((r) => r > 0x2fff);
+
+/// A big figure in the numbers' face. With words in it ("5 小时 8 分钟", "245 场") the
+/// numbers keep [style] and the words drop to body size beside them, so the figure
+/// stays as wide as a number would be.
+class FigureText extends StatelessWidget {
+  const FigureText(
+    this.text, {
+    super.key,
+    this.style,
+    this.color,
+    this.animate = false,
+  });
+  final String text;
+
+  /// The numbers' style; the display size by default.
+  final TextStyle? style;
+  final Color? color;
+
+  /// Counts up to a new value (a plain number only).
+  final bool animate;
+
+  static final _number = RegExp(r'[0-9][0-9.,:]*');
+
+  @override
+  Widget build(BuildContext context) {
+    final big = Ty.num(style ?? Ty.display).copyWith(color: color);
+    if (!hasWords(text)) {
+      return animate
+          ? AnimatedValueText(text, style: big)
+          : Text(text, style: big, maxLines: 1);
+    }
+    final word = Ty.bodyStrong.copyWith(
+      color: color ?? context.c.textSecondary,
+    );
+    final spans = <InlineSpan>[];
+    var at = 0;
+    for (final m in _number.allMatches(text)) {
+      if (m.start > at) {
+        spans.add(TextSpan(text: text.substring(at, m.start), style: word));
+      }
+      spans.add(TextSpan(text: m[0], style: big));
+      at = m.end;
+    }
+    if (at < text.length) {
+      spans.add(TextSpan(text: text.substring(at), style: word));
+    }
+    return Text.rich(
+      TextSpan(children: spans),
+      maxLines: 1,
+      semanticsLabel: text,
+    );
+  }
+}
+
 /// One headline number: label above, big figure, optional note, optional stat colour.
 /// The only tile of its kind: every page with a row of headline numbers uses it.
 class KpiTile extends StatelessWidget {
@@ -1026,7 +1082,7 @@ class KpiTile extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: AnimatedValueText(value, style: Ty.num(Ty.figure)),
+              child: FigureText(value, style: Ty.figure, animate: true),
             ),
             if (note != null)
               Text(note!, style: Ty.meta.copyWith(color: c.textSecondary)),

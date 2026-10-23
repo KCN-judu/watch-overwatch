@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../core/metric_doc.dart';
 import '../../core/maps.dart';
+import '../../core/metric_doc.dart';
 import '../../core/models.dart';
+import '../../core/overview.dart';
 import '../../core/support.dart';
 import '../../design/cards.dart';
 import '../../design/chart_kit.dart';
+import '../../design/headline.dart';
 import '../../design/icons.dart';
 import '../../design/net_pic.dart';
 import '../../design/share.dart';
@@ -224,14 +226,10 @@ class _Detail extends StatelessWidget {
   EntityRef? _hero(String key) {
     for (final m in workspace.matchesFor(mode).value?.matches ?? const []) {
       final h = m.hero;
-      if (h != null && _stable(h) == key) return h;
+      if (h != null && groupKey(h) == key) return h;
     }
     return null;
   }
-
-  static String _stable(EntityRef e) => e.officialId != null
-      ? 'overwatch:${e.kind}:${e.officialId!.toLowerCase()}'
-      : 'dashen:${e.kind}:${e.guid}';
 
   void _open(AppState app, {EntityRef? hero}) {
     final f = workspace.filtersFor(mode)..clear();
@@ -280,7 +278,7 @@ class _Detail extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(row.map.label, style: Ty.title),
+                    Text(row.map.label, style: Ty.page),
                     Text(
                       _modeName(group),
                       style: Ty.meta.copyWith(color: c.textSecondary),
@@ -293,13 +291,14 @@ class _Detail extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: Sp.betweenGroups),
+                    // The two that answer "how do I do here", large; the rest as tiles.
                     Wrap(
-                      spacing: Sp.withinGroup,
-                      runSpacing: Sp.withinGroup,
+                      spacing: Sp.page,
+                      runSpacing: Sp.betweenGroups,
                       children: [
-                        KpiTile(
-                          tr.maps.winRate,
-                          fmtPct(rate, digits: 0),
+                        HeadlineFigure(
+                          label: tr.maps.winRate,
+                          value: fmtPct(rate, digits: 0),
                           note: r.lowPct == null || r.highPct == null
                               ? null
                               : tr.maps.range(
@@ -307,11 +306,18 @@ class _Detail extends StatelessWidget {
                                   fmtPct(r.highPct, digits: 0),
                                 ),
                         ),
-                        KpiTile(
-                          tr.maps.record,
-                          tr.overview.record(r.wins, r.losses, r.draws),
+                        HeadlineFigure(
+                          label: tr.maps.record,
                           note: tr.common.matchCount(r.matches),
+                          child: RecordText(r.wins, r.losses, draws: r.draws),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: Sp.betweenGroups),
+                    Wrap(
+                      spacing: Sp.withinGroup,
+                      runSpacing: Sp.withinGroup,
+                      children: [
                         KpiTile(
                           tr.maps.duration,
                           fmtClock(row.durationS),
