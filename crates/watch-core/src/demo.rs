@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 use std::sync::OnceLock;
 
 /// What to search for. Shown in the app's first-run page.
-pub const DEMO_NAME: &str = "示例玩家#0000";
+pub use crate::DEMO_NAME;
 /// Stands in for a `customerToken`; never sent anywhere.
 pub const DEMO_TOKEN: &str = "demo-sample-token";
 /// The sample player's id. Its number is the generator's version: matches made by an

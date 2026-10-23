@@ -10,7 +10,12 @@ fn read(path: &Path) -> anyhow::Result<Vec<String>> {
     if !path.exists() {
         return Ok(Vec::new());
     }
-    Ok(serde_json::from_slice(&std::fs::read(path)?)?)
+    let mut players: Vec<String> = serde_json::from_slice(&std::fs::read(path)?)?;
+    // Left by a development build; this one cannot answer for it.
+    if !watch_core::DEMO_AVAILABLE {
+        players.retain(|p| !p.eq_ignore_ascii_case(watch_core::DEMO_NAME));
+    }
+    Ok(players)
 }
 fn update(path: &Path, name: &str, remove: bool) -> anyhow::Result<Vec<String>> {
     let name = name.trim();

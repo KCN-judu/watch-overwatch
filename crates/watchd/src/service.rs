@@ -1565,6 +1565,7 @@ mod tests {
         assert_eq!(client.metrics().await.len(), 2);
     }
 
+    #[cfg(any(debug_assertions, feature = "demo"))]
     #[tokio::test]
     async fn the_sample_player_works_without_an_account_or_the_network() {
         use watch_core::{Policy, SecretsFile};
@@ -1598,7 +1599,7 @@ mod tests {
             search_player(
                 State(s.clone()),
                 Json(SearchInput {
-                    name: watch_core::demo::DEMO_NAME.into(),
+                    name: watch_core::DEMO_NAME.into(),
                 }),
             )
             .await,

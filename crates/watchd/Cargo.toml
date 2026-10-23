@@ -24,6 +24,10 @@ tao = "0.34"
 wry = "0.53"
 raw-window-handle = "0.6"
 
+[features]
+# The sample player in a release build (`watch_core::DEMO_AVAILABLE`).
+demo = ["watch-core/demo"]
+
 [[bin]]
 name = "watch-overwatch"
 path = "src/launcher.rs"
