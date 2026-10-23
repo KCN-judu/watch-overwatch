@@ -6,6 +6,7 @@ import '../../core/stats.dart';
 import '../../core/support.dart';
 import '../../design/cards.dart';
 import '../../design/headline.dart';
+import '../../design/icons.dart';
 import '../../design/tokens.dart';
 import '../../design/widgets.dart';
 import '../../l10n/strings.dart';
@@ -90,6 +91,9 @@ class HeroComparePage extends StatelessWidget {
   }
 }
 
+/// The game's hero select: every hero as a portrait, one row of them per role (the
+/// compared hero's role first). Heroes without a match this season are grey and
+/// cannot be picked; the hero being compared is marked.
 class _Picker extends StatelessWidget {
   const _Picker({required this.workspace, required this.a, required this.all});
   final PlayerWorkspace workspace;
@@ -99,58 +103,172 @@ class _Picker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cat = AppScope.of(context).catalog;
+    final c = context.c;
     final role = cat.heroRole(a.hero);
-    final others =
-        [
-          for (final h in all)
-            if (PlayerWorkspace.heroKey(h) != PlayerWorkspace.heroKey(a)) h,
-        ]..sort((x, y) {
-          final rx = cat.heroRole(x.hero) == role ? 0 : 1;
-          final ry = cat.heroRole(y.hero) == role ? 0 : 1;
-          return rx != ry ? rx - ry : (y.matches ?? 0) - (x.matches ?? 0);
-        });
+    // A hero played in more than one queue: the usage with the most matches.
+    final played = <String, HeroUsage>{};
+    for (final h in all) {
+      final seen = played[h.hero.guid];
+      if (seen == null || (h.matches ?? 0) > (seen.matches ?? 0)) {
+        played[h.hero.guid] = h;
+      }
+    }
+    final roster = [
+      ...cat.heroes,
+      // Heroes the season has that the catalog does not (yet).
+      for (final h in played.values)
+        if (!cat.heroes.any((e) => e.guid == h.hero.guid)) h.hero,
+    ];
+    final roles = [
+      if (Role.playable.contains(role)) role,
+      for (final r in Role.playable)
+        if (r != role) r,
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SectionHeader(tr.compare.pickHero, info: tr.compare.pickHeroTip),
         const SizedBox(height: SectionHeader.below),
-        Wrap(
-          spacing: Sp.withinGroup,
-          runSpacing: Sp.withinGroup,
-          children: [
-            for (final h in others)
-              Pressable(
-                onTap: () => workspace.compareHero(PlayerWorkspace.heroKey(h)),
-                semanticLabel:
-                    '${h.hero.label} ${tr.common.matchCount(h.matches ?? 0)}',
-                outlineAtRest: true,
-                padding: const EdgeInsets.fromLTRB(
-                  Sp.iconGap,
-                  Sp.iconGap,
-                  Sp.betweenItems,
-                  Sp.iconGap,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    NetImage(
-                      cat.heroIcon(h.hero),
-                      size: 28,
-                      fallback: h.hero.label,
+        for (final r in roles)
+          if (roster.where((e) => cat.heroRole(e) == r).toList()
+              case final heroes when heroes.isNotEmpty) ...[
+            Row(
+              children: [
+                RoleIcon(r, size: 18),
+                const SizedBox(width: Sp.iconGap),
+                Text(r.label, style: Ty.bodyStrong),
+                const SizedBox(width: Sp.withinGroup),
+                Text(
+                  tr.common.matchCount(
+                    heroes.fold(
+                      0,
+                      (n, e) => n + (played[e.guid]?.matches ?? 0),
                     ),
-                    const SizedBox(width: Sp.withinGroup),
-                    Text(h.hero.label, style: Ty.bodyStrong),
-                    const SizedBox(width: Sp.iconGap),
-                    Text(
-                      tr.common.matchCount(h.matches ?? 0),
-                      style: Ty.meta.copyWith(color: context.c.textSecondary),
-                    ),
-                  ],
+                  ),
+                  style: Ty.meta.copyWith(color: c.textSecondary),
                 ),
-              ),
+              ],
+            ),
+            const SizedBox(height: Sp.withinGroup),
+            Wrap(
+              spacing: Sp.iconGap,
+              runSpacing: Sp.iconGap,
+              children: [
+                for (final e in heroes)
+                  _Face(
+                    hero: e,
+                    usage: played[e.guid],
+                    current: e.guid == a.hero.guid,
+                    onPick: (u) =>
+                        workspace.compareHero(PlayerWorkspace.heroKey(u)),
+                  ),
+              ],
+            ),
+            const SizedBox(height: Sp.betweenSections),
           ],
-        ),
       ],
+    );
+  }
+}
+
+/// One hero of the select screen: the portrait, a strip in the hero's colour and the
+/// name under it with the matches.
+class _Face extends StatelessWidget {
+  const _Face({
+    required this.hero,
+    required this.usage,
+    required this.current,
+    required this.onPick,
+  });
+  final EntityRef hero;
+  final HeroUsage? usage;
+  final bool current;
+  final ValueChanged<HeroUsage> onPick;
+
+  static const _size = 72.0;
+
+  /// Luminance weights: the portrait in greys.
+  static const _grey = ColorFilter.matrix([
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0, 0, 0, 1, 0,
+  ]);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final cat = AppScope.of(context).catalog;
+    final u = usage;
+    final playable = u != null && (u.matches ?? 0) > 0 && !current;
+    final tint = heroTint(context, hero) ?? c.accent;
+    Widget face = SizedBox(
+      width: _size,
+      height: _size,
+      child: PortraitCell(cat.heroPortrait(hero)),
+    );
+    if (!playable && !current) {
+      face = Opacity(
+        opacity: Alpha.muted,
+        child: ColorFiltered(colorFilter: _grey, child: face),
+      );
+    }
+    final tile = SizedBox(
+      width: _size,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              border: current ? Border.all(color: tint, width: 2) : null,
+            ),
+            child: ColoredBox(color: c.raised, child: face),
+          ),
+          Container(
+            height: accentBar,
+            color: playable || current
+                ? tint
+                : c.textSecondary.withValues(alpha: Alpha.faint),
+          ),
+          const SizedBox(height: Sp.hairline),
+          Text(
+            hero.label,
+            style: Ty.meta.copyWith(
+              color: playable || current ? c.textPrimary : c.textSecondary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            current
+                ? tr.compare.current
+                : tr.common.matchCount(u?.matches ?? 0),
+            style: Ty.num(Ty.micro).copyWith(color: c.textSecondary),
+          ),
+        ],
+      ),
+    );
+    final label = current
+        ? '${hero.label} ${tr.compare.current}'
+        : playable
+        ? '${hero.label} ${tr.common.matchCount(u.matches ?? 0)}'
+        : tr.compare.noMatchesTip(hero.label);
+    if (!playable) {
+      return Tooltip(
+        message: label,
+        child: Semantics(
+          label: label,
+          child: ExcludeSemantics(child: tile),
+        ),
+      );
+    }
+    return Pressable(
+      onTap: () => onPick(u),
+      semanticLabel: label,
+      tooltip: label,
+      radius: 0,
+      child: tile,
     );
   }
 }
