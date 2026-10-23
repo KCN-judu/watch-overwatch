@@ -4,6 +4,7 @@
 //! Rust toolchain: no second language to install, and the tasks are tested like the rest.
 mod catalog;
 mod game_assets;
+mod notes;
 mod package;
 
 use anyhow::{Context, bail};
@@ -13,7 +14,8 @@ const USAGE: &str = "usage:
   cargo xtask sync-assets                      copy resources/game into the app and register it in pubspec.yaml
   cargo xtask slim-catalog <source> <target>   cut a full query_tool.json down to what the program reads
   cargo xtask update-catalog <dir>             rebuild the bundled catalog from the live files downloaded into <dir>
-  cargo xtask package                          zip the release builds into dist/ with its sha256";
+  cargo xtask package                          zip the release builds into dist/ with its sha256
+  cargo xtask release-notes <version>          print the CHANGELOG section of <version> as release text";
 
 fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -33,6 +35,7 @@ fn main() -> anyhow::Result<()> {
             &root.join("crates/watch-core/data/query_tool.min.json"),
         ),
         ["package"] => package::run(&root),
+        ["release-notes", version] => notes::run(&root, version),
         _ => bail!("{USAGE}"),
     }
 }

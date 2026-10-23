@@ -1586,6 +1586,7 @@ mod tests {
             progress: Arc::new(std::sync::Mutex::new(HashMap::new())),
             store,
             season_checked: Arc::default(),
+            updates: Arc::default(),
         };
         async fn body(r: Response) -> Value {
             let b = axum::body::to_bytes(r.into_body(), usize::MAX)

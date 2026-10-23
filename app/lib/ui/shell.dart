@@ -12,6 +12,7 @@ import 'navigator_pane.dart';
 import 'overlays.dart';
 import 'pages/settings_page.dart';
 import 'player_view.dart';
+import 'update_dialog.dart';
 import '../design/net_pic.dart';
 
 /// Hands pane-level handles to descendants.
@@ -91,6 +92,8 @@ class _ShellState extends State<Shell> implements ShellActions {
   void openPalette() => showCommandPalette(context, _app, this, _commands);
   @override
   void openShortcuts() => showShortcuts(context, _commands);
+  @override
+  void openUpdate() => showUpdateDialog(context, check: true);
   @override
   void openExport() => showExportDialog(context, _app);
   @override
@@ -678,6 +681,26 @@ class _StatusBar extends StatelessWidget {
           if (app.currentSeason case final season?)
             Text(tr.common.season(season), style: style),
           const Spacer(),
+          if (app.update case final u? when u.newer && u.latest != null) ...[
+            Pressable(
+              onTap: () => showUpdateDialog(context),
+              semanticLabel: tr.update.newVersion(u.latest!.version),
+              tooltip: tr.update.newVersionTip,
+              padding: const EdgeInsets.symmetric(horizontal: Sp.iconGap),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.system_update_alt, size: 13, color: c.accent),
+                  const SizedBox(width: Sp.withinControl),
+                  Text(
+                    tr.update.newVersion(u.latest!.version),
+                    style: Ty.meta.copyWith(color: c.accent),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: Sp.betweenItems),
+          ],
           const ImageProgress(),
           const SizedBox(width: Sp.betweenItems),
           if (app.exporting) ...[

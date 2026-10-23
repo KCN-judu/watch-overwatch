@@ -266,6 +266,16 @@ bool matchesQuery(String haystack, String query) =>
 
 // ---- Persisted interface state ---------------------------------------------
 
+/// Opens [url] in the system browser. Never from a test run: that would open a real one.
+Future<void> openUrl(String url) async {
+  if (!Platform.isWindows || Platform.environment.containsKey('FLUTTER_TEST')) {
+    return;
+  }
+  try {
+    await Process.run('rundll32', ['url.dll,FileProtocolHandler', url]);
+  } catch (_) {}
+}
+
 class UiState {
   static const version = 1;
   String theme = 'system';
@@ -281,6 +291,9 @@ class UiState {
 
   /// Share pictures say "玩家" instead of player names.
   bool shareMaskNames = false;
+
+  /// Look for a new version when the app starts.
+  bool autoCheckUpdates = true;
 
   static File _file() {
     final base =
@@ -313,6 +326,7 @@ class UiState {
         s.tab = j['tab'] is String ? j['tab'] : s.tab;
         s.mode = j['mode'] is String ? j['mode'] : s.mode;
         s.shareMaskNames = j['shareMaskNames'] == true;
+        s.autoCheckUpdates = j['autoCheckUpdates'] != false;
         s.mutedInsights = {
           for (final k in (j['mutedInsights'] as List?) ?? const [])
             if (k is String) k,
@@ -346,6 +360,7 @@ class UiState {
           'mode': mode,
           'mutedInsights': mutedInsights.toList(),
           'shareMaskNames': shareMaskNames,
+          'autoCheckUpdates': autoCheckUpdates,
         }),
       );
       part.renameSync(f.path);

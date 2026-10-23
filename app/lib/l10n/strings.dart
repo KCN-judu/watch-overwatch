@@ -28,6 +28,7 @@ import 'overview.dart';
 import 'people.dart';
 import 'recap.dart';
 import 'shell.dart';
+import 'update.dart';
 
 export 'analysis.dart';
 export 'common.dart';
@@ -41,6 +42,7 @@ export 'overview.dart';
 export 'people.dart';
 export 'recap.dart';
 export 'shell.dart';
+export 'update.dart';
 
 class Strings {
   const Strings();
@@ -74,6 +76,9 @@ class Strings {
 
   /// The maps page.
   MapStrings get maps => const MapStrings();
+
+  /// Checking for and installing a new version.
+  UpdateStrings get update => const UpdateStrings();
 
   /// The overview page.
   OverviewStrings get overview => const OverviewStrings();

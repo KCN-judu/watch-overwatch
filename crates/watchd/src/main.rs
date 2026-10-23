@@ -3,6 +3,7 @@ mod community;
 mod players;
 mod service;
 mod store;
+mod update;
 use axum::{
     Json, Router,
     extract::{Request, State},
@@ -35,6 +36,8 @@ pub(crate) struct AppState {
     store: Option<Arc<store::LocalStore>>,
     /// Whether this run has checked for a season newer than the catalog (`follow_season`).
     season_checked: Arc<std::sync::atomic::AtomicBool>,
+    /// The latest release seen and the download of it (`/api/update/*`).
+    updates: update::UpdateBook,
 }
 /// Opens the on-disk local store; without it everything still works, just without reuse.
 pub(crate) fn open_store() -> Option<Arc<store::LocalStore>> {
@@ -68,6 +71,12 @@ async fn main() -> anyhow::Result<()> {
             "Imported {count} account(s) into the local secrets file. Token values were not printed."
         );
         return Ok(());
+    }
+    if args.get(1).map(String::as_str) == Some("apply-update") {
+        let (Some(staged), Some(target)) = (args.get(2), args.get(3)) else {
+            anyhow::bail!("Usage: watchd apply-update <staged folder> <program folder>");
+        };
+        return update::run_installer(std::path::Path::new(staged), std::path::Path::new(target));
     }
     if let Some(command) = args
         .get(1)
@@ -125,6 +134,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/player/replies", post(service::player_replies))
         .route("/api/catalog", get(community::catalog))
         .route("/api/community", post(community::query))
+        .route("/api/update/check", post(update::check))
+        .route("/api/update/status", post(update::status))
+        .route("/api/update/download", post(update::download))
+        .route("/api/update/apply", post(update::apply))
         .layer(axum::extract::DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn(local_guard))
         .with_state(AppState {
@@ -135,6 +148,7 @@ async fn main() -> anyhow::Result<()> {
             progress: Arc::new(std::sync::Mutex::new(HashMap::new())),
             store: open_store(),
             season_checked: Arc::default(),
+            updates: Arc::default(),
         });
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", port())).await?;
     tracing::info!("Watch Overwatch: http://127.0.0.1:{}", port());
@@ -246,7 +260,7 @@ async fn hero_portraits() -> impl IntoResponse {
 }
 async fn state(State(s): State<AppState>) -> Json<serde_json::Value> {
     Json(
-        serde_json::json!({"accounts":s.client.account_views().await,"metrics":s.client.metrics().await,"endpoints":watch_core::endpoints(),"current_season":s.catalog.current_season.get(),"thresholds":{"group":watch_core::stats::MIN_GROUP_MATCHES,"trend":watch_core::stats::MIN_TREND_MATCHES},"secrets_path":watch_core::secrets_path().display().to_string()}),
+        serde_json::json!({"accounts":s.client.account_views().await,"metrics":s.client.metrics().await,"endpoints":watch_core::endpoints(),"current_season":s.catalog.current_season.get(),"thresholds":{"group":watch_core::stats::MIN_GROUP_MATCHES,"trend":watch_core::stats::MIN_TREND_MATCHES},"secrets_path":watch_core::secrets_path().display().to_string(),"version":watch_core::update::current_version()}),
     )
 }
 pub(crate) fn fail(error: Failure) -> (StatusCode, Json<serde_json::Value>) {

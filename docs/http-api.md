@@ -46,6 +46,9 @@ Invoke-RestMethod http://127.0.0.1:18180/api/player/growth -Method Post -Headers
 | `POST /api/player/export` | 导出数据集 |
 | `GET /api/catalog` | 目录（英雄、地图、统计项、威能、段位图标与名称；`stadium_upgrades`：角斗领域的异能与装备，按 `0x…` 编号给出名称、图标、说明、分类和稀有度） |
 | `POST /api/request` | 白名单内的原始接口转发（调试用） |
+| `POST /api/update/check` | 本版本与 GitHub 上最新发布版的比较（`force: true` 重新查询，否则 6 小时内复用上次结果）：`current`、`latest`（版本、更新说明、发布时间、发布页、安装包大小）、`newer`、`installable`（是否为可被更新的发布目录）、`download`。只访问本项目公开的发布页，不带任何凭据 |
+| `POST /api/update/download`、`POST /api/update/status` | 在后台下载最新版的安装包，用发布页附带的 `.sha256` 校验，解压到 `%LOCALAPPDATA%\Watch Overwatch\updates\`；`status` 返回 `download.state`（`idle` / `downloading` / `verifying` / `ready` / `failed`）和已下载字节数 |
+| `POST /api/update/apply` | 下载就绪后，启动一份临时的安装程序（`watchd.exe` 的副本）并退出服务；安装程序等应用和服务退出后把新文件覆盖到程序目录，再启动新版本，结果写在 `updates\update.log` |
 
 ### 视图（`/api/player/view`）
 
