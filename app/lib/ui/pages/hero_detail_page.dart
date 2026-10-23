@@ -127,10 +127,7 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
             Expanded(
               child: ListView(
                 controller: _scroll,
-                padding: const EdgeInsets.only(
-                  right: Sp.betweenGroups,
-                  bottom: 28,
-                ),
+                padding: const EdgeInsets.only(right: scrollGutter, bottom: 28),
                 children: [
                   _Poster(
                     hero: hero,

@@ -61,7 +61,7 @@ class _StrengthPageState extends State<StrengthPage> {
     final result = load.value;
 
     return ListView(
-      padding: const EdgeInsets.only(right: Sp.betweenGroups),
+      padding: const EdgeInsets.only(right: scrollGutter),
       children: [
         Row(
           children: [

@@ -51,7 +51,7 @@ class ProfilePage extends StatelessWidget {
         context.density.rowHeight * scale * (math.max(roleCount, 1) + 1) + 4;
 
     return ListView(
-      padding: const EdgeInsets.only(right: Sp.betweenGroups),
+      padding: const EdgeInsets.only(right: scrollGutter),
       children: [
         LoadStatusBar(
           at: load.at,

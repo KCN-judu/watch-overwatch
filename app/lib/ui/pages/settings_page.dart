@@ -116,7 +116,7 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Padding(
           padding: const EdgeInsets.all(Sp.betweenGroups),
           child: ListView(
-            padding: const EdgeInsets.only(right: Sp.betweenItems),
+            padding: const EdgeInsets.only(right: scrollGutter),
             children: [
               Row(
                 children: [

@@ -14,6 +14,12 @@ class UpdateStrings {
   String published(String date) => '发布于 $date';
   String get notesTitle => '更新内容';
   String get noNotes => '这一版没有写更新说明。';
+  String entries(int n) => '$n 项';
+
+  // The CHANGELOG's section headings, to colour them.
+  String get sectionAdded => '新增';
+  String get sectionFixed => '修复';
+  List<String> get sectionChanged => const ['变更', '改进'];
   String get later => '以后再说';
   String get openPage => '在网页查看';
   String get download => '下载更新';

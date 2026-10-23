@@ -205,7 +205,7 @@ class PlayerDetailPage extends StatelessWidget {
         ];
         final stadium = player.stadium;
         return ListView(
-          padding: const EdgeInsets.only(right: Sp.betweenItems),
+          padding: const EdgeInsets.only(right: scrollGutter),
           children: [
             header(),
             const SizedBox(height: Sp.betweenSections),

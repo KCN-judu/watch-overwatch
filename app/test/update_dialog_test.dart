@@ -15,7 +15,11 @@ Map<String, Object?> answer({bool installable = true, Object? download}) => {
     'version': '1.3.0',
     'name': 'Watch Overwatch 1.3.0',
     'notes':
-        '# Watch Overwatch 1.3.0\n\n## 新增\n\n- **每日总结**：一天一页\n- 见[文档](https://example.test)',
+        '# Watch Overwatch 1.3.0\n\n## 新增\n\n'
+        '- **每日总结**（issue #40）：一天一页，`POST /api/player/daily`\n'
+        '  - 可翻看过去\n'
+        '- 见[文档](https://example.test)\n\n'
+        '### 修复\n\n- 一处',
     'published_at': '2026-10-24T08:00:00Z',
     'page_url': 'https://example.test/release',
     'zip_size': 24 * 1048576,
@@ -60,9 +64,20 @@ void main() {
     await open(tester, answer());
     expect(find.text('1.3.0 可以更新（当前 1.2.0）'), findsOneWidget);
     expect(find.textContaining('24.0 MB'), findsOneWidget);
+    // The title line repeats the dialog's heading and is left out.
+    expect(find.textContaining('Watch Overwatch 1.3.0'), findsNothing);
     expect(find.text('新增'), findsOneWidget);
-    expect(find.text('每日总结：一天一页'), findsOneWidget); // ** dropped
-    expect(find.text('见文档'), findsOneWidget); // link reduced to its text
+    expect(find.text('2 项'), findsOneWidget);
+    expect(find.text('修复'), findsOneWidget);
+    // The entry's name on its own line, the issue as a tag, the rest under it.
+    expect(find.text('每日总结', findRichText: true), findsOneWidget);
+    expect(find.text('#40'), findsOneWidget);
+    expect(
+      find.text('一天一页，POST /api/player/daily', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.text('可翻看过去', findRichText: true), findsOneWidget);
+    expect(find.text('见文档', findRichText: true), findsOneWidget);
     expect(find.text('下载更新'), findsOneWidget);
     expect(find.text('以后再说'), findsOneWidget);
   });

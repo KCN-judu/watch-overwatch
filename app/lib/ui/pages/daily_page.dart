@@ -57,7 +57,6 @@ class DailyPage extends StatelessWidget {
     }
     final index = r.days.indexWhere((d) => d.day == s.day);
     void go(String day) => ws.loadDaily(mode, day);
-    const pad = EdgeInsets.only(right: Sp.betweenGroups, bottom: Sp.page);
     final list = _Days(days: r.days, picked: s.day, onPick: go);
     final body = _Summary(
       workspace: ws,
@@ -72,7 +71,13 @@ class DailyPage extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, box) {
         if (box.maxWidth < 900) {
-          return ListView(padding: pad, children: [body]);
+          return ListView(
+            padding: const EdgeInsets.only(
+              right: scrollGutter,
+              bottom: Sp.page,
+            ),
+            children: [body],
+          );
         }
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,7 +85,13 @@ class DailyPage extends StatelessWidget {
             SizedBox(width: 240, child: list),
             const SizedBox(width: Sp.betweenSections),
             Expanded(
-              child: ListView(padding: pad, children: [body]),
+              child: ListView(
+                padding: const EdgeInsets.only(
+                  right: scrollGutter,
+                  bottom: Sp.page,
+                ),
+                children: [body],
+              ),
             ),
           ],
         );
@@ -113,6 +124,7 @@ class _Days extends StatelessWidget {
         const SizedBox(height: SectionHeader.below),
         Expanded(
           child: ListView(
+            padding: const EdgeInsets.only(right: scrollGutter),
             children: [
               for (final d in days)
                 Pressable(

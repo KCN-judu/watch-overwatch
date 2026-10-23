@@ -235,7 +235,7 @@ class _Body extends StatelessWidget {
     final outcomeColor = c.outcome(detail.outcome.id);
     return ListView(
       // Room for the scrollbar, so it does not sit on the tables.
-      padding: const EdgeInsets.only(right: Sp.betweenItems),
+      padding: const EdgeInsets.only(right: scrollGutter),
       children: [
         // Result line
         Padding(

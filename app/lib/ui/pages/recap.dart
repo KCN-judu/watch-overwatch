@@ -307,6 +307,7 @@ class _RecapState extends State<_Recap> {
         Expanded(
           child: _all
               ? SingleChildScrollView(
+                  padding: const EdgeInsets.only(right: scrollGutter),
                   child: Shareable(
                     title: tr.recap.title,
                     caption: caption,

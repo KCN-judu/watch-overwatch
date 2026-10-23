@@ -193,6 +193,7 @@ class _PaletteState extends State<_Palette> {
                       )
                     : ListView(
                         shrinkWrap: true,
+                        padding: const EdgeInsets.only(right: scrollGutter),
                         children: [
                           for (final (i, e) in shown.indexed)
                             _PaletteRow(
@@ -373,6 +374,7 @@ Future<void> showShortcuts(BuildContext context, List<Cmd> cmds) {
             const SizedBox(height: Sp.betweenGroups),
             Expanded(
               child: ListView(
+                padding: const EdgeInsets.only(right: scrollGutter),
                 children: [
                   for (final e in byCategory.entries) ...[
                     Padding(
