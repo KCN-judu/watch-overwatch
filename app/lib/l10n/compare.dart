@@ -6,7 +6,9 @@ class CompareStrings {
   String get compareHero => '对比';
   String get compareHeroTip => '和另一个英雄并排比较';
   String get pickHero => '选一个英雄来对比';
-  String get pickHeroTip => '同职责的英雄排在前面。只列出本赛季玩过的英雄。';
+  String get pickHeroTip => '按职责排，和这个英雄同职责的在前。灰色头像是本赛季还没有玩过的英雄，不能对比。';
+  String get current => '当前';
+  String noMatchesTip(String hero) => '$hero：本赛季没有场次';
   String get change => '换一个';
   String get close => '关闭对比';
   String heroesTitle(String a, String b) => '$a 对比 $b';

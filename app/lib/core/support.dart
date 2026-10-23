@@ -96,6 +96,20 @@ class Catalog {
   }
 
   /// Role a hero is played in, from the catalog (list rows without a role use this).
+  /// Every hero the catalog knows with a role a player queues as, in the catalog's
+  /// order: the whole roster, played or not.
+  List<EntityRef> get heroes => [
+    for (final MapEntry(key: guid, :value) in _heroes.entries)
+      if (value is Map &&
+          heroRole(EntityRef('hero', guid, null, null)) != Role.unknown)
+        EntityRef(
+          'hero',
+          guid,
+          value['name'] as String?,
+          value['official_id'] as String?,
+        ),
+  ];
+
   Role heroRole(EntityRef? hero) {
     final r = hero == null ? null : _heroes[hero.guid]?['role'];
     return switch (r) {
