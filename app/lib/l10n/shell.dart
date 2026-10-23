@@ -31,6 +31,7 @@ class ShellStrings {
   // First run: three steps, or the sample player.
   String get welcomeTitle => '欢迎使用 Watch Overwatch';
   String get welcomeBody => '三步看到自己的数据；也可以先用示例数据看看每个页面。';
+  String get welcomeBodyPlain => '三步看到自己的数据。';
   String get stepAccount => '添加大神账号';
   String get stepAccountBody =>
       '在设置里粘贴大神 App 的 role_id 和 token（获取方法见使用指引的“凭据”一节），点“测试连接”确认可用。凭据只保存在本机。';

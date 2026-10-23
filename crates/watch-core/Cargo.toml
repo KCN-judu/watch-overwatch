@@ -22,3 +22,7 @@ windows-sys = { version = "0.61", features = ["Win32_System_Com", "Win32_UI_Shel
 
 [dev-dependencies]
 axum.workspace = true
+
+[features]
+# The sample player (`demo`) in a release build; development builds always have it.
+demo = []

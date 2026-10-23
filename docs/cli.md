@@ -69,6 +69,17 @@ cargo xtask update-catalog $dir
 
 合并后精简，覆盖快照。改完运行 `cargo test`，并看一下 `git diff` 里有哪些变化。
 
+## 示例玩家
+
+示例玩家（`watch_core::demo`，按固定规则生成对局、不联网）只编进开发构建：`cargo build`、`flutter run` 都有，`cargo build --release` 和 `flutter build windows --release` 默认不带，发布包也就没有。要在发布构建里带上，两边一起打开：
+
+```powershell
+cargo build --release -p watchd --features demo
+flutter build windows --release --dart-define=WATCH_DEMO=true
+```
+
+服务端的开关是 `watch_core::DEMO_AVAILABLE`（`/api/state` 的 `demo`），应用的开关是 `lib/core/build.dart` 的 `demoBuild`，两边都有才显示“打开示例玩家”。不带示例的构建会把开发构建留在玩家库里的 `示例玩家#0000` 隐藏起来（文件本身不改）。
+
 ## 文档截图
 
 概览、地图、常遇玩家三页的截图由测试渲染生成，不用手动截：

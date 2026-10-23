@@ -496,14 +496,15 @@ class FirstRun extends StatelessWidget {
             onPressed: scope.actions.focusSearch,
             tooltip: 'Ctrl+L',
           ),
-          AppButton(
-            tr.shell.openSample,
-            icon: Icons.science_outlined,
-            tooltip: tr.shell.trySampleBody,
-            onPressed: app.searching
-                ? null
-                : () => app.openPlayer(tr.shell.sampleName),
-          ),
+          if (app.demoAvailable)
+            AppButton(
+              tr.shell.openSample,
+              icon: Icons.science_outlined,
+              tooltip: tr.shell.trySampleBody,
+              onPressed: app.searching
+                  ? null
+                  : () => app.openPlayer(tr.shell.sampleName),
+            ),
         ],
       );
     }
@@ -562,7 +563,9 @@ class FirstRun extends StatelessWidget {
               Text(tr.shell.welcomeTitle, style: Ty.title),
               const SizedBox(height: Sp.withinControl),
               Text(
-                tr.shell.welcomeBody,
+                app.demoAvailable
+                    ? tr.shell.welcomeBody
+                    : tr.shell.welcomeBodyPlain,
                 style: Ty.body.copyWith(color: c.textSecondary),
               ),
               const SizedBox(height: Sp.betweenSections),
@@ -592,34 +595,36 @@ class FirstRun extends StatelessWidget {
                 ),
               ),
               step(3, tr.shell.stepRead, tr.shell.stepReadBody, null),
-              const SizedBox(height: Sp.withinGroup),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(Sp.betweenGroups),
-                decoration: BoxDecoration(
-                  color: c.raised,
-                  border: Border.all(color: c.border),
+              if (app.demoAvailable) ...[
+                const SizedBox(height: Sp.withinGroup),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(Sp.betweenGroups),
+                  decoration: BoxDecoration(
+                    color: c.raised,
+                    border: Border.all(color: c.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(tr.shell.trySample, style: Ty.bodyStrong),
+                      const SizedBox(height: Sp.hairline),
+                      Text(
+                        tr.shell.trySampleBody,
+                        style: Ty.body.copyWith(color: c.textSecondary),
+                      ),
+                      const SizedBox(height: Sp.withinGroup),
+                      AppButton(
+                        tr.shell.openSample,
+                        icon: Icons.science_outlined,
+                        onPressed: app.searching
+                            ? null
+                            : () => app.openPlayer(tr.shell.sampleName),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(tr.shell.trySample, style: Ty.bodyStrong),
-                    const SizedBox(height: Sp.hairline),
-                    Text(
-                      tr.shell.trySampleBody,
-                      style: Ty.body.copyWith(color: c.textSecondary),
-                    ),
-                    const SizedBox(height: Sp.withinGroup),
-                    AppButton(
-                      tr.shell.openSample,
-                      icon: Icons.science_outlined,
-                      onPressed: app.searching
-                          ? null
-                          : () => app.openPlayer(tr.shell.sampleName),
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ],
           ),
         ),

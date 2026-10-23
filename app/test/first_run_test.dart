@@ -51,4 +51,18 @@ void main() {
     expect(find.text('已添加账号'), findsOneWidget);
     expect(find.text('添加账号'), findsNothing);
   });
+
+  testWidgets('a service built without the sample player offers no sample', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final app = AppState(Backend(), UiState())
+      ..server = {'demo': false, 'accounts': <Object?>[]};
+    await tester.pumpWidget(host(app, FakeActions(), false));
+    expect(find.text('输入战网昵称'), findsOneWidget);
+    expect(find.text('打开示例玩家'), findsNothing);
+    expect(find.text('三步看到自己的数据。'), findsOneWidget);
+  });
 }

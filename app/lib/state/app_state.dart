@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../core/api.dart';
 import '../core/benchmark.dart';
+import '../core/build.dart';
 import '../core/daily.dart';
 import '../core/maps.dart';
 import '../core/people.dart';
@@ -847,6 +848,9 @@ class AppState extends ChangeNotifier {
       (a as Map).cast<String, dynamic>(),
   ];
   bool get noAccount => server != null && accounts.isEmpty;
+
+  /// Whether the sample player can be opened: this build has it and so does the service.
+  bool get demoAvailable => demoBuild && server?['demo'] != false;
   bool get anyAccountReady => accounts.any((a) => a['status'] == 'ready');
 
   // ---- Boot -------------------------------------------------------------------

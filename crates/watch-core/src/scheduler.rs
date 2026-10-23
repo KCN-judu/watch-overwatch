@@ -273,6 +273,7 @@ impl WatchClient {
             at_ms: now_ms(),
         };
         // The sample player is answered here and never goes upstream (see `demo`).
+        #[cfg(any(debug_assertions, feature = "demo"))]
         if let Some(value) = crate::demo::respond(endpoint, &spec.payload) {
             metric.status = "demo".into();
             return Ok((metric, value));
