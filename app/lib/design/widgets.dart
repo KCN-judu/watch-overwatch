@@ -1054,7 +1054,8 @@ class FigureText extends StatelessWidget {
   }
 }
 
-/// One headline number: label above, big figure, optional note, optional stat colour.
+/// One headline number: label above, big figure, optional note, optional stat colour
+/// (the left bar only; the tile itself stays a flat surface).
 /// The only tile of its kind: every page with a row of headline numbers uses it.
 class KpiTile extends StatelessWidget {
   const KpiTile(this.label, this.value, {super.key, this.note, this.color});
@@ -1077,7 +1078,7 @@ class KpiTile extends StatelessWidget {
           Sp.withinGroup,
         ),
         decoration: BoxDecoration(
-          color: color == null ? c.raised : c.barFill(color!),
+          color: c.raised,
           border: Border(
             left: BorderSide(color: color ?? c.border, width: accentBar),
           ),
