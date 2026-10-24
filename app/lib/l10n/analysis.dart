@@ -146,9 +146,7 @@ class AnalysisStrings {
     required int n,
     required int requests,
     required bool quick,
-  }) =>
-      '从已读取的对局中${role ?? '每个职责'}取最近 $n 场（不足会自动多读）。'
-      '首次最多约 $requests 次请求${quick ? '，约 1–2 分钟' : ''}，之后大多走缓存，可随时取消。';
+  }) => '${role ?? '每个职责'}取最近 $n 场；首次约 $requests 次请求${quick ? '，1–2 分钟' : ''}。';
 
   String selectedMatches(int n) => '已选 $n 场';
   String get queryNotNeeded => '无需查询（对局自带段位）';
@@ -255,7 +253,6 @@ class AnalysisStrings {
     if (notStored > 0) '$notStored 场详情待同步',
     if (skipped > 0) '$skipped 场过短或缺阵亡数，未计入',
   ].join('；');
-  String get pValueNote => 'p 值：Mann-Kendall 趋势检验（双侧），p < 0.1 判定有趋势；不足 8 场不检验。';
   String trendTooFew(String card) => '$card：场次不足';
   String trendUp(String card) => '$card 上升';
   String trendDown(String card) => '$card 下降';
@@ -269,11 +266,11 @@ class AnalysisStrings {
 
   /// The trend card's second line: how big the change is, and how sure.
   String trendEffect(String changePct, String confidence) =>
-      '后半段 vs 前半段 $changePct%，$confidence';
+      '前后半段 $changePct%，$confidence';
 
   /// Under the trend cards: what the wording means (the p value is in each card's tip).
   String get confidenceMeaning =>
-      '显著：p < 0.05；弱趋势：p < 0.1（Mann-Kendall 检验）。不足 8 场不检验，悬停查看 p 值与前后均值。';
+      '前后半段：后半段均值比前半段；显著：p < 0.05；弱趋势：p < 0.1；不足 8 场不检验，悬停查看 p 值与前后均值。';
   String pValue(String p) => 'p $p';
   String trendTip({
     required String older,
@@ -302,7 +299,8 @@ class AnalysisStrings {
   String noPastSeasonsBody(String mode) => '近 6 个赛季无$mode职责数据（未玩过或资料未公开）。';
 
   /// Header: mode and the season span, short form (S5–S10).
-  String trendTitle(String mode, int first, int last) => '$mode S$first–S$last';
+  String trendTitle(String mode, int first, int last) =>
+      first == last ? '$mode S$first' : '$mode S$first–S$last';
   String get metricSemantic => '指标';
   String noRanksIn(String mode) => '$mode没有段位';
   String get rankInfo => '三图纵轴一致。实线：赛季末段位；虚线：赛季最高段位。';

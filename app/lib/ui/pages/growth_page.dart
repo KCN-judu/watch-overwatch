@@ -272,10 +272,6 @@ class _GrowthPageState extends State<GrowthPage> {
           tr.analysis.confidenceMeaning,
           style: Ty.meta.copyWith(color: c.textSecondary),
         ),
-        Text(
-          tr.analysis.pValueNote,
-          style: Ty.meta.copyWith(color: c.textSecondary),
-        ),
         for (final m in shown) ...[
           const SizedBox(height: Sp.betweenSections),
           Shareable(
@@ -361,7 +357,12 @@ class _TrendCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: Sp.hairline),
-                Text(p, style: Ty.body.copyWith(color: c.textSecondary)),
+                Text(
+                  p,
+                  style: Ty.body.copyWith(color: c.textSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),

@@ -100,17 +100,13 @@ class ProfilePage extends StatelessWidget {
         const SizedBox(height: Sp.betweenSections),
         _Recent(rows: data.matches, mode: mode, server: career?.serverAverage),
         const SizedBox(height: Sp.betweenSections),
-        Semantics(
-          header: true,
-          child: Text(
-            tr.heroes.careerHeading(
-              mode.label,
-              career?.season ?? app.currentSeason,
-            ),
-            style: Ty.section,
+        SectionHeader(
+          tr.heroes.careerHeading(
+            mode.label,
+            career?.season ?? app.currentSeason,
           ),
         ),
-        const SizedBox(height: Sp.withinGroup),
+        const SizedBox(height: SectionHeader.below),
         SizedBox(
           height: tableH,
           child: AppTable<RoleCareer>(
@@ -334,19 +330,11 @@ class _Recent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Semantics(
-              header: true,
-              child: Text(
-                tr.heroes.recentHeading(mode.label),
-                style: Ty.section,
-              ),
-            ),
-            InfoTip(tr.heroes.recentFormInfo),
-          ],
+        SectionHeader(
+          tr.heroes.recentHeading(mode.label),
+          info: tr.heroes.recentFormInfo,
         ),
-        const SizedBox(height: Sp.withinGroup),
+        const SizedBox(height: SectionHeader.below),
         if (rows.isEmpty)
           Text(
             tr.heroes.noMatchesRead,
