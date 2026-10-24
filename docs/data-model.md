@@ -11,7 +11,7 @@
 - 英雄、地图、统计项、威能都用 `EntityRef` 引用，名称可能缺失，所以**不能靠名称做连接**，要用 `guid` 或 `official_id`。
 - 官方 ID 在 JSON 里是字符串，避免 JavaScript 大整数丢精度。
 - 部分请求失败不会让整个采集失败：`Coverage` 记录每个请求是否成功。
-- 版本：`IR_VERSION`（当前 1.1.0）随 IR 的变化升级；只新增可选字段升次版本。
+- 版本：`IR_VERSION`（当前 2.0.0）随 IR 的变化升级；删除或改动字段升主版本，只新增可选字段升次版本。2.0.0（1.4.0 发行）：`Participant` 去掉 `career_rank`、`career_other_roles`，换成三个职责的段位快照 `career`。
 
 ## 主要类型
 
@@ -22,7 +22,7 @@
 | `CareerSnapshot` | 某模式某赛季的生涯：各职责数据、英雄使用统计、省榜、行为与荣誉 |
 | `MatchSummary` | 列表里的一场：地图、结果、比分、英雄、职责、统计 |
 | `MatchDetail` | 一场的详情：时长、比分、禁用、查询对象用过的英雄、双方各 5 人；角斗还有回合 |
-| `Participant` | 一名参与者：英雄、职责、统计、对局报告的段位、威能、组队成员、点赞者；`career`（段位快照：为这场对局查到的本赛季三个职责的竞技段位 `{tank, damage, support}`，每个是三种状态之一：`{state: "ranked", rank}`、`{state: "unranked"}`（查到了、这个职责没有段位）、`{state: "querying"}`（还不知道：没查，或请求失败）。和对局一起存，已知的职责不再改；查询的时间、失败记在查询过程的状态和段位缓存里，不在值上）；详情展示时另带 `shown_rank`（这名玩家显示的段位，由 `watch_core::rank_view` 算出，对局强度和同侪基准用的是同一个结果：`{state: "ranked", rank, basis}`，`basis` 为 `match` 对局自带、`role` 所打职责的快照、`other_roles` 所打职责没有时其他职责里最高的；或 `unranked`、`querying`）和 `fleta` |
+| `Participant` | 一名参与者：英雄、职责、统计、对局报告的段位、威能、组队成员、点赞者；`career`（段位快照：为这场对局查到的本赛季三个职责的竞技段位 `{tank, damage, support}`，每个是三种状态之一：`{state: "ranked", rank}`、`{state: "unranked"}`（查到了、这个职责没有段位）、`{state: "querying"}`（还不知道：没查，或请求失败）。和对局一起存，已知的职责不再改；查询的时间、失败记在后台任务的查询状态里，不在值上）；详情展示时另带 `shown_rank`（这名玩家显示的段位，由 `watch_core::rank_view` 算出，对局强度和同侪基准用的是同一个结果：`{state: "ranked", rank, basis}`，`basis` 为 `match` 对局自带、`role` 所打职责的快照、`other_roles` 所打职责没有时其他职责里最高的；或 `unranked`、`querying`）和 `fleta` |
 | `StatLine` | 一场的统计：消灭、助攻、阵亡、伤害、治疗、阻挡、最后一击、单独消灭、承受伤害、承受治疗、目标时间 |
 | `HeroUsage` | 一个英雄的赛季统计：场次、胜率、时长、熟练度、每场平均、每 10 分钟 |
 | `EntityRef` | 英雄、地图、统计项、威能的引用：大神 `guid`、官方 `official_id`（`0x…`）、名称 |

@@ -10,7 +10,7 @@ pub use crate::dashen::Mode;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-pub const IR_VERSION: &str = "1.1.0";
+pub const IR_VERSION: &str = "2.0.0";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
