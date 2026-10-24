@@ -1,6 +1,8 @@
 // 在 https://ds.163.com/ 主站（已登录）的开发者工具 Console 里粘贴运行。
 // 先读大神账号绑定的守望先锋角色，拿到 role_id，再把 token 复制到剪贴板。
 // 脚本不会把 token 打印出来，也不会发送到别处。
+// 控制台自带的 copy 只在粘贴的代码同步运行时存在，await 之后就没了，所以先存下来。
+const consoleCopy = typeof copy === "function" ? copy : null;
 (async () => {
   if (typeof window.sig?.default !== "function") {
     console.error("当前页面没有签名模块。请确认你在 https://ds.163.com/ 主站并且已登录，刷新后重试。");
@@ -82,11 +84,29 @@
       console.error(`没有拿到 token（HTTP ${status}，业务码 ${json?.code ?? "无"}）。确认已登录后重试。`);
       return;
     }
-    copy(token); // 开发者工具自带：只写入剪贴板，不打印
-    console.log(
-      `成功。role_id = ${roleId}${role.nick ? `（${role.nick}）` : ""}，token 已复制到剪贴板（${token.length} 个字符）。` +
-        "回到应用的“设置”里填 role_id、粘贴 token 即可。",
-    );
+    const done = () =>
+      console.log(
+        `成功。role_id = ${roleId}${role.nick ? `（${role.nick}）` : ""}，token 已复制到剪贴板（${token.length} 个字符）。` +
+          "回到应用的“设置”里填 role_id、粘贴 token 即可。",
+      );
+    // 只写入剪贴板，不打印。
+    if (consoleCopy) {
+      consoleCopy(token);
+      done();
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(token);
+      done();
+    } catch {
+      // 页面没有焦点时浏览器不让写剪贴板：等点一下页面再写。
+      console.log(`role_id = ${roleId}。token 已拿到，点一下网页（不是控制台）任意位置就会复制到剪贴板。`);
+      document.addEventListener(
+        "click",
+        () => navigator.clipboard.writeText(token).then(done, (e) => console.error("复制失败：", e.message)),
+        { once: true },
+      );
+    }
   } catch (err) {
     console.error("请求失败：", err.name, err.message);
   }
