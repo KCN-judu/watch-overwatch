@@ -76,7 +76,12 @@ impl SecretsFile {
         Ok(())
     }
 }
+/// `%LOCALAPPDATA%\Watch Overwatch`, or `WATCH_DATA_DIR` when set (a throwaway
+/// directory for scripted runs such as the documentation screenshots).
 pub fn data_dir() -> PathBuf {
+    if let Some(dir) = std::env::var_os("WATCH_DATA_DIR").filter(|d| !d.is_empty()) {
+        return PathBuf::from(dir);
+    }
     local_app_data_dir()
         .or_else(|| std::env::var_os("LOCALAPPDATA").map(PathBuf::from))
         .or_else(|| {

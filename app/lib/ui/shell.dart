@@ -421,7 +421,9 @@ class _WorkArea extends StatelessWidget {
     final ws = app.current;
     return Column(
       children: [
-        if (app.noAccount)
+        if (app.viewingSample)
+          const SizedBox.shrink()
+        else if (app.noAccount)
           Padding(
             padding: const EdgeInsets.fromLTRB(
               Sp.betweenGroups,

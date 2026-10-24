@@ -295,13 +295,8 @@ class UiState {
   /// Look for a new version when the app starts.
   bool autoCheckUpdates = true;
 
-  static File _file() {
-    final base =
-        Platform.environment['LOCALAPPDATA'] ?? Directory.systemTemp.path;
-    return File(
-      '$base${Platform.pathSeparator}Watch Overwatch${Platform.pathSeparator}ui-state.json',
-    );
-  }
+  static File _file() =>
+      File('${appDataDir()}${Platform.pathSeparator}ui-state.json');
 
   static UiState load() {
     final s = UiState();
@@ -486,3 +481,14 @@ int levelTier(int level) => level < 25
     : level < 100
     ? 4
     : 5;
+
+/// The app's own data folder, the same one the service uses (`watch_core::data_dir`):
+/// `%LOCALAPPDATA%\Watch Overwatch`, or `WATCH_DATA_DIR` when set (scripted runs such
+/// as the documentation screenshots).
+String appDataDir() {
+  final own = Platform.environment['WATCH_DATA_DIR'];
+  if (own != null && own.isNotEmpty) return own;
+  final base =
+      Platform.environment['LOCALAPPDATA'] ?? Directory.systemTemp.path;
+  return '$base${Platform.pathSeparator}Watch Overwatch';
+}

@@ -750,12 +750,12 @@ pub(crate) async fn progress(
     }
 }
 
-/// What the strength cache holds.
+/// What the local store holds (match lists, details with their rank snapshots).
 pub(crate) async fn cache_stats(State(s): State<AppState>) -> Response {
     Json(json!({"store": s.store.as_ref().map(|c| c.stats())})).into_response()
 }
 
-/// Empties the strength cache (the next analysis fetches everything again).
+/// Empties the local store (the next read fetches everything again).
 pub(crate) async fn cache_clear(State(s): State<AppState>) -> Response {
     if let Some(c) = &s.store {
         c.clear();
@@ -1423,7 +1423,7 @@ pub(crate) async fn player_benchmark(
     .await;
     match result {
         Ok(v) => Json(v).into_response(),
-        Err(_) => fail(error("internal", "同侪基准计算失败。 ")).into_response(),
+        Err(_) => fail(error("internal", "同分段基准计算失败。")).into_response(),
     }
 }
 

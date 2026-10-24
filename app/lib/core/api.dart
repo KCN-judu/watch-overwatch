@@ -506,7 +506,13 @@ class Api {
 
 /// Finds, starts and supervises the local `watchd` process.
 class Backend {
-  Backend({this.port = 18280});
+  /// Port 18280, or `WATCHD_PORT` when set (a second copy running beside the first,
+  /// such as the documentation screenshots).
+  Backend({int? port})
+    : port =
+          port ??
+          int.tryParse(Platform.environment['WATCHD_PORT'] ?? '') ??
+          18280;
   final int port;
   late final Api api = Api(port);
   Process? _process;
@@ -533,6 +539,11 @@ class Backend {
   }
 
   String? locate() {
+    // A path given in `WATCHD_PATH` wins over any build found nearby.
+    final given = Platform.environment['WATCHD_PATH'];
+    if (given != null && given.isNotEmpty && File(given).existsSync()) {
+      return given;
+    }
     final found = candidates().where((p) => File(p).existsSync()).toList();
     if (found.isEmpty) return null;
     // Prefer the most recently built binary; stale builds lack newer endpoints.

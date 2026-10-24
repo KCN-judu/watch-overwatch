@@ -9,7 +9,7 @@
 //!
 //! The values carry only states. Everything about the lookup itself (which answers came,
 //! which requests failed, who cannot be looked up) is the state of one lookup run,
-//! [`Lookups`], threaded through it; across runs it is the rank cache and its times.
+//! [`Lookups`], threaded through it; across runs it is the background job's own state.
 use std::collections::HashMap;
 
 use crate::ir::{MatchDetail, Participant, PlayerRating, RankState, Role, RoleRanks, RoleRating};

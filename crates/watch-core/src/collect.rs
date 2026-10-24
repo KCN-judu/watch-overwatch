@@ -1139,7 +1139,7 @@ pub async fn search_player<F: Fetcher>(f: &F, name: &str) -> Result<(String, Val
         .ok_or_else(|| {
             failure(
                 "business",
-                "未找到玩家，或上游没有返回玩家授权。请使用完整 BattleTag。",
+                "未找到玩家，或大神没有返回玩家授权。请使用完整的战网昵称（名字#数字）。",
             )
         })?;
     Ok((token, identity))
