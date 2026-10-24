@@ -7,6 +7,7 @@ import 'package:flutter/painting.dart';
 import 'package:http/http.dart' as http;
 
 import '../l10n/strings.dart';
+import 'support.dart';
 
 /// How many images are still loading, for the progress bar.
 class ImageLoadStats {
@@ -31,10 +32,8 @@ class ImageStore {
   final http.Client _client = http.Client();
 
   Directory get _cacheDir {
-    final base =
-        Platform.environment['LOCALAPPDATA'] ?? Directory.systemTemp.path;
     return _dir ??= Directory(
-      '$base${Platform.pathSeparator}Watch Overwatch${Platform.pathSeparator}img-cache',
+      '${appDataDir()}${Platform.pathSeparator}img-cache',
     )..createSync(recursive: true);
   }
 

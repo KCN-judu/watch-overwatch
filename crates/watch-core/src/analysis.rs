@@ -675,7 +675,7 @@ pub struct Overview {
     pub form: Vec<FormPoint>,
     /// Win rate over the last 10 decided matches at each of the newest 30, oldest first.
     pub rolling_win_pct: Vec<Option<f64>>,
-    /// Findings firm enough to say; never more than four.
+    /// Findings firm enough to say; never more than `MAX_FINDINGS`.
     pub insights: Vec<Insight>,
 }
 

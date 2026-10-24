@@ -387,7 +387,7 @@ impl WatchClient {
                     } else if !status.is_success() {
                         return Err(failure(
                             "upstream",
-                            "上游拒绝了请求，请检查玩家和筛选条件。",
+                            "大神拒绝了请求，请检查玩家和筛选条件。",
                         ));
                     } else {
                         let mut bytes = Vec::new();
@@ -397,12 +397,12 @@ impl WatchClient {
                             .map_err(|_| failure("network", "读取响应失败。"))?
                         {
                             if bytes.len() + chunk.len() > 8 * 1024 * 1024 {
-                                return Err(failure("response", "上游响应过大。"));
+                                return Err(failure("response", "大神的响应过大。"));
                             }
                             bytes.extend_from_slice(&chunk);
                         }
                         let value: Value = serde_json::from_slice(&bytes)
-                            .map_err(|_| failure("response", "上游返回了无法读取的数据。"))?;
+                            .map_err(|_| failure("response", "大神返回了无法读取的数据。"))?;
                         if value.get("success") == Some(&json!(false))
                             || value.get("ok") == Some(&json!(false))
                             || value.get("code").is_some_and(|c| c != &json!(0))

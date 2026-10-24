@@ -177,10 +177,9 @@ pub enum RankState {
     Ranked(Rank),
 }
 
-/// A player's competitive ranks in the three roles (this season's, else the one before),
-/// as looked up for a match: the snapshot kept with it (`crate::snapshot`). Only the
-/// states: when and how they were looked up is the lookup's own state
-/// (`crate::snapshot::Lookups`, and the time each answer was cached).
+/// A player's competitive ranks in the three roles this season, as looked up for a
+/// match: the snapshot kept with it (`crate::snapshot`). Only the states: when and how
+/// they were looked up is the lookup's own state (`crate::snapshot::Lookups`).
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct RoleRanks {
     #[serde(default)]

@@ -139,7 +139,7 @@ class LineChart extends StatefulWidget {
   /// Exact numbers shown in the readout beside the value (e.g. the rating behind a rank).
   final String Function(double)? detailFormat;
 
-  /// How the player count is worded in the readout (e.g. `已评定 3 人`).
+  /// How the player count is worded in the readout (e.g. `已定级 3 人`).
   final String Function(int)? countFormat;
 
   /// Force tick spacing (e.g. 100 = one rank division); otherwise round numbers.

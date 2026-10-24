@@ -34,7 +34,7 @@ class ShellStrings {
   String get welcomeBodyPlain => '三步查看战绩。';
   String get stepAccount => '添加大神账号';
   String get stepAccountBody =>
-      '在设置里粘贴大神 App 的 role_id 和 token（获取方法见使用指引的“凭据”一节），点“测试连接”确认可用。凭据只保存在本机。';
+      '设置里点“复制获取脚本”，在 ds.163.com 的控制台运行，得到 role_id 和 token 后填进设置保存。凭据只保存在本机。';
   String get stepAccountDone => '已添加账号';
   String get stepFind => '输入战网昵称';
   String get stepFindBody => '在左上角的搜索框输入完整的战网昵称，例如 Player#12345。';

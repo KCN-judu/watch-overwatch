@@ -10,7 +10,7 @@
 ///  - Words follow the glossary in docs/ui-design.md §2 (段位 / 段位分, 已定级 / 未定级,
 ///    对局 / 场, 读取 / 加载 / 查询, 刷新 / 重新分析 / 重新查询段位 / 重试, 搜索 / 筛选,
 ///    移除 / 清除, 己方 / 对方, 第 N 赛季, 该玩家 …).
-///  - The voice is a game stats tool's (docs/ui-design.md §8 措辞): labels in players'
+///  - The voice is a game stats tool's (docs/ui-design.md §11 措辞): labels in players'
 ///    words (强势图 / 苦手图, 绝活, 连胜中, 零阵亡, 同分段, 段位同步, 高光时刻); facts and
 ///    figures, never advice, comfort or judgement of a player; a tip is one or two short
 ///    clauses, the rule first; one fact per clause, joined with ，(tr.common.sep), never an

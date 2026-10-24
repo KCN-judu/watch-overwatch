@@ -840,6 +840,10 @@ class AppState extends ChangeNotifier {
   bool get demoAvailable => demoBuild && server?['demo'] != false;
   bool get anyAccountReady => accounts.any((a) => a['status'] == 'ready');
 
+  /// The sample player is on screen: it needs no account, so no account warning shows.
+  bool get viewingSample =>
+      current?.name.toLowerCase() == tr.shell.sampleName.toLowerCase();
+
   // ---- Boot -------------------------------------------------------------------
 
   Future<void> boot() async {

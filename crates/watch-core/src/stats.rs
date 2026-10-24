@@ -39,11 +39,11 @@ pub fn wilson_pct(wins: usize, n: usize) -> Option<(f64, f64)> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Confidence {
-    /// p < 0.05: “较可信”.
+    /// p < 0.05: “显著”.
     Firm,
-    /// p < 0.10: “有迹象”.
+    /// p < 0.10: “弱趋势”.
     Hint,
-    /// Not distinguishable from chance: “看不出变化”.
+    /// Not distinguishable from chance: “无变化”.
     None,
     /// Fewer matches than the test needs: “样本不足”.
     TooFew,
