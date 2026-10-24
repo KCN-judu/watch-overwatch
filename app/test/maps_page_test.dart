@@ -131,7 +131,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('攻击/护送'), findsWidgets);
     expect(find.text('占领要点'), findsWidgets);
-    expect(find.text('10 场 · 胜率 80%'), findsOneWidget);
+    expect(find.text('10 场，胜率 80%'), findsOneWidget);
     expect(find.text('12:34'), findsOneWidget); // mean length
     expect(find.text('有详情的 4 场'), findsOneWidget);
     expect(find.text('本图英雄'), findsOneWidget);

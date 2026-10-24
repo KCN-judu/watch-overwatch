@@ -264,7 +264,7 @@ class _Summary extends StatelessWidget {
             art: app.catalog.heroBanner(top),
             tint: heroTint(context, top),
             eyebrow: Text(
-              [?span, tr.daily.sittings(s.sittings)].join(' · '),
+              [?span, tr.daily.sittings(s.sittings)].join(tr.common.sep),
               style: Ty.meta.copyWith(color: c.textSecondary),
             ),
             figures: [
@@ -448,7 +448,7 @@ class _Summary extends StatelessWidget {
                         rows[id]!.outcome.label,
                         fmtDateTime(rows[id]!.startedAtMs),
                         rows[id]!.map?.label ?? tr.common.unknownMap,
-                      ].join(' · '),
+                      ].join(tr.common.sep),
                       padding: EdgeInsets.symmetric(
                         horizontal: Sp.withinGroup,
                         vertical: context.density.padV,
@@ -689,7 +689,7 @@ class _HighlightCard extends StatelessWidget {
     if (onOpen == null) return card;
     return Pressable(
       onTap: onOpen,
-      semanticLabel: [title, value, ?where].join(' · '),
+      semanticLabel: [title, value, ?where].join(tr.common.sep),
       radius: 0,
       child: card,
     );

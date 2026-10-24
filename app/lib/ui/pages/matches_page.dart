@@ -297,7 +297,7 @@ class _MatchCard extends StatelessWidget {
                           fmtDateTime(m.startedAtMs),
                           if (mapMode != null && mapMode.isNotEmpty) mapMode,
                           if ((party ?? 1) > 1) tr.people.partyTag(party!),
-                        ].join('  ·  '),
+                        ].join(tr.common.sep),
                         style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

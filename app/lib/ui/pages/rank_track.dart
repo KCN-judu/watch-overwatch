@@ -161,7 +161,7 @@ class _RankTrackSectionState extends State<RankTrackSection> {
                 [
                   p.outcome.label,
                   if (p.season != null) tr.common.season(p.season!),
-                ].join(' · '),
+                ].join(tr.common.sep),
             ],
             hollow: [for (final p in t.points) p.outcome == Outcome.loss],
             hollowMeaning: tr.analysis.hollowMeaning,

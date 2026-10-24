@@ -21,7 +21,7 @@ class CompareStrings {
   String get matches => '场次';
   String get kda => 'KDA';
   String get playTime => '游戏时间';
-  String rateNote(int n, String low, String high) => '$n 场 · $low–$high';
+  String rateNote(int n, String low, String high) => '$n 场，$low–$high';
   String get onlyOne => '—';
 
   // Two stretches of time (growth page).
@@ -43,7 +43,7 @@ class CompareStrings {
   String get playersTip => '与本次打开过的其他玩家对比：同模式、同口径（本机已读取的对局），场次不同会标出。';
   String get playersNone => '再查找一名玩家即可对比。';
   String get playersPick => '选一名玩家';
-  String samples(String a, int n, String b, int m) => '$a $n 场 · $b $m 场';
+  String samples(String a, int n, String b, int m) => '$a $n 场，$b $m 场';
   String get samplesDiffer => '双方场次差距较大，场次少的一方波动更大。';
   String get rowRecentRate => '近 20 场胜率';
   String get rowOverallRate => '总胜率';

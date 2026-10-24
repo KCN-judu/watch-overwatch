@@ -8,8 +8,8 @@ class CommonStrings {
   /// Joins items of a list inside a sentence: 胜、负.
   String list(Iterable<String> items) => items.join('、');
 
-  /// Separates facts on one line: 10-21 16:33 · 运载目标.
-  String get dot => ' · ';
+  /// Separates facts on one line: 10-21 16:33，运载目标. No infix dots.
+  String get sep => '，';
 
   String get retry => '重试';
   String get cancel => '取消';
