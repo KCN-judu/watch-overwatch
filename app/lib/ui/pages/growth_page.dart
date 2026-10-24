@@ -181,7 +181,7 @@ class _GrowthPageState extends State<GrowthPage> {
     }
     if (!data.enabled || data.points.isEmpty) {
       return EmptyState(
-        icon: Icons.trending_up,
+        icon: Icons.trending_up_sharp,
         title: tr.analysis.noGrowthMatches(mode.label),
         body: data.listed == 0
             ? tr.analysis.readMatchListFirst
@@ -232,7 +232,7 @@ class _GrowthPageState extends State<GrowthPage> {
               ),
             AppButton(
               tr.compare.compareTime,
-              icon: Icons.compare_arrows,
+              icon: Icons.compare_arrows_sharp,
               quiet: !_compare,
               primary: _compare,
               tooltip: tr.compare.compareTimeTip,
@@ -311,16 +311,24 @@ class _TrendCard extends StatelessWidget {
     final c = context.c;
     final g = this.g;
     final (text, icon, color) = switch (g?.trend) {
-      null => (tr.analysis.trendTooFew(m.card), Icons.remove, c.textSecondary),
-      Trend.up => (tr.analysis.trendUp(m.card), Icons.trending_up, c.positive),
+      null => (
+        tr.analysis.trendTooFew(m.card),
+        Icons.remove_sharp,
+        c.textSecondary,
+      ),
+      Trend.up => (
+        tr.analysis.trendUp(m.card),
+        Icons.trending_up_sharp,
+        c.positive,
+      ),
       Trend.down => (
         tr.analysis.trendDown(m.card),
-        Icons.trending_down,
+        Icons.trending_down_sharp,
         c.negative,
       ),
       Trend.flat => (
         tr.analysis.trendFlat(m.card),
-        Icons.trending_flat,
+        Icons.trending_flat_sharp,
         c.textSecondary,
       ),
     };

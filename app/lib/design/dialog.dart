@@ -48,7 +48,7 @@ class AppDialog extends StatelessWidget {
                 children: [
                   Expanded(child: Text(title, style: Ty.section)),
                   IconAction(
-                    icon: Icons.close,
+                    icon: Icons.close_sharp,
                     label: tr.common.close,
                     onPressed: close,
                   ),

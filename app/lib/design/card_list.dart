@@ -7,6 +7,7 @@ import '../l10n/strings.dart';
 import 'interaction.dart';
 import 'motion.dart';
 import 'net_pic.dart';
+import 'shapes.dart';
 import 'tokens.dart';
 import 'widgets.dart' show AfterDelay;
 
@@ -25,10 +26,12 @@ class CardState {
   final bool ring;
 }
 
-/// A recognition row drawn over a picture (a map, a hero banner): the picture is
-/// dense behind the text on the left and fades out to the right, under a scrim that
-/// keeps the text readable. Selection, hover and focus are painted as everywhere
-/// else ([ItemState]). Shared by the match and hero lists so the two stay identical.
+/// A recognition row with a picture (a map, a hero banner): the row is a flat raised
+/// surface, and the picture is a strip toward the right with a leaning left edge
+/// ([SlantBorder]), clearest at that edge and gone by the right end, so it shows in
+/// the gap between the row's name and its figures and never sits under the text. Selection,
+/// hover and focus are painted as everywhere else ([ItemState]). Shared by the match
+/// and hero lists so the two stay identical.
 class ArtRow extends StatelessWidget {
   const ArtRow({
     super.key,
@@ -41,6 +44,9 @@ class ArtRow extends StatelessWidget {
   final CardState state;
   final String? art;
   final Alignment artAlignment;
+
+  /// How much of the row's width the picture strip takes, at the right.
+  static const stripShare = 0.5;
 
   /// Drawn over the picture and under the selection tint, given the row height.
   final List<Widget> Function(double side)? layers;
@@ -65,21 +71,28 @@ class ArtRow extends StatelessWidget {
           child: ClipRect(
             child: Stack(
               children: [
-                Positioned.fill(
-                  child: ShaderMask(
-                    blendMode: BlendMode.dstIn,
-                    shaderCallback: (rect) => const LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: AppColors.artFade,
-                      stops: [0, 0.55, 1],
-                    ).createShader(rect),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        ColoredBox(color: c.raised),
-                        if (art != null)
-                          ExcludeSemantics(
+                Positioned.fill(child: ColoredBox(color: c.raised)),
+                if (art != null)
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    right: 0,
+                    width: box.maxWidth * stripShare,
+                    child: ShapeClip(
+                      shape: const SlantBorder(edges: SlantEdges.leading),
+                      child: ShaderMask(
+                        blendMode: BlendMode.dstIn,
+                        // Clearest at the leaning edge, gone by the right end, where
+                        // the row's figures and portrait sit.
+                        shaderCallback: (rect) => const LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: AppColors.artFade,
+                          stops: [0, 0.35, 0.75],
+                        ).createShader(rect),
+                        child: Opacity(
+                          opacity: light ? 0.6 : 0.45,
+                          child: ExcludeSemantics(
                             child: NetPic(
                               art!,
                               fit: BoxFit.cover,
@@ -89,23 +102,10 @@ class ArtRow extends StatelessWidget {
                               ),
                             ),
                           ),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                for (final a in AppColors.artScrim(light))
-                                  c.raised.withValues(alpha: a),
-                              ],
-                              stops: const [0, 0.5, 1],
-                            ),
-                          ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
                 ...?layers?.call(side),
                 if (fill != null)
                   Positioned.fill(child: ColoredBox(color: fill)),

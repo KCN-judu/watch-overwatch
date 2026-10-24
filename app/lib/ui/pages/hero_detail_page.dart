@@ -67,7 +67,7 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
       children: [
         AppButton(
           tr.heroes.heroList,
-          icon: Icons.arrow_back,
+          icon: Icons.arrow_back_sharp,
           quiet: true,
           tooltip: tr.heroes.backShortcut,
           onPressed: ws.closeHero,
@@ -83,7 +83,7 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
         ),
         AppButton(
           tr.compare.compareHero,
-          icon: Icons.compare_arrows,
+          icon: Icons.compare_arrows_sharp,
           quiet: true,
           tooltip: tr.compare.compareHeroTip,
           onPressed: () => ws.compareHero(null),
@@ -95,13 +95,13 @@ class _HeroDetailPageState extends State<HeroDetailPage> {
             style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
           ),
         IconAction(
-          icon: Icons.chevron_left,
+          icon: Icons.chevron_left_sharp,
           label: tr.heroes.previousHero,
           shortcut: '[',
           onPressed: index > 0 ? () => ws.stepHero(-1) : null,
         ),
         IconAction(
-          icon: Icons.chevron_right,
+          icon: Icons.chevron_right_sharp,
           label: tr.heroes.nextHero,
           shortcut: ']',
           onPressed: index >= 0 && index < keys.length - 1
@@ -329,7 +329,7 @@ class _Poster extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.leaderboard_outlined,
+                                Icons.leaderboard_sharp,
                                 size: 18,
                                 color: accent,
                               ),

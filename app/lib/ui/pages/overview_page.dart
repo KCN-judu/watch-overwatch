@@ -50,7 +50,7 @@ class OverviewPage extends StatelessWidget {
     }
     if (result!.listed == 0) {
       return EmptyState(
-        icon: Icons.dashboard_outlined,
+        icon: Icons.dashboard_sharp,
         title: tr.overview.emptyTitle,
         body: tr.overview.emptyBody(mode.label),
         actions: [
@@ -195,7 +195,7 @@ class _Headline extends StatelessWidget {
       actions: [
         AppButton(
           tr.recap.open,
-          icon: Icons.auto_stories_outlined,
+          icon: Icons.auto_stories_sharp,
           tooltip: tr.recap.openTip,
           onPressed: () => showRecap(
             context,
@@ -379,13 +379,13 @@ class _Insights extends StatelessWidget {
   static IconData _icon(Insight i) => switch (i.kind) {
     InsightKind.streak =>
       i.positive
-          ? Icons.local_fire_department_outlined
-          : Icons.self_improvement,
-    InsightKind.streakStrength => Icons.balance,
-    InsightKind.map => Icons.map_outlined,
-    InsightKind.hero || InsightKind.heroMetric => Icons.person_outline,
-    InsightKind.fatigue => Icons.bedtime_outlined,
-    _ => i.positive ? Icons.trending_up : Icons.trending_down,
+          ? Icons.local_fire_department_sharp
+          : Icons.self_improvement_sharp,
+    InsightKind.streakStrength => Icons.balance_sharp,
+    InsightKind.map => Icons.map_sharp,
+    InsightKind.hero || InsightKind.heroMetric => Icons.person_outline_sharp,
+    InsightKind.fatigue => Icons.bedtime_sharp,
+    _ => i.positive ? Icons.trending_up_sharp : Icons.trending_down_sharp,
   };
 
   /// Opens the match list filtered to a finding's map or hero.
@@ -493,8 +493,8 @@ class _Insights extends StatelessWidget {
                             it.label,
                             quiet: true,
                             icon: it.kind == 'map'
-                                ? Icons.map_outlined
-                                : Icons.person_outline,
+                                ? Icons.map_sharp
+                                : Icons.person_outline_sharp,
                             onPressed: () => _drill(app, it.kind, it.key),
                           ),
                       ],
@@ -505,12 +505,12 @@ class _Insights extends StatelessWidget {
             ),
             if (drill != null)
               IconAction(
-                icon: Icons.filter_alt_outlined,
+                icon: Icons.filter_alt_sharp,
                 label: tr.overview.openMatches,
                 onPressed: () => _drill(app, drill.$1, drill.$2),
               ),
             IconAction(
-              icon: Icons.notifications_off_outlined,
+              icon: Icons.notifications_off_sharp,
               label: tr.overview.mute,
               onPressed: () => app.muteInsight(i.kind.id),
             ),

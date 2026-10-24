@@ -54,7 +54,7 @@ class _PeoplePageState extends State<PeoplePage> {
     }
     if (r.details == 0) {
       return EmptyState(
-        icon: Icons.people_outline,
+        icon: Icons.people_outline_sharp,
         title: tr.people.emptyTitle,
         body: tr.people.emptyBody(mode.label),
         actions: [

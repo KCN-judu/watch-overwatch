@@ -43,7 +43,7 @@ class RoleIcon extends StatelessWidget {
     final asset = playableAssets[role];
     final tint = color ?? c.textPrimary;
     final glyph = asset == null
-        ? Icon(Icons.remove, size: size, color: c.textSecondary)
+        ? Icon(Icons.remove_sharp, size: size, color: c.textSecondary)
         : _svg(asset, size, tint);
     final label = role.label.isEmpty ? tr.shell.unknownRole : role.label;
     final body = showLabel
@@ -97,11 +97,7 @@ class MapThumb extends StatelessWidget {
         color: c.header,
         borderRadius: BorderRadius.circular(radius),
       ),
-      child: Icon(
-        Icons.map_outlined,
-        size: height * 0.6,
-        color: c.textSecondary,
-      ),
+      child: Icon(Icons.map_sharp, size: height * 0.6, color: c.textSecondary),
     );
     if (url == null) return ExcludeSemantics(child: placeholder);
     return ExcludeSemantics(
@@ -399,7 +395,7 @@ class _InfoTipState extends State<InfoTip> {
                   border: c.itemOutline(focused: ring),
                 ),
                 child: Icon(
-                  Icons.info_outline,
+                  Icons.info_outline_sharp,
                   size: 14,
                   color: c.textSecondary,
                 ),
@@ -415,9 +411,9 @@ class _InfoTipState extends State<InfoTip> {
 extension ModeIcon on Mode {
   /// Backs up the mode's name; the name is always shown or in the tooltip.
   IconData get icon => switch (this) {
-    Mode.competitive => Icons.emoji_events_outlined,
-    Mode.quick => Icons.bolt,
-    Mode.stadium => Icons.stadium_outlined,
+    Mode.competitive => Icons.emoji_events_sharp,
+    Mode.quick => Icons.bolt_sharp,
+    Mode.stadium => Icons.stadium_sharp,
   };
 }
 

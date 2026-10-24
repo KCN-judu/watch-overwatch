@@ -272,7 +272,7 @@ class PlayerDetailPage extends StatelessWidget {
                         player.partyBnetIds.length,
                         peopleText(player.partyBnetIds, ''),
                       ),
-                glyph: Icons.groups_outlined,
+                glyph: Icons.groups_sharp,
                 accent: heroColor,
               ),
               InfoCard(
@@ -283,7 +283,7 @@ class PlayerDetailPage extends StatelessWidget {
                         player.endorsedBy.length,
                         peopleText(player.endorsedBy, ''),
                       ),
-                glyph: Icons.thumb_up_outlined,
+                glyph: Icons.thumb_up_sharp,
                 accent: heroColor,
               ),
             ]),

@@ -84,7 +84,7 @@ class TeamTable extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.only(right: Sp.withinControl),
                 child: Icon(
-                  Icons.info_outline,
+                  Icons.info_outline_sharp,
                   size: 13,
                   color: c.textSecondary,
                 ),
@@ -241,7 +241,7 @@ class TeamTable extends StatelessWidget {
                           Tooltip(
                             message: tr.matches.suspendedTip,
                             child: Icon(
-                              Icons.warning_amber_rounded,
+                              Icons.warning_amber_sharp,
                               size: 14,
                               color: c.warning,
                             ),

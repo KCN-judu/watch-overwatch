@@ -49,7 +49,7 @@ class _TrendPageState extends State<TrendPage> {
     }
     if (points.isEmpty) {
       return EmptyState(
-        icon: Icons.timeline,
+        icon: Icons.timeline_sharp,
         title: tr.analysis.noPastSeasons(mode.label),
         body: tr.analysis.noPastSeasonsBody(mode.label),
         actions: [

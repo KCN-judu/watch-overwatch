@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 
+import 'shapes.dart';
 import 'tokens.dart';
 
 /// Whether the last input was the keyboard, so focus rings appear for keyboard users
@@ -76,6 +77,7 @@ class Pressable extends StatefulWidget {
     this.padding,
     this.height,
     this.outlineAtRest = false,
+    this.slanted = false,
     this.tooltip,
   });
 
@@ -97,6 +99,10 @@ class Pressable extends StatefulWidget {
 
   /// Draws the plain border while unselected (chips that sit on the page, not in a list).
   final bool outlineAtRest;
+
+  /// Drawn as a [SlantBorder] (chips on the page, picked like segments) instead of a
+  /// rectangle.
+  final bool slanted;
   final String? tooltip;
 
   @override
@@ -117,16 +123,28 @@ class _PressableState extends State<Pressable> {
     final outline =
         c.itemOutline(selected: selected, focused: focused) ??
         (widget.outlineAtRest ? Border.all(color: c.border) : null);
+    final fill = _enabled
+        ? c.itemFill(selected: selected, hovered: _hovered)
+        : null;
     Widget body = Container(
       height: widget.height,
-      padding: widget.padding,
-      decoration: BoxDecoration(
-        color: _enabled
-            ? c.itemFill(selected: selected, hovered: _hovered)
-            : null,
-        borderRadius: BorderRadius.circular(widget.radius),
-        border: outline,
-      ),
+      padding: widget.slanted
+          ? (widget.padding ?? EdgeInsets.zero).add(
+              EdgeInsets.symmetric(
+                horizontal: (widget.height ?? 0) * slant / 2,
+              ),
+            )
+          : widget.padding,
+      decoration: widget.slanted
+          ? ShapeDecoration(
+              color: fill,
+              shape: SlantBorder(side: outline?.top ?? BorderSide.none),
+            )
+          : BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(widget.radius),
+              border: outline,
+            ),
       child: DefaultTextStyle.merge(
         style: TextStyle(color: _enabled ? null : c.textSecondary),
         child: widget.child,

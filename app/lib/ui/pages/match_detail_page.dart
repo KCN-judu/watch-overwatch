@@ -65,7 +65,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       children: [
         AppButton(
           tr.matches.matchList,
-          icon: Icons.arrow_back,
+          icon: Icons.arrow_back_sharp,
           quiet: true,
           tooltip: onPlayerPage ? null : tr.matches.backShortcut,
           onPressed: ws.closeMatch,
@@ -112,7 +112,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
             style: Ty.num(Ty.meta).copyWith(color: c.textSecondary),
           ),
         IconAction(
-          icon: Icons.chevron_left,
+          icon: Icons.chevron_left_sharp,
           label: onPlayerPage
               ? tr.matches.previousPlayer
               : tr.matches.previousMatch,
@@ -122,7 +122,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
               : (index > 0 ? () => ws.stepMatch(-1) : null),
         ),
         IconAction(
-          icon: Icons.chevron_right,
+          icon: Icons.chevron_right_sharp,
           label: onPlayerPage ? tr.matches.nextPlayer : tr.matches.nextMatch,
           shortcut: ']',
           onPressed: onPlayerPage

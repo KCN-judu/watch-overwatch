@@ -41,7 +41,7 @@ class HeroComparePage extends StatelessWidget {
       children: [
         AppButton(
           a.hero.label,
-          icon: Icons.arrow_back,
+          icon: Icons.arrow_back_sharp,
           quiet: true,
           onPressed: workspace.closeHeroCompare,
         ),

@@ -4,10 +4,11 @@ import '../core/metric_doc.dart';
 import '../l10n/strings.dart';
 import 'icons.dart';
 import 'net_pic.dart';
+import 'shapes.dart';
 import 'tokens.dart';
 import 'widgets.dart' show FigureText, ProgressLine;
 
-/// The one section heading: a short bar, the title, an optional info tip and an
+/// The one section heading: the leaning section mark, the title, an optional info tip and an
 /// optional control at the right end. The bar is the accent colour unless the section
 /// belongs to something with its own colour (a hero, a stat). Put
 /// [SectionHeader.below] between it and the section body.
@@ -35,7 +36,7 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(width: 4, height: 20, color: accent ?? context.c.accent),
+        SectionMark(color: accent ?? context.c.accent),
         const SizedBox(width: Sp.withinGroup),
         Flexible(
           child: Semantics(header: true, child: Text(text, style: Ty.section)),
@@ -48,7 +49,8 @@ class SectionHeader extends StatelessWidget {
 }
 
 /// The one bordered container for a block of content: the raised surface, a 1px
-/// border, square corners (as cards have). Padding comes in three sizes.
+/// border, the top-right corner cut ([CutBorder], as cards have). Padding comes in
+/// three sizes.
 class Panel extends StatelessWidget {
   const Panel({
     super.key,
@@ -66,9 +68,9 @@ class Panel extends StatelessWidget {
     return Container(
       width: width,
       padding: padding.insets,
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: c.raised,
-        border: Border.all(color: c.border),
+        shape: CutBorder(side: BorderSide(color: c.border)),
       ),
       child: child,
     );
@@ -134,7 +136,7 @@ class _FoldSectionState extends State<FoldSection> {
               child: Row(
                 children: [
                   Icon(
-                    _open ? Icons.expand_more : Icons.chevron_right,
+                    _open ? Icons.expand_more_sharp : Icons.chevron_right_sharp,
                     size: 20,
                     color: c.textSecondary,
                   ),
@@ -204,8 +206,8 @@ class CardGrid extends StatelessWidget {
   }
 }
 
-/// The surface every card sits on: a raised, bordered rectangle with an accent bar down
-/// the left edge. Square corners everywhere, so cards on different pages look the same.
+/// The surface every card sits on: a raised, bordered rectangle with its top-right
+/// corner cut and an accent bar down the left edge, the same on every page.
 class CardSurface extends StatelessWidget {
   const CardSurface({super.key, required this.accent, required this.child});
   final Color accent;
@@ -214,20 +216,23 @@ class CardSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final shape = CutBorder(side: BorderSide(color: c.border));
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: c.raised,
-        border: Border.all(color: c.border),
-      ),
-      child: ClipRect(
+      position: DecorationPosition.foreground,
+      decoration: ShapeDecoration(shape: shape),
+      child: ShapeClip(
+        shape: shape,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(width: accentBar, color: accent),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(Sp.betweenGroups),
-                child: child,
+              child: ColoredBox(
+                color: c.raised,
+                child: Padding(
+                  padding: const EdgeInsets.all(Sp.betweenGroups),
+                  child: child,
+                ),
               ),
             ),
           ],

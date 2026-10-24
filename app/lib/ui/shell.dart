@@ -358,7 +358,7 @@ class _MenuBarRow extends StatelessWidget {
             child: AppButton(
               tr.shell.commandPalette,
               quiet: true,
-              icon: Icons.search,
+              icon: Icons.search_sharp,
               onPressed: shell.openPalette,
               tooltip: 'Ctrl+K',
             ),
@@ -401,7 +401,7 @@ class _WorkArea extends StatelessWidget {
       return EmptyState(
         title: tr.shell.backendStartingTitle,
         body: tr.shell.backendStartingBody,
-        icon: Icons.hourglass_empty,
+        icon: Icons.hourglass_empty_sharp,
       );
     }
     if (app.status == BackendStatus.offline) {
@@ -485,21 +485,21 @@ class FirstRun extends StatelessWidget {
     final c = context.c;
     if (app.players.isNotEmpty) {
       return EmptyState(
-        icon: Icons.person_search_outlined,
+        icon: Icons.person_search_sharp,
         title: tr.shell.choosePlayer,
         body: tr.shell.choosePlayerBody,
         actions: [
           AppButton(
             tr.shell.findPlayer,
             primary: true,
-            icon: Icons.search,
+            icon: Icons.search_sharp,
             onPressed: scope.actions.focusSearch,
             tooltip: 'Ctrl+L',
           ),
           if (app.demoAvailable)
             AppButton(
               tr.shell.openSample,
-              icon: Icons.science_outlined,
+              icon: Icons.science_sharp,
               tooltip: tr.shell.trySampleBody,
               onPressed: app.searching
                   ? null
@@ -528,7 +528,7 @@ class FirstRun extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: done
-                ? Icon(Icons.check, size: 16, color: c.onAccent)
+                ? Icon(Icons.check_sharp, size: 16, color: c.onAccent)
                 : Text('$n', style: Ty.bodyStrong.copyWith(color: c.onAccent)),
           ),
           const SizedBox(width: Sp.betweenGroups),
@@ -589,7 +589,7 @@ class FirstRun extends StatelessWidget {
                 AppButton(
                   tr.shell.findPlayer,
                   primary: hasAccount,
-                  icon: Icons.search,
+                  icon: Icons.search_sharp,
                   onPressed: scope.actions.focusSearch,
                   tooltip: 'Ctrl+L',
                 ),
@@ -616,7 +616,7 @@ class FirstRun extends StatelessWidget {
                       const SizedBox(height: Sp.withinGroup),
                       AppButton(
                         tr.shell.openSample,
-                        icon: Icons.science_outlined,
+                        icon: Icons.science_sharp,
                         onPressed: app.searching
                             ? null
                             : () => app.openPlayer(tr.shell.sampleName),
@@ -643,15 +643,15 @@ class _StatusBar extends StatelessWidget {
     final c = context.c;
     final (icon, text) = switch (app.status) {
       BackendStatus.ready => (
-        Icons.check_circle_outline,
+        Icons.check_circle_outline_sharp,
         tr.shell.backendConnected,
       ),
       BackendStatus.starting => (
-        Icons.hourglass_empty,
+        Icons.hourglass_empty_sharp,
         tr.shell.backendStarting,
       ),
       BackendStatus.offline => (
-        Icons.error_outline,
+        Icons.error_outline_sharp,
         tr.shell.backendDisconnected,
       ),
     };
@@ -695,7 +695,11 @@ class _StatusBar extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.system_update_alt, size: 13, color: c.accent),
+                  Icon(
+                    Icons.system_update_alt_sharp,
+                    size: 13,
+                    color: c.accent,
+                  ),
                   const SizedBox(width: Sp.withinControl),
                   Text(
                     tr.update.newVersion(u.latest!.version),

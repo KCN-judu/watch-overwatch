@@ -166,7 +166,7 @@ class _MatchListState extends State<_MatchList> {
   ) {
     if (noData) {
       return EmptyState(
-        icon: Icons.sports_esports_outlined,
+        icon: Icons.sports_esports_sharp,
         title: tr.matches.noRecord(ws.name, mode.label),
         body: tr.matches.noRecordBody,
         actions: [
@@ -190,7 +190,7 @@ class _MatchListState extends State<_MatchList> {
         tr.matches.filterSearchQuoted(filters.query.trim()),
     ];
     return EmptyState(
-      icon: Icons.filter_alt_off_outlined,
+      icon: Icons.filter_alt_off_sharp,
       title: tr.matches.noMatchingMatches,
       body: tr.matches.noMatchingBody(
         ws.matchesFor(mode).value?.matches.length ?? 0,
@@ -388,11 +388,11 @@ class _FilterBar extends StatelessWidget {
               onChanged: (v) => change(() => f.query = v),
               decoration: InputDecoration(
                 hintText: tr.matches.searchHint,
-                prefixIcon: const Icon(Icons.search, size: 18),
+                prefixIcon: const Icon(Icons.search_sharp, size: 18),
                 suffixIcon: f.query.isEmpty
                     ? null
                     : IconAction(
-                        icon: Icons.close,
+                        icon: Icons.close_sharp,
                         label: tr.matches.clearSearch,
                         onPressed: () {
                           queryController.clear();
@@ -427,14 +427,14 @@ class _FilterBar extends StatelessWidget {
           ),
         _FacetMenu(
           title: tr.matches.filterHero,
-          icon: Icons.person_outline,
+          icon: Icons.person_outline_sharp,
           value: f.heroGuid == null ? null : heroes[f.heroGuid],
           options: options(heroes, heroCounts),
           onSelect: (id) => change(() => f.heroGuid = id),
         ),
         _FacetMenu(
           title: tr.matches.filterMap,
-          icon: Icons.map_outlined,
+          icon: Icons.map_sharp,
           value: f.mapGuid == null ? null : maps[f.mapGuid],
           options: options(maps, mapCounts),
           onSelect: (id) => change(() => f.mapGuid = id),
@@ -473,6 +473,7 @@ class _ToggleChip extends StatelessWidget {
       selected: selected,
       toggle: true,
       outlineAtRest: true,
+      slanted: true,
       semanticLabel: tr.matches.chipLabel(name, count),
       tooltip: tip ?? name,
       height: Ctl.regular,
@@ -556,7 +557,7 @@ class _FacetMenu extends StatelessWidget {
             Icon(icon, size: 16),
             const SizedBox(width: Sp.iconGap),
             Text(value ?? title),
-            const Icon(Icons.arrow_drop_down, size: 18),
+            const Icon(Icons.arrow_drop_down_sharp, size: 18),
           ],
         ),
       ),
@@ -628,11 +629,11 @@ class _ScopeLine extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              record(Icons.check_rounded, c.win, a.wins, Outcome.win.label),
+              record(Icons.check_sharp, c.win, a.wins, Outcome.win.label),
               const SizedBox(width: Sp.withinGroup),
-              record(Icons.close_rounded, c.loss, a.losses, Outcome.loss.label),
+              record(Icons.close_sharp, c.loss, a.losses, Outcome.loss.label),
               const SizedBox(width: Sp.withinGroup),
-              record(Icons.remove_rounded, c.draw, a.draws, Outcome.draw.label),
+              record(Icons.remove_sharp, c.draw, a.draws, Outcome.draw.label),
             ],
           ),
           Tooltip(
@@ -679,7 +680,7 @@ class _ScopeLine extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.done_all, size: 15, color: c.textSecondary),
+                  Icon(Icons.done_all_sharp, size: 15, color: c.textSecondary),
                   const SizedBox(width: Sp.withinControl),
                   Text(
                     coverage!.newMatches > 0
@@ -712,7 +713,7 @@ class _ScopeLine extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.warning_amber_rounded,
+                        Icons.warning_amber_sharp,
                         size: 15,
                         color: c.warning,
                       ),
@@ -728,7 +729,7 @@ class _ScopeLine extends StatelessWidget {
                 AppButton(
                   tr.matches.continueReading,
                   quiet: true,
-                  icon: Icons.add,
+                  icon: Icons.add_sharp,
                   onPressed: () => ws.loadMatches(mode),
                   tooltip: tr.matches.continueReadingTip,
                 ),
@@ -756,7 +757,9 @@ class _ScopeLine extends StatelessWidget {
           onRetry: () => ws.loadMatches(mode, fresh: true),
         ),
         IconAction(
-          icon: ws.sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+          icon: ws.sortAscending
+              ? Icons.arrow_upward_sharp
+              : Icons.arrow_downward_sharp,
           label: ws.sortAscending
               ? tr.matches.sortOldestFirst
               : tr.matches.sortNewestFirst,

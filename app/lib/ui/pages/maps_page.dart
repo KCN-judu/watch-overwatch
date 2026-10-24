@@ -53,7 +53,7 @@ class _MapsPageState extends State<MapsPage> {
     }
     if (result.listed == 0 || result.modes.isEmpty) {
       return EmptyState(
-        icon: Icons.map_outlined,
+        icon: Icons.map_sharp,
         title: tr.maps.emptyTitle,
         body: tr.maps.emptyBody(mode.label),
         actions: [
@@ -334,7 +334,7 @@ class _Detail extends StatelessWidget {
                     const SizedBox(height: Sp.betweenGroups),
                     AppButton(
                       tr.maps.openMatches,
-                      icon: Icons.filter_alt_outlined,
+                      icon: Icons.filter_alt_sharp,
                       onPressed: () => _open(app),
                     ),
                   ],

@@ -10,9 +10,11 @@ import 'interaction.dart';
 import 'motion.dart';
 import 'tokens.dart';
 import 'net_pic.dart';
+import 'shapes.dart';
 
 export 'interaction.dart';
 export 'motion.dart';
+export 'shapes.dart';
 
 // ---- Buttons ---------------------------------------------------------------
 
@@ -29,7 +31,7 @@ ButtonStyle buttonStyle(
   return ButtonStyle(
     minimumSize: const WidgetStatePropertyAll(Size(0, Ctl.regular)),
     padding: const WidgetStatePropertyAll(
-      EdgeInsets.symmetric(horizontal: Sp.betweenItems),
+      EdgeInsets.symmetric(horizontal: Sp.betweenGroups),
     ),
     // The button's own style replaces the inherited one: name the app's font, or button
     // labels fall back to the platform's default face.
@@ -39,11 +41,8 @@ ButtonStyle buttonStyle(
         fontFamilyFallback: Ty.fallback,
       ),
     ),
-    shape: WidgetStatePropertyAll(
-      RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(Radii.control),
-      ),
-    ),
+    // Buttons lean, like everything that is picked or pressed (shapes.dart).
+    shape: const WidgetStatePropertyAll(SlantBorder()),
     elevation: const WidgetStatePropertyAll(0),
     backgroundColor: WidgetStateProperty.resolveWith((s) {
       if (s.contains(WidgetState.disabled)) {
@@ -259,13 +258,17 @@ class _SegmentedBarState<V> extends State<SegmentedBar<V>> {
           builder: (context, _) {
             final ring = _focus.hasFocus && keyboardModality;
             return Container(
-              padding: const EdgeInsets.all(Sp.hairline),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Sp.withinControl,
+                vertical: Sp.hairline,
+              ),
+              decoration: ShapeDecoration(
                 color: c.window,
-                borderRadius: BorderRadius.circular(Radii.control + 2),
-                border: Border.all(
-                  color: ring ? c.accent : c.border,
-                  width: ring ? 2 : 1,
+                shape: SlantBorder(
+                  side: BorderSide(
+                    color: ring ? c.accent : c.border,
+                    width: ring ? 2 : 1,
+                  ),
                 ),
               ),
               child: Row(
@@ -347,34 +350,35 @@ class _SegmentButtonState extends State<_SegmentButton> {
               minHeight: Ctl.small,
               minWidth: 40,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: Sp.betweenItems),
+            padding: const EdgeInsets.symmetric(horizontal: Sp.betweenGroups),
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: c.itemFill(
-                selected: selected,
-                hovered: _hovered && enabled,
-              ),
-              borderRadius: BorderRadius.circular(Radii.control),
+            // The picked segment is a solid accent plate (a change of lightness, not
+            // of hue alone, with heavier type); the others take the hover fill.
+            decoration: ShapeDecoration(
+              color: selected
+                  ? (_hovered && enabled
+                        ? Color.alphaBlend(c.hover, c.accent)
+                        : c.accent)
+                  : c.itemFill(hovered: _hovered && enabled),
+              shape: const SlantBorder(),
             ),
             child: Opacity(
               opacity: enabled ? 1 : 0.55,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Selected state is carried by weight and a check, not by colour alone.
-                  if (selected) ...[
-                    Icon(Icons.check, size: 13, color: c.accent),
-                    const SizedBox(width: Sp.withinControl),
-                  ],
                   if (widget.leading != null) ...[
-                    widget.leading!,
+                    IconTheme.merge(
+                      data: IconThemeData(color: selected ? c.onAccent : null),
+                      child: widget.leading!,
+                    ),
                     const SizedBox(width: Sp.withinControl),
                   ],
                   Text(
                     widget.label,
                     style: Ty.body.copyWith(
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                      color: selected ? c.textPrimary : c.textSecondary,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                      color: selected ? c.onAccent : c.textSecondary,
                     ),
                   ),
                 ],
@@ -412,10 +416,10 @@ class OutcomeMark extends StatelessWidget {
     final c = context.c;
     final color = c.outcome(outcome.id);
     final icon = switch (outcome) {
-      Outcome.win => Icons.check_rounded,
-      Outcome.loss => Icons.close_rounded,
-      Outcome.draw => Icons.remove_rounded,
-      Outcome.unknown => Icons.help_outline_rounded,
+      Outcome.win => Icons.check_sharp,
+      Outcome.loss => Icons.close_sharp,
+      Outcome.draw => Icons.remove_sharp,
+      Outcome.unknown => Icons.help_outline_sharp,
     };
     if (textless) {
       return Semantics(
@@ -596,9 +600,9 @@ class StatusBanner extends StatelessWidget {
       Severity.error => c.error,
     };
     final icon = switch (severity) {
-      Severity.info => Icons.info_outline,
-      Severity.warning => Icons.warning_amber_rounded,
-      Severity.error => Icons.error_outline,
+      Severity.info => Icons.info_outline_sharp,
+      Severity.warning => Icons.warning_amber_sharp,
+      Severity.error => Icons.error_outline_sharp,
     };
     return Semantics(
       container: true,
@@ -756,7 +760,7 @@ class ErrorPanel extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.error_outline, color: c.error, size: 20),
+                    Icon(Icons.error_outline_sharp, color: c.error, size: 20),
                     const SizedBox(width: Sp.withinGroup),
                     Expanded(child: Text(what, style: Ty.section)),
                   ],
@@ -779,13 +783,13 @@ class ErrorPanel extends StatelessWidget {
                         tr.common.retry,
                         onPressed: onRetry,
                         primary: true,
-                        icon: Icons.refresh,
+                        icon: Icons.refresh_sharp,
                       ),
                     ...extra,
                     AppButton(
                       tr.common.copyDetails,
                       quiet: true,
-                      icon: Icons.copy,
+                      icon: Icons.copy_sharp,
                       onPressed: () async {
                         await Clipboard.setData(
                           ClipboardData(text: error.details),
@@ -925,6 +929,7 @@ class FilterTag extends StatelessWidget {
       semanticLabel: tr.shell.removeFilterLabel(label),
       tooltip: tr.shell.removeFilter,
       height: Ctl.small,
+      slanted: true,
       padding: const EdgeInsets.fromLTRB(
         Sp.withinGroup,
         0,
@@ -936,7 +941,7 @@ class FilterTag extends StatelessWidget {
         children: [
           Text(label, style: Ty.meta.copyWith(color: c.textPrimary)),
           const SizedBox(width: Sp.hairline),
-          Icon(Icons.close, size: 14, color: c.textSecondary),
+          Icon(Icons.close_sharp, size: 14, color: c.textSecondary),
         ],
       ),
     );
