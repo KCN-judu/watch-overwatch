@@ -30,13 +30,11 @@ class DailyStrings {
   String rankFrom(String from, String sign, int v) => '原 $from，$sign$v 分';
 
   String get highlightsTitle => '高光时刻';
-  String get highlightsTip =>
-      '全场最高、单场最佳、本机纪录、连胜、零阵亡、最佳一局。点击查看对应对局。';
+  String get highlightsTip => '全场最高、单场最佳、本机纪录、连胜、零阵亡、最佳一局。点击查看对应对局。';
   String get noHighlights => '当天没有突出数据。';
   String lobbyTop(String stat) => '全场最高$stat';
   String get lobbyTopTitle => '全场最高';
-  String lobbyTopNote(int n) =>
-      '$n 场全场第一';
+  String lobbyTopNote(int n) => '$n 场全场第一';
   String dayBest(String stat) => '单场最高$stat';
   String newRecord(String stat) => '刷新纪录：$stat';
   String recordNote(String prev) => '之前本机最高 $prev';

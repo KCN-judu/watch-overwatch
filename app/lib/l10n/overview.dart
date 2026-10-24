@@ -22,8 +22,7 @@ class OverviewStrings {
   String get insightsTitle => '近期动态';
   String streakWin(int n) => '$n 连胜中';
   String streakLoss(int n) => '$n 连败中';
-  String recentUp(String now, String then) =>
-      '状态回升：近 20 场胜率 $now，前 20 场 $then';
+  String recentUp(String now, String then) => '状态回升：近 20 场胜率 $now，前 20 场 $then';
   String recentDown(String now, String then) =>
       '状态下滑：近 20 场胜率 $now，前 20 场 $then';
   String mapUp(String map, String rate, int n, String overall) =>
@@ -56,8 +55,7 @@ class OverviewStrings {
   String driversUp(String items) => '回升来源：$items';
   String driversDown(String items) => '下滑来源：$items';
   String driverItem(String label, String delta) => '$label（净胜 $delta）';
-  String fatigue(String late, String early) =>
-      '连续第 4 场起胜率 $late，前 3 场 $early';
+  String fatigue(String late, String early) => '连续第 4 场起胜率 $late，前 3 场 $early';
   String heroMetricDown(String hero, String metric, int p) =>
       '$hero $metric：同分段第 $p 百分位，偏低';
   String heroMetricUp(String hero, String metric, int p) =>

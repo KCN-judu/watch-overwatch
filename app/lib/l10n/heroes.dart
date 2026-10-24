@@ -125,8 +125,7 @@ class HeroStrings {
   String get recentMatches => '近期对局';
   String recentInfo(int total, String hero) =>
       '已读取 $total 场中使用$hero的对局，平均值仅来自这些对局。';
-  String recentEmpty(int total, String hero) =>
-      '已读取的 $total 场中没有使用$hero。';
+  String recentEmpty(int total, String hero) => '已读取的 $total 场中没有使用$hero。';
   String moreMatches(int n) => '另有 $n 场，可在对局页筛选查看。';
 
   String get abilities => '技能';
@@ -212,8 +211,7 @@ class HeroStrings {
   String get peerInfo =>
       '本人该英雄的中位数（每 10 分钟）在其他玩家同英雄对局中的百分位，第 50 即中游；阵亡已反向计算。优先同段位，样本不足时放宽到相邻段位，再不足则不限段位。';
   String get peerLoading => '正在计算同分段基准…';
-  String get peerNone =>
-      '样本不足：本人该英雄需 ≥ 3 场，其他玩家需 ≥ 30 场。';
+  String get peerNone => '样本不足：本人该英雄需 ≥ 3 场，其他玩家需 ≥ 30 场。';
   String get peerStadium => '角斗领域的数据与段位独立，暂不支持同分段对比。';
   String get metricDamage => '伤害';
   String get metricHealing => '治疗';

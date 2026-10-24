@@ -78,8 +78,7 @@ class MatchStrings {
   String preparing(int remaining) => '段位同步中 · 剩余 $remaining 场';
   String preparingRetry(int seconds, int remaining) =>
       '部分段位查询失败 · $seconds 秒后重试 · 剩余 $remaining 场';
-  String preparingPaused(int remaining) =>
-      '段位同步暂停 · 剩余 $remaining 场';
+  String preparingPaused(int remaining) => '段位同步暂停 · 剩余 $remaining 场';
   String get sortOldestFirst => '最早在前（点击切换）';
   String get sortNewestFirst => '最新在前（点击切换）';
   String get listInfo => '筛选、排序仅作用于已读取的对局。点击或按 Enter 查看本局数据。';
@@ -101,8 +100,7 @@ class MatchStrings {
   String duration(String clock) => '用时 $clock';
   String get outcomeFromScoreTip => '角斗领域详情无胜负字段，按最终比分判定。';
   String get outcomeFromScore => '结果按比分判断';
-  String get openPlayerHint =>
-      '点击玩家（或方向键 + Enter）查看威能、Fleta 指数、组队与点赞。';
+  String get openPlayerHint => '点击玩家（或方向键 + Enter）查看威能、Fleta 指数、组队与点赞。';
   String get bans => '禁用';
   String get subjectHeroes => '本局使用英雄';
   String heroPlayTime(String clock) => '使用 $clock';

@@ -3,8 +3,7 @@ class PeopleStrings {
   const PeopleStrings();
 
   String coverage(int n, String mode) => '$mode · $n 场对局详情';
-  String get coverageTip =>
-      '统计已存详情的对局（对局列表不含阵容），组排来自对局内的组队信息。';
+  String get coverageTip => '统计已存详情的对局（对局列表不含阵容），组排来自对局内的组队信息。';
   String get partyTitle => '组排与单排';
   String get partyTip => '组排：同队至少一人与本人组队；单排：同队全是路人。胜率不计平局，细线为置信区间。';
   String get partyRate => '组排胜率';

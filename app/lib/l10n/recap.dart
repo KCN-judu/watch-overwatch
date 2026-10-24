@@ -20,8 +20,7 @@ class RecapStrings {
   String get guessRight => '猜中了';
   String get guessWrong => '不是这张';
   String get stepImproved => '提升最大';
-  String improvedNote(String pct, int n) =>
-      '后半段比前半段高 $pct（$n 场）';
+  String improvedNote(String pct, int n) => '后半段比前半段高 $pct（$n 场）';
   String get stepBest => '最佳一局';
   String bestNote(String hero, String map, String when) =>
       '$hero · $map · $when';

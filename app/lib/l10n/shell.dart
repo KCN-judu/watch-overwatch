@@ -307,8 +307,7 @@ class ShellStrings {
 
   /// A rank with its skill rating: 白金 2 · 2650 分.
   String rankWithRating(String rank, String rating) => '$rank · $rating 分';
-  String rankFromOtherRole(String rank) =>
-      '无该职责段位，取其他职责最高段位：$rank';
+  String rankFromOtherRole(String rank) => '无该职责段位，取其他职责最高段位：$rank';
   String rankSnapshot(String rank) => '本局记录的竞技段位：$rank';
   String heroPortrait(String hero) => '$hero 立绘';
   String masteryLevel(int level) => '熟练度 $level';

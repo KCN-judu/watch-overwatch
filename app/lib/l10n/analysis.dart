@@ -226,12 +226,10 @@ class AnalysisStrings {
   String deaths(String n) => '阵亡 $n 次';
   String get kdaShield => '盾牌：零阵亡，按 1 次计。';
   String get healingTitle => '治疗量';
-  String get healingInfo =>
-      '每 10 分钟治疗量（含自我治疗），只算支援对局。';
+  String get healingInfo => '每 10 分钟治疗量（含自我治疗），只算支援对局。';
   String per10Min(String v) => '$v / 10 分钟';
   String get mitigationTitle => '阻挡量';
-  String get mitigationInfo =>
-      '每 10 分钟阻挡 / 减免的伤害，只算重装对局。';
+  String get mitigationInfo => '每 10 分钟阻挡 / 减免的伤害，只算重装对局。';
 
   String get growthFailed => '无法读取成长数据';
   String get growthLoading => '正在读取成长数据…';
@@ -257,15 +255,13 @@ class AnalysisStrings {
     if (notStored > 0) '$notStored 场详情待同步',
     if (skipped > 0) '$skipped 场过短或缺阵亡数，未计入',
   ].join('；');
-  String get pValueNote =>
-      'p 值：Mann-Kendall 趋势检验（双侧），p < 0.1 判定有趋势；不足 8 场不检验。';
+  String get pValueNote => 'p 值：Mann-Kendall 趋势检验（双侧），p < 0.1 判定有趋势；不足 8 场不检验。';
   String trendTooFew(String card) => '$card：场次不足';
   String trendUp(String card) => '$card 上升';
   String trendDown(String card) => '$card 下降';
   String trendFlat(String card) => '$card 无明显趋势';
   String get trendNeedsEight => '不足 8 场，无法判断';
-  String get baselineMeaning =>
-      '灰色底带：前 20 场的四分位区间（P25–P75），带外为异常局；不足 8 场不显示。';
+  String get baselineMeaning => '灰色底带：前 20 场的四分位区间（P25–P75），带外为异常局；不足 8 场不显示。';
   String get confidenceFirm => '显著';
   String get confidenceHint => '弱趋势';
   String get confidenceNone => '无变化';
@@ -349,8 +345,7 @@ class AnalysisStrings {
       '$role：$n 场，从 $from 到 $to';
   String get trackOpenHint => '点已指着的一场或按 Enter 打开这场对局';
   String get dropsTitle => '掉分局对手强度';
-  String get dropsTip =>
-      '连续掉分 ≥ 100（一个小段）的区间里，对方均分比己方高多少，来自已算过对局强度的对局。';
+  String get dropsTip => '连续掉分 ≥ 100（一个小段）的区间里，对方均分比己方高多少，来自已算过对局强度的对局。';
   String drop(
     String role,
     String from,
