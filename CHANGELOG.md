@@ -4,6 +4,14 @@
 
 ## 未发布
 
+### 修复
+
+- 导出的 JSON Schema 把 `provider_data` 限定为 `null`，但 `technical` 导出里它是对象：schema 改为允许 `null`、对象、数组，并由测试核对导出文档符合 schema。
+- 导出摘要（`records.summary`）的消灭、伤害等合计，没有一场有这一项时写 `null`，不再写 0。
+- 导出带队友时（`include_teammates`），本机对局库里已有的详情直接用，不再每次向大神重读。
+- `sameplay` 视图没读到最早一场时，`completeness.status` 是 `partial`，不再是 `provider_snapshot`。
+- `/api/player/replies` 的文字摘要和报告图片不再用 · 分隔。
+
 ### 变更
 
 - **文档全面更新**：页面说明、标签名和截图对齐 1.4.0 的界面；措辞按界面的文案原则改写（只写事实和口径，不劝告、不评价，数据来源写“大神”，并列事实用逗号）。截图换成示例玩家的真实窗口：裁到窗口边缘、圆角、阴影、纯色底。

@@ -201,5 +201,17 @@ mod tests {
         assert!(m.get("match_id").is_none());
         assert_eq!(m["hero_name"], "未知英雄");
         assert!(!v.to_string().contains("secret"));
+
+        // The published schema describes this document: every required field is there,
+        // and a technical export's provider data is a type the schema allows.
+        let schema: Value =
+            serde_json::from_str(include_str!("../../../docs/watch-overwatch.schema.json"))
+                .unwrap();
+        for key in schema["required"].as_array().unwrap() {
+            assert!(v.get(key.as_str().unwrap()).is_some(), "missing {key}");
+        }
+        let allowed = &schema["properties"]["provider_data"]["type"];
+        assert!(allowed.as_array().unwrap().contains(&json!("object")));
+        assert!(v["provider_data"].is_object());
     }
 }

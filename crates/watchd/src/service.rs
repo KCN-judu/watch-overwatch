@@ -574,7 +574,8 @@ async fn history_view(
     Ok(view)
 }
 
-/// Fetches details for up to `limit` matches; failures are skipped.
+/// Details for up to `limit` matches: the ones kept in the local store as they are (with
+/// their rank snapshots), the rest fetched from 大神; failed fetches are skipped.
 async fn details_for(
     f: &SessionFetcher<'_>,
     s: &AppState,
@@ -585,6 +586,12 @@ async fn details_for(
 ) -> BTreeMap<String, MatchDetail> {
     let mut details = BTreeMap::new();
     for m in matches.iter().filter(|m| !m.id.is_empty()).take(limit) {
+        if let (Some(store), Some(subject)) = (s.store.as_ref(), subject)
+            && let Some(kept) = store.detail(m.kind.mode, &m.id, subject)
+        {
+            details.insert(m.id.clone(), kept.detail);
+            continue;
+        }
         let endpoint = m.kind.mode.match_info();
         if let Ok(v) = f
             .fetch(endpoint, collect::match_info_payload(token, &m.id))
@@ -603,6 +610,17 @@ async fn details_for(
         }
     }
     details
+}
+
+/// How complete an exported view is: read to the end, one page of the match list, a
+/// multi-page view (summary, sameplay) that stopped early, or a single provider answer.
+fn completeness_status(view: &str, extra: &Map<String, Value>) -> &'static str {
+    match extra.get("complete") {
+        Some(Value::Bool(true)) => "complete",
+        _ if view == "matches" => "page",
+        Some(_) => "partial",
+        None => "provider_snapshot",
+    }
 }
 
 pub(crate) fn subject_id(identity: &Value) -> Option<String> {
@@ -638,17 +656,8 @@ async fn build_export(s: &AppState, input: ViewInput) -> Result<Value, Failure> 
         BTreeMap::new()
     };
     let seasons = view.extra.get("seasons").and_then(Value::as_array);
-    let complete = view.extra.get("complete") == Some(&json!(true));
     let completeness = Completeness {
-        status: if complete {
-            "complete"
-        } else if input.view == "matches" {
-            "page"
-        } else if input.view == "summary" {
-            "partial"
-        } else {
-            "provider_snapshot"
-        },
+        status: completeness_status(&input.view, &view.extra),
         page_limit: view
             .extra
             .get("page_limit")
@@ -699,7 +708,7 @@ pub(crate) async fn player_replies(
         .as_array()
         .map_or(0, Vec::len);
     let text = format!(
-        "{} · {} 场可用记录 · {}",
+        "{}，{} 场可用记录，{}",
         document["records"]["player_name"]
             .as_str()
             .unwrap_or("玩家"),
@@ -1528,6 +1537,84 @@ mod tests {
         );
         assert_eq!(v, json!({"data":[{"name":"test"}]}));
     }
+    #[test]
+    fn a_view_that_stopped_early_is_partial() {
+        let extra = |complete: Option<bool>| {
+            let mut m = Map::new();
+            if let Some(c) = complete {
+                m.insert("complete".into(), json!(c));
+            }
+            m
+        };
+        assert_eq!(
+            completeness_status("sameplay", &extra(Some(true))),
+            "complete"
+        );
+        assert_eq!(
+            completeness_status("sameplay", &extra(Some(false))),
+            "partial"
+        );
+        assert_eq!(
+            completeness_status("summary", &extra(Some(false))),
+            "partial"
+        );
+        assert_eq!(completeness_status("matches", &extra(Some(false))), "page");
+        assert_eq!(completeness_status("matches", &extra(None)), "page");
+        assert_eq!(
+            completeness_status("profile", &extra(None)),
+            "provider_snapshot"
+        );
+    }
+
+    #[tokio::test]
+    async fn exported_details_come_from_the_local_store_first() {
+        use watch_core::{Policy, SecretsFile, StrengthCache};
+        let dir = std::env::temp_dir().join(format!("watchd-export-{}", uuid::Uuid::new_v4()));
+        let store = Arc::new(crate::store::LocalStore::open(&dir).unwrap());
+        let catalog = watch_core::Catalog::default();
+        let rows = normalize::match_list(
+            &json!([{"matchId":"m1","matchRet":1},{"matchId":"m2","matchRet":0}]),
+            Mode::Competitive,
+            &catalog,
+        );
+        let kept = normalize::match_detail(
+            "m1",
+            &json!({"teammateList":[{"name":"A#1","kill":3}]}),
+            Mode::Competitive,
+            Some("7"),
+            &catalog,
+        );
+        store.put_detail("7", &kept, &[]);
+        // Nothing listens on port 9: whatever is not stored cannot be fetched.
+        let client = WatchClient::with_base(
+            SecretsFile { accounts: vec![] },
+            "http://127.0.0.1:9",
+            Policy::default(),
+        )
+        .unwrap();
+        let s = AppState {
+            client: Arc::new(client),
+            sessions: Arc::new(Mutex::new(HashMap::new())),
+            settings_lock: Arc::new(Mutex::new(())),
+            catalog: Arc::new(catalog),
+            progress: Arc::new(std::sync::Mutex::new(HashMap::new())),
+            store: Some(store),
+            season_checked: Arc::default(),
+            updates: Arc::default(),
+            foreground: Arc::default(),
+            rank_jobs: Arc::default(),
+        };
+        let cache = Mutex::new(HashMap::new());
+        let f = SessionFetcher {
+            client: &s.client,
+            cache: &cache,
+            fresh: false,
+        };
+        let details = details_for(&f, &s, "token", Some("7"), &rows, 20).await;
+        assert_eq!(details.keys().collect::<Vec<_>>(), ["m1"]);
+        assert_eq!(details["m1"], kept);
+    }
+
     #[tokio::test]
     async fn duplicate_views_share_one_upstream_request_and_refresh_bypasses_cache() {
         use axum::{Router, routing::get};

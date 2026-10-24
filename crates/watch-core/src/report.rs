@@ -15,7 +15,7 @@ pub fn report_svg(document: &Value) -> String {
         .cloned()
         .unwrap_or_default();
     let mut svg = format!(
-        r##"<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="{}" viewBox="0 0 1200 {}"><rect width="100%" height="100%" fill="#202124"/><g font-family="Segoe UI,Microsoft YaHei,sans-serif" fill="#e9e9ed"><text x="48" y="66" font-size="30">{}</text><text x="48" y="100" font-size="14" fill="#a1a1a7">Watch Overwatch · {} · {} · exported at {} Unix ms</text>"##,
+        r##"<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="{}" viewBox="0 0 1200 {}"><rect width="100%" height="100%" fill="#202124"/><g font-family="Segoe UI,Microsoft YaHei,sans-serif" fill="#e9e9ed"><text x="48" y="66" font-size="30">{}</text><text x="48" y="100" font-size="14" fill="#a1a1a7">Watch Overwatch，{}，{}，exported at {} Unix ms</text>"##,
         180 + rows.len().min(20) * 45,
         180 + rows.len().min(20) * 45,
         xml(name),
