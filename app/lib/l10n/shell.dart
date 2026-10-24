@@ -154,7 +154,8 @@ class ShellStrings {
   String get roleIdInvalid => 'role_id 是一串数字。';
   String get tokenRequired => '粘贴 token。';
   String accountSaved(String name) => '已保存账号 $name';
-  String get tokenScriptCopied => '已复制获取脚本。到 ds.163.com 的控制台粘贴运行。';
+  String get tokenScriptCopied =>
+      '已复制获取脚本。到 ds.163.com 的控制台粘贴运行，得到 role_id 和 token。';
   String get tokenScriptCopyFailed => '无法复制脚本，请看 docs/credentials.md。';
   String removeAccountTitle(String name) => '移除账号“$name”？';
   String get removeAccountBody =>
