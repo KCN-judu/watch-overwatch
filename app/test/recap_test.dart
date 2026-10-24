@@ -99,7 +99,7 @@ void main() {
     await tester.pump();
     // 伊利奥斯 has the best evidence (low end 55).
     expect(find.text('伊利奥斯'), findsOneWidget);
-    expect(find.textContaining('不是它'), findsOneWidget);
+    expect(find.textContaining('不是这张'), findsOneWidget);
     await tester.tap(find.widgetWithText(AppButton, '全部显示').first);
     await tester.pump();
     expect(find.byType(Shareable), findsOneWidget);

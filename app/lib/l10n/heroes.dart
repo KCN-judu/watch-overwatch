@@ -47,7 +47,7 @@ class HeroStrings {
   String seasonTotal(int? season) =>
       season == null ? '本赛季累计' : '第 $season 赛季累计';
   String get listInfo =>
-      '整个赛季的累计，来自大神，不是“对局”页读取的最近对局。点一个英雄看详情。消灭、伤害、治疗、阻挡为每 10 分钟；— 表示这个英雄无法产出。';
+      '本赛季累计（来自大神），非对局页的近期对局。消灭、伤害、治疗、阻挡为每 10 分钟；— 为该英雄不产出此项。点击查看详情。';
   String get sortBy => '排序';
   String get sortBasis => '排序依据';
 
@@ -67,18 +67,18 @@ class HeroStrings {
   ) => '$hero，$role，$matches 场，胜率$winRate，使用$playTime';
   String noHeroesTitle(int? season, String mode) =>
       season == null ? '本赛季没有$mode的英雄记录' : '第 $season 赛季没有$mode的英雄记录';
-  String get noHeroesBody => '该赛季没有打过这个模式，或资料为私密。可换个模式，或到“赛季走势”看往期。';
+  String get noHeroesBody => '本赛季未玩过该模式或资料未公开，往期见赛季走势。';
   String switchTo(String mode) => '切换到$mode';
   String noSearchMatchTitle(String query) => '没有名称包含“$query”的英雄';
-  String noSearchMatchBody(int n) => '已有 $n 个英雄记录。';
+  String noSearchMatchBody(int n) => '共 $n 个英雄。';
   String minutes(int n) => '$n 分钟';
 
   /// Win rate tooltip when the sample is too small.
-  String smallSample(int n) => '只有 $n 场，样本太少，仅供参考';
+  String smallSample(int n) => '仅 $n 场，样本不足';
 
   /// Label of the per-10-minute figure the list is sorted by: 消灭 /10分.
   String per10Metric(String label) => '$label /10分';
-  String get cannotProduce => '这个英雄无法产出这项数据';
+  String get cannotProduce => '该英雄不产出此项';
 
   // ---- hero detail page ----
 
@@ -92,7 +92,7 @@ class HeroStrings {
 
   /// 场均 12:34.
   String avgMatchTime(String clock) => '场均 $clock';
-  String get notProvided => '上游没有提供';
+  String get notProvided => '大神未提供';
   String get recentMatchesNote => '近期对局';
 
   String get groupCombat => '战斗';
@@ -101,14 +101,14 @@ class HeroStrings {
   String get groupDefense => '防护';
   String get groupHero => '英雄特色';
 
-  String get sourceDerived => '上游没给这一项，由每场平均 × 600 ÷ 场均时长推算';
-  String get sourceRecent => '上游没给这一项，取自已读取的近期对局';
-  String get sourceZero => '这个英雄能产出这项数据，但上游没有记录，按 0 计';
+  String get sourceDerived => '大神未提供，按场均 × 600 ÷ 场均时长推算';
+  String get sourceRecent => '大神未提供，取自已读取的近期对局';
+  String get sourceZero => '大神无记录，按 0 计';
 
   String get seasonStats => '赛季数据';
   String get seasonStatsInfo =>
-      '整个赛季的累计，来自大神。上游常漏项，缺的按这个英雄能产出的内容补全：≈ 是推算或取自近期对局，灰色 0 是上游没有记录。消灭和治疗量是两部分相加，条里是第一部分占的比例：消灭 = 最后一击 + 共同消灭（造成过伤害、最后一击是队友打的），治疗量 = 自我治疗 + 对他人。';
-  String get noStats => '没有这个英雄的统计项。';
+      '本赛季累计（来自大神）。缺项按英雄补全：≈ 为推算或取自近期对局，灰色 0 为大神无记录。消灭 = 最后一击 + 共同消灭，治疗量 = 自我治疗 + 对他人，条内为前者占比。';
+  String get noStats => '暂无该英雄数据。';
   String get per10 => '每 10 分钟';
   String get perMatch => '每场平均';
   String unnamedStats(int n) => '另有 $n 项统计目录里没有名称，未显示。';
@@ -124,10 +124,9 @@ class HeroStrings {
 
   String get recentMatches => '近期对局';
   String recentInfo(int total, String hero) =>
-      '已读取的 $total 场里该玩家用$hero打的。平均值来自这些对局，不是赛季累计。';
-  String recentEmpty(int total, String hero) =>
-      '已读取的 $total 场里没有用$hero打的。到“对局”页读取更多。';
-  String moreMatches(int n) => '还有 $n 场，在“对局”页筛选这个英雄查看。';
+      '已读取 $total 场中使用$hero的对局，平均值仅来自这些对局。';
+  String recentEmpty(int total, String hero) => '已读取的 $total 场中没有使用$hero。';
+  String moreMatches(int n) => '另有 $n 场，可在对局页筛选查看。';
 
   String get abilities => '技能';
   String get abilitiesInfo => '来自本机安装的游戏资料（国服 2.25），名称和说明与游戏内一致。';
@@ -171,8 +170,8 @@ class HeroStrings {
     String matches,
     String winRate,
   ) => '$role，当前$current，最高$peak，$matches 场，胜率$winRate';
-  String noCareer(String mode) => '$mode本赛季没有分职责的生涯数据。';
-  String noRanksInMode(String mode) => '$mode不提供段位，段位列为 —。';
+  String noCareer(String mode) => '$mode本赛季无职责数据。';
+  String noRanksInMode(String mode) => '$mode无段位。';
 
   String get behavior => '行为与荣誉';
   String get honorsReceived => '收到的荣誉';
@@ -194,8 +193,8 @@ class HeroStrings {
   /// 近期表现 · 竞技比赛.
   String recentHeading(String mode) => '近期表现 · $mode';
   String get recentFormInfo =>
-      '只统计“对局”页已读取的对局。胜率 = 胜 ÷ （胜 + 负）；平均值只计入提供了该数据的对局，数量不足时标注 n。';
-  String get noMatchesRead => '还没有读取到对局。';
+      '基于对局页已读取的对局。胜率 = 胜 ÷（胜 + 负）；平均值只计提供了该项的对局，不足时标注 n。';
+  String get noMatchesRead => '暂无已读取的对局。';
   String get record => '战绩';
 
   /// N 平, with · M 未知 when some outcomes are unknown.
@@ -204,17 +203,16 @@ class HeroStrings {
 
   /// The range a win rate plausibly lies in, and the record behind it.
   String winRateRange(String low, String high, int wins, int matches) =>
-      '可能在 $low–$high 之间（$wins 胜 / $matches 场）。按胜率排序时以区间下限为准。';
+      '区间 $low–$high（$wins 胜 / $matches 场），按胜率排序取区间下限。';
 
   // ---- ui/pages/peer_bench.dart ----
 
-  String get peerTitle => '同侪对比';
+  String get peerTitle => '同分段对比';
   String get peerInfo =>
-      '把该玩家这个英雄的“典型一场”（中位数，每 10 分钟）放进其他玩家用同一英雄的每一场里比：第 50 百分位就是正中间。阵亡越少越好，已经反过来算。同侪优先取同一档位，场次不够就放宽到相邻档位，再不够就不限段位。';
-  String get peerLoading => '正在计算同侪基准…';
-  String get peerNone =>
-      '本机样本还不够比较：需要该玩家用这个英雄至少 3 场，其他玩家至少 30 场。查询更多玩家、读取更多对局后会出现。';
-  String get peerStadium => '角斗领域的数据和段位自成一套，暂不做同侪对比。';
+      '本人该英雄的中位数（每 10 分钟）在其他玩家同英雄对局中的百分位，第 50 即中游；阵亡已反向计算。优先同段位，样本不足时放宽到相邻段位，再不足则不限段位。';
+  String get peerLoading => '正在计算同分段基准…';
+  String get peerNone => '样本不足：本人该英雄需 ≥ 3 场，其他玩家需 ≥ 30 场。';
+  String get peerStadium => '角斗领域的数据与段位独立，暂不支持同分段对比。';
   String get metricDamage => '伤害';
   String get metricHealing => '治疗';
   String get metricMitigation => '阻挡';
@@ -234,36 +232,36 @@ class HeroStrings {
     int p,
     String band,
     String median,
-  ) => '$metric：$value，第 $p 百分位（$band），同侪中位数 $median';
-  String peerMedian(String v) => '同侪中位数 $v';
+  ) => '$metric：$value，第 $p 百分位（$band），同分段中位数 $median';
+  String peerMedian(String v) => '同分段中位数 $v';
   String get anyRank => '不限段位';
   String tierRange(String low, String high) => low == high ? low : '$low–$high';
   String peerSource(String band, String hero, int peers, int stored) =>
-      '基准：$band的$hero，$peers 场其他玩家的对局，来自本机已存的 $stored 场对局。样本只包含在这里查询过的玩家所在的对局，不代表全服。';
+      '基准：$band的$hero，$peers 场（本机已存 $stored 场）。仅含查询过的玩家所在对局，不代表全服。';
 
   /// Under a per-match average: the provider's server-wide figure.
   String serverAverage(String v) => '全服平均 $v';
 
   // Hero boards (hero detail).
   String heroBoard(String province, int rank) => '英雄榜：$province第 $rank 名';
-  String heroBoardTip(int n, String rate) => '上榜依据 $n 场，胜率 $rate（大神英雄榜，只看本人）';
+  String heroBoardTip(int n, String rate) => '依据 $n 场 · 胜率 $rate（大神英雄榜）';
 
   // Stadium builds (hero detail, Stadium mode).
   String get buildsTitle => '构筑';
   String get buildsTip =>
-      '这个英雄在本机已存的角斗领域对局里，各个异能和物品被选了多少、选了之后赢了多少。横条是胜率，细线是可能的范围。少于 5 场的条目变灰，排在后面，不参与比较。点一行列出该玩家用它的对局。';
-  String get scopeOwn => '该玩家';
+      '本机已存角斗领域对局中，各异能、物品的选取次数与胜率。横条：胜率；细线：置信区间；不足 5 场置灰。点击列出本人使用它的对局。';
+  String get scopeOwn => '本人';
   String get scopeEveryone => '本机所有玩家';
   String buildsSource(int n, int own, int stored) => own == n
-      ? '$n 场该玩家的对局，来自本机已存的 $stored 场角斗领域对局。'
-      : '$n 个玩家对局（其中该玩家 $own 场），来自本机已存的 $stored 场角斗领域对局。样本只包含在这里查询过的玩家所在的对局，不代表全服。';
-  String get buildsNone => '本机还没有这个英雄的角斗领域对局详情。打开几场对局的详情后，这里会统计构筑。';
+      ? '$n 场本人对局（本机已存 $stored 场角斗领域对局）'
+      : '$n 场对局，本人 $own 场（本机已存 $stored 场角斗领域对局）。仅含查询过的玩家所在对局，不代表全服。';
+  String get buildsNone => '暂无该英雄的角斗领域对局详情。';
   String get buildsPowers => '异能';
   String get buildsItems => '物品';
   String get buildsSets => '常用异能组合';
   String roundTag(int r) => '第 $r 回合';
   String pickRate(String rate) => '选取率 $rate';
-  String get noOwnMatches => '该玩家没有用它的已存对局。';
-  String ownMatches(int n) => '该玩家用它的 $n 场对局';
+  String get noOwnMatches => '本人没有使用它的已存对局。';
+  String ownMatches(int n) => '本人使用它的 $n 场对局';
   String get hideMatches => '收起';
 }

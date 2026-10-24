@@ -11,14 +11,14 @@ class MatchStrings {
   String listLabel(String mode) => '$mode对局列表';
 
   String noRecord(String name, String mode) => '$name 在$mode没有对局记录';
-  String get noRecordBody => '该模式没有打过，或资料为私密。可换个模式。';
+  String get noRecordBody => '未玩过该模式或资料未公开。';
   String switchToMode(String mode) => '切换到$mode';
 
   String get noMatchingMatches => '没有符合筛选的对局';
 
   /// [conditions] is the filter descriptions joined with [conditions].
   String noMatchingBody(int read, String conditions) =>
-      '已读取的 $read 场对局中，没有满足：$conditions。';
+      '已读取 $read 场，无符合 $conditions 的对局。';
 
   /// Joins filter descriptions inside [noMatchingBody]: 结果：胜，职责：输出.
   String conditions(Iterable<String> parts) => parts.join('，');
@@ -66,23 +66,22 @@ class MatchStrings {
   String recordCount(String outcome, int n) => '$outcome $n 场';
   String winRateTip(int decided) => '胜 ÷ （胜 + 负），共 $decided 场；平局、未知不计。';
   String winRate(String value) => '胜率 $value';
-  String allSavedTip(int total) => '本地已保存全部对局（$total 场）。每次打开只读取比已保存的最新一场更新的对局。';
+  String allSavedTip(int total) => '已存全部 $total 场，之后打开只读取新对局。';
   String get allRead => '已读完';
   String allReadWithNew(int n) => '已读完，新增 $n 场';
   String readingOlder(int n) => n == 0 ? '正在读取对局列表…' : '正在读取更早的对局…已读 $n 场';
-  String get olderUnreadTip => '还有更早的对局没有读取';
+  String get olderUnreadTip => '还有更早的对局未读取';
   String get notAllRead => '未读完';
   String get continueReading => '继续读取';
   String get continueReadingTip => '读取全部更早的对局';
-  String get preparingTip => '正在后台给对局里的玩家取段位快照，存进对局信息；打开别的页面时会先让路，之后自动继续。';
-  String preparing(int remaining) => '正在后台读取段位，还剩 $remaining 场…';
+  String get preparingTip => '后台为对局中的玩家记录当时的段位。其他查询优先，空闲后自动继续。';
+  String preparing(int remaining) => '段位同步中 · 剩余 $remaining 场';
   String preparingRetry(int seconds, int remaining) =>
-      '部分段位没查到，$seconds 秒后重试（还剩 $remaining 场）';
-  String preparingPaused(int remaining) =>
-      '段位读取已暂停，等其他查询完成后继续（还剩 $remaining 场）';
-  String get sortOldestFirst => '时间顺序：最早在前，点击改为最新在前';
-  String get sortNewestFirst => '时间顺序：最新在前，点击改为最早在前';
-  String get listInfo => '筛选与排序只作用于已读取的对局。点击一行（或按 Enter）打开这一局的详细数据。';
+      '部分段位查询失败 · $seconds 秒后重试 · 剩余 $remaining 场';
+  String preparingPaused(int remaining) => '段位同步暂停 · 剩余 $remaining 场';
+  String get sortOldestFirst => '最早在前（点击切换）';
+  String get sortNewestFirst => '最新在前（点击切换）';
+  String get listInfo => '筛选、排序仅作用于已读取的对局。点击或按 Enter 查看本局数据。';
 
   // ---- match_detail_page ----
 
@@ -99,18 +98,17 @@ class MatchStrings {
   String get backToList => '返回列表';
   String get readingDetail => '正在读取对局详情';
   String duration(String clock) => '用时 $clock';
-  String get outcomeFromScoreTip => '角斗领域详情没有提供胜负字段，结果按最终比分判断。';
+  String get outcomeFromScoreTip => '角斗领域详情无胜负字段，按最终比分判定。';
   String get outcomeFromScore => '结果按比分判断';
-  String get openPlayerHint =>
-      '点一名玩家（或用方向键选中后按 Enter）打开他的详情页：威能、Fleta 指数、组队和点赞。';
+  String get openPlayerHint => '点击玩家（或方向键 + Enter）查看威能、Fleta 指数、组队与点赞。';
   String get bans => '禁用';
-  String get subjectHeroes => '该玩家在本场使用的英雄';
+  String get subjectHeroes => '本局使用英雄';
   String heroPlayTime(String clock) => '使用 $clock';
   String heroPlayTimeShare(String clock, String pct) => '使用 $clock（占本场 $pct）';
   String statsAllUnnamed(int n) => '本场 $n 项统计，目录里还没有它们的名称。';
   String statsSomeUnnamed(int n) => '另有 $n 项统计目录里没有名称，未显示。';
   String get rounds => '回合';
-  String get timelineTip => '每回合左侧是该回合的胜负，右侧是该玩家这一回合新选的异能和物品。';
+  String get timelineTip => '左侧：回合胜负；右侧：本回合新选的异能与物品。';
   String round(int i, String score, String clock) => '第 $i 回合  $score  $clock';
 
   // ---- team_table ----
@@ -121,20 +119,20 @@ class MatchStrings {
   String teamTotal(String team) => '$team合计';
 
   /// Badge next to the player being looked at.
-  String get subject => '该玩家';
-  String get suspendedTip => '该玩家账号处于暂停状态';
+  String get subject => '本人';
+  String get suspendedTip => '账号暂停中';
   String get kdaTip => 'Kills / Assists / Deaths：消灭 / 助攻 / 阵亡';
-  String get damageTip => '对英雄伤害。条形长度按全场 10 人的最大值';
-  String get healingTip => '治疗量。条形长度按全场 10 人的最大值';
-  String get mitigationTip => '阻挡或减免的伤害量，不是次数。条形长度按全场 10 人的最大值';
+  String get damageTip => '对英雄伤害，条长以全场最高为满';
+  String get healingTip => '治疗量，条长以全场最高为满';
+  String get mitigationTip => '阻挡 / 减免的伤害量（非次数），条长以全场最高为满';
   String get rank => '段位';
-  String get rankTip => '竞技、角斗显示该场的段位；快速比赛显示读取这场时取的竞技段位快照，之后不再变。查不到的显示 —';
-  String get rankLookupTip => '正在查询这名玩家的竞技段位';
+  String get rankTip => '竞技、角斗：本局段位；快速比赛：读取本局时记录的竞技段位，之后不再变。— 为查不到。';
+  String get rankLookupTip => '竞技段位查询中';
   String get rankLookup => '查询中';
   String get unranked => '未定级';
-  String get unrankedTip => '这名玩家没有竞技段位，或查不到';
+  String get unrankedTip => '本赛季无竞技段位';
   String roleRank(String role, String rank) => '$role $rank';
-  String roleRanks(List<String> roles) => '读取这场时的竞技段位：${roles.join(' · ')}';
+  String roleRanks(List<String> roles) => '本局记录的竞技段位：${roles.join(' · ')}';
   String get portrait => '英雄立绘';
   String playerCount(int n) => '$n 人';
   String teamTableLabel(String team) => '$team队伍';
@@ -170,10 +168,10 @@ class MatchStrings {
     String healing,
     String mitigation,
   ) =>
-      '$name，该玩家，$hero，$role，消灭$kills助攻$assists阵亡$deaths，'
+      '$name，本人，$hero，$role，消灭$kills助攻$assists阵亡$deaths，'
       '伤害$damage，治疗$healing，阻挡$mitigation';
   String get noParticipants => '没有参与者数据';
-  String get noParticipantsBody => '上游没有返回这一方的名单。';
+  String get noParticipantsBody => '大神未返回该方名单。';
 
   // ---- stat names (team_table, player_detail_page) ----
 
@@ -194,20 +192,19 @@ class MatchStrings {
 
   String shareOfTeam(String pct) => '占本队 $pct';
   String get rankLookupLong => '段位查询中';
-  String get restrictedTip => '这个账号正处于处罚或风险状态。';
+  String get restrictedTip => '账号处于处罚或风控状态。';
   String get restricted => '账号受限';
-  String peopleNotInMatch(int n) => '另有 $n 名不在这场对局里';
+  String peopleNotInMatch(int n) => '另 $n 人不在本局';
 
   /// Joins the named players and [peopleNotInMatch].
   String peopleParts(Iterable<String> parts) => parts.join('；');
   String get matchStats => '本场数据';
-  String get matchStatsInfo => '占本队的比例按本队 5 人的合计算；— 表示上游没有提供，不等于 0。';
+  String get matchStatsInfo => '占比以本队 5 人合计为分母；— 为大神未提供，不是 0。';
   String get fleta => 'Fleta 指数';
   String get fletaInfo =>
-      '最后一击 ÷（本队最后一击合计 × 0.5）× 100%。100% 表示拿下了本队一半的最后一击；'
-      '越高，说明这支队伍的击杀越多是由他收尾的。只看这一场、只和本队比，不分职责，'
-      '辅助和重装通常偏低，输出偏高。';
-  String get fletaNoData => '没有最后一击数据，或本队没有最后一击';
+      '最后一击 ÷（本队最后一击 × 0.5）× 100%，100% 即拿下本队一半的最后一击。'
+      '只与本队比、不分职责：输出通常偏高，重装、支援偏低。';
+  String get fletaNoData => '无最后一击数据';
   String fletaFormula(String finalBlows, String teamFinalBlows) =>
       '最后一击 $finalBlows ÷（本队 $teamFinalBlows × 0.5）';
   String get perks => '威能';
@@ -216,7 +213,7 @@ class MatchStrings {
   String get noParty => '没有组队信息';
   String partyWith(int n, String names) => '与 $n 名玩家组队：$names';
   String get endorsements => '获得点赞';
-  String get noEndorsements => '没有收到点赞';
+  String get noEndorsements => '未获得点赞';
   String endorsedBy(int n, String names) => '$n 人：$names';
   String get stadiumBuild => '角斗构筑';
   String get stadiumCash => '局内货币';
