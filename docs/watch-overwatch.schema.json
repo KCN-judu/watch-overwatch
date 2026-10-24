@@ -10,6 +10,6 @@
   "source":{"type":"object"},"query":{"type":"object"},"completeness":{"type":"object"},"units":{"type":"object"},
   "entities":{"type":"array","items":{"type":"object","required":["kind","name"]}},
   "records":{"type":"object"},
-  "provider_data":{"type":"null"}
+  "provider_data":{"type":["null","object","array"],"description":"null unless the export is technical: then the sanitized provider snapshot (an object, or the per-season array of the history view)"}
  }
 }

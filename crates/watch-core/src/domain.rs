@@ -93,18 +93,20 @@ pub struct Summary {
     pub draws: usize,
     pub unknown: usize,
     pub win_rate: Option<f64>,
-    pub kills: u64,
-    pub assists: u64,
-    pub deaths: u64,
-    pub damage: u64,
-    pub healing: u64,
+    /// Totals over the matches that report the stat; `None` when none does (missing is
+    /// never 0).
+    pub kills: Option<u64>,
+    pub assists: Option<u64>,
+    pub deaths: Option<u64>,
+    pub damage: Option<u64>,
+    pub healing: Option<u64>,
     pub kda: Option<f64>,
     pub best_streak: usize,
 }
 
 pub fn summarize(rows: &[MatchSummary]) -> Summary {
     let a = analysis::aggregate(rows);
-    let total = |v: Option<f64>| v.map_or(0, |n| n.round() as u64);
+    let total = |v: Option<f64>| v.map(|n| n.round() as u64);
     Summary {
         matches: a.record.matches,
         wins: a.record.wins,
@@ -140,6 +142,9 @@ mod tests {
         assert_eq!((s.wins, s.draws, s.losses, s.unknown), (1, 1, 1, 1));
         assert_eq!(s.win_rate, Some(50.0));
         assert_eq!(s.kda, None);
+        // Only the first match reports kills and deaths; none reports damage.
+        assert_eq!((s.kills, s.deaths), (Some(10), Some(0)));
+        assert_eq!(s.damage, None);
         assert_eq!(MatchView::from(&rows[0]).damage, None);
     }
 }

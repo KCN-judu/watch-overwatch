@@ -24,7 +24,7 @@ JSON Schema：[`watch-overwatch.schema.json`](watch-overwatch.schema.json)。删
 | 字段 | 默认 | 含义 |
 |---|---|---|
 | `technical` | `false` | 为真时 `provider_data` 带脱敏后的大神原始数据 |
-| `include_teammates` | `true` | 向大神读视图里前 20 场的详情，填 `teammates`、`enemies` |
+| `include_teammates` | `true` | 视图里前 20 场的详情，填 `teammates`、`enemies`；本机对局库里有的直接用（含段位快照），其余向大神读 |
 
 ### 顶层字段
 
@@ -38,14 +38,14 @@ JSON Schema：[`watch-overwatch.schema.json`](watch-overwatch.schema.json)。删
 | `units` | 时间戳为 Unix 毫秒，时长为秒，胜率为 0–100，缺失为 `null`，汇总胜率的分母为胜 + 负；`identifier_policy`、`provider_fields` 说明是否带了大神标识和原始数据 |
 | `entities` | 出现过的英雄和地图：`{kind, name}`，`kind` 为 `hero` 或 `map`；没有名称时为 `未知` |
 | `records` | `player_name`、`matches`、`summary` |
-| `provider_data` | 默认 `null` |
+| `provider_data` | 默认 `null`；`technical` 时是脱敏后的大神原始数据（对象；`history` 视图是逐赛季的数组） |
 
 ### `completeness.status`
 
 | 值 | 含义 |
 |---|---|
 | `complete` | `summary`、`sameplay` 视图读到了对局列表的最早一场 |
-| `partial` | `summary` 视图到了 5 页的上限 |
+| `partial` | `summary`、`sameplay` 视图到了 5 页的上限，没读到最早一场 |
 | `page` | `matches` 视图，只有一页 |
 | `provider_snapshot` | 其余视图：大神这一次返回的内容 |
 
@@ -69,7 +69,7 @@ JSON Schema：[`watch-overwatch.schema.json`](watch-overwatch.schema.json)。删
 
 `blocked_damage` 与 `mitigation` 同值，都是大神的 `resistDamage`：阻挡、减免的伤害量，不是次数。
 
-`records.summary`：`matches`、`wins`、`losses`、`draws`、`unknown`、`win_rate`、`kills`、`assists`、`deaths`、`damage`、`healing`（合计）、`kda`、`best_streak`。
+`records.summary`：`matches`、`wins`、`losses`、`draws`、`unknown`、`win_rate`、`kills`、`assists`、`deaths`、`damage`、`healing`（有这一项的对局的合计；没有一场有时为 `null`，不当 0）、`kda`、`best_streak`。
 
 不输出对局编号、官方 UID、大神 GUID。`records` 只覆盖对局：`profile`、`card`、`heroes`、`history` 视图的内容只在 `technical` 导出的 `provider_data` 里。
 
