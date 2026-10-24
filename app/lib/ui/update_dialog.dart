@@ -120,7 +120,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
                   fmtDate(release.publishedAt!.millisecondsSinceEpoch),
                 ),
               if (release.zipSize > 0) fmtBytes(release.zipSize),
-            ].join(' · '),
+            ].join(tr.common.sep),
             style: meta,
           ),
           const SizedBox(height: Sp.betweenGroups),

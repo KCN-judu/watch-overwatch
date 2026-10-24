@@ -63,8 +63,8 @@ class ShellStrings {
   String get playerNotFound => '没有找到这名玩家';
   String get searchHint => '输入完整昵称后按 Enter。';
 
-  /// Header of the saved-player list: 玩家库 · N.
-  String playerLibraryCount(int n) => '玩家库 · $n';
+  /// Header of the saved-player list: 玩家库（N）.
+  String playerLibraryCount(int n) => '玩家库（$n）';
   String get playerLibraryEmpty => '暂无玩家。查找过的玩家会保存在这里。';
   String get settings => '设置';
   String get collapseLibrary => '折叠玩家库';
@@ -293,7 +293,7 @@ class ShellStrings {
 
   /// Indented detail under a series in the chart tooltip, with the mean.
   String chartMeanAndRange(String mean, String low, String high) =>
-      '    平均 $mean · 区间 $low–$high';
+      '    平均 $mean，区间 $low–$high';
 
   /// Indented detail under a series in the chart tooltip, without a mean.
   String chartRange(String low, String high) => '    区间 $low–$high';
@@ -305,8 +305,8 @@ class ShellStrings {
   /// Tooltip of every role column header.
   String get roleLegend => '盾牌 = 重装　子弹 = 输出　十字 = 支援';
 
-  /// A rank with its skill rating: 白金 2 · 2650 分.
-  String rankWithRating(String rank, String rating) => '$rank · $rating 分';
+  /// A rank with its skill rating: 白金 2（2650 分）.
+  String rankWithRating(String rank, String rating) => '$rank（$rating 分）';
   String rankFromOtherRole(String rank) => '无该职责段位，取其他职责最高段位：$rank';
   String rankSnapshot(String rank) => '本局记录的竞技段位：$rank';
   String heroPortrait(String hero) => '$hero 立绘';

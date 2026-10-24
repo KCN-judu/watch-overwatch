@@ -418,7 +418,7 @@ class _MeasureChart extends StatelessWidget {
       p.hero?.label ?? p.role.label,
       p.outcome.label,
       m.noteOf(p),
-    ].where((s) => s.isNotEmpty).join(' · ');
+    ].where((s) => s.isNotEmpty).join(tr.common.sep);
 
     final known = values.whereType<double>();
     return Panel(

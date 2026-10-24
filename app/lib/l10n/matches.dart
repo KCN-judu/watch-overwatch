@@ -75,10 +75,10 @@ class MatchStrings {
   String get continueReading => '继续读取';
   String get continueReadingTip => '读取全部更早的对局';
   String get preparingTip => '后台为对局中的玩家记录当时的段位。其他查询优先，空闲后自动继续。';
-  String preparing(int remaining) => '段位同步中 · 剩余 $remaining 场';
+  String preparing(int remaining) => '段位同步中，剩余 $remaining 场';
   String preparingRetry(int seconds, int remaining) =>
-      '部分段位查询失败 · $seconds 秒后重试 · 剩余 $remaining 场';
-  String preparingPaused(int remaining) => '段位同步暂停 · 剩余 $remaining 场';
+      '部分段位查询失败，$seconds 秒后重试，剩余 $remaining 场';
+  String preparingPaused(int remaining) => '段位同步暂停，剩余 $remaining 场';
   String get sortOldestFirst => '最早在前（点击切换）';
   String get sortNewestFirst => '最新在前（点击切换）';
   String get listInfo => '筛选、排序仅作用于已读取的对局。点击或按 Enter 查看本局数据。';
@@ -132,7 +132,7 @@ class MatchStrings {
   String get unranked => '未定级';
   String get unrankedTip => '本赛季无竞技段位';
   String roleRank(String role, String rank) => '$role $rank';
-  String roleRanks(List<String> roles) => '本局记录的竞技段位：${roles.join(' · ')}';
+  String roleRanks(List<String> roles) => '本局记录的竞技段位：${roles.join('、')}';
   String get portrait => '英雄立绘';
   String playerCount(int n) => '$n 人';
   String teamTableLabel(String team) => '$team队伍';
@@ -221,7 +221,7 @@ class MatchStrings {
   String get item => '装备';
 
   /// The tag on a Stadium power or item card: its kind (异能, or the item's 武器 / 技能 /
-  /// 生存 category) and rarity when known: 武器 · 史诗.
+  /// 生存 category) and rarity when known: 史诗武器.
   String upgradeTag(String kind, String? rarity) =>
-      rarity == null ? kind : '$kind · $rarity';
+      rarity == null ? kind : '$rarity$kind';
 }

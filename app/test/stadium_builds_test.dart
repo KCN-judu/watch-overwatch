@@ -112,10 +112,10 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.text('纳米强化 · 第 3 回合 · 选取率 75%'), findsOneWidget);
+      expect(find.text('纳米强化，第 3 回合，选取率 75%'), findsOneWidget);
       expect(find.text('纳米强化、睡眠专精'), findsOneWidget);
       expect(find.textContaining('8 场本人对局'), findsOneWidget);
-      await tester.tap(find.text('纳米强化 · 第 3 回合 · 选取率 75%'));
+      await tester.tap(find.text('纳米强化，第 3 回合，选取率 75%'));
       await tester.pump();
       expect(find.text('本人使用它的 2 场对局'), findsOneWidget);
       await tester.tap(find.text(fmtDateTime(1767283200000)));

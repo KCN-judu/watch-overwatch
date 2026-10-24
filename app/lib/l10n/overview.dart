@@ -11,12 +11,12 @@ class OverviewStrings {
   String versusBefore(String delta) => '比之前 20 场 $delta';
   String get notEnoughBefore => '前 20 场不足，无对比';
   String get rollingLabel => '每 10 场的胜率';
-  String coverage(int n, String mode) => '$mode · 已读取 $n 场';
+  String coverage(int n, String mode) => '$mode，已读取 $n 场';
   String get coverageTip => '基于本机已读取的对局，对局页读到新对局后自动更新。胜率不计平局。';
 
   String get formTitle => '最近 20 场';
   String formTip(String result, String map, String hero, String time) =>
-      '$result · $map · $hero · $time';
+      '$result，$map，$hero，$time';
   String get formHint => '点头像查看本局';
 
   String get insightsTitle => '近期动态';
@@ -26,13 +26,13 @@ class OverviewStrings {
   String recentDown(String now, String then) =>
       '状态下滑：近 20 场胜率 $now，前 20 场 $then';
   String mapUp(String map, String rate, int n, String overall) =>
-      '强势图 $map：$n 场 · 胜率 $rate（总胜率 $overall）';
+      '强势图 $map：$n 场，胜率 $rate（总胜率 $overall）';
   String mapDown(String map, String rate, int n, String overall) =>
-      '苦手图 $map：$n 场 · 胜率 $rate（总胜率 $overall）';
+      '苦手图 $map：$n 场，胜率 $rate（总胜率 $overall）';
   String heroUp(String hero, String rate, int n, String overall) =>
-      '绝活 $hero：$n 场 · 胜率 $rate（总胜率 $overall）';
+      '绝活 $hero：$n 场，胜率 $rate（总胜率 $overall）';
   String heroDown(String hero, String rate, int n, String overall) =>
-      '短板英雄 $hero：$n 场 · 胜率 $rate（总胜率 $overall）';
+      '短板英雄 $hero：$n 场，胜率 $rate（总胜率 $overall）';
   String get insightsNone => '暂无显著动态。';
   String get insightsTip =>
       '判定标准：地图、英雄的胜率区间整体高于或低于总胜率；近期对比前后各 ≥ 10 场且相差 ≥ 15 个百分点；连胜、连败从 3 场起。';

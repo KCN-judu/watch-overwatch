@@ -167,7 +167,7 @@ void main() {
     await tester.pump();
     expect(find.text('+20%'), findsWidgets); // 60% − 40%
     expect(find.text('+5.0'), findsOneWidget); // kills
-    expect(find.text('KCN#51896 40 场 · 小明#5123 10 场'), findsOneWidget);
+    expect(find.text('KCN#51896 40 场，小明#5123 10 场'), findsOneWidget);
     expect(find.text('双方场次差距较大，场次少的一方波动更大。'), findsOneWidget);
   });
 }

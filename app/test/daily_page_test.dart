@@ -125,7 +125,7 @@ void main() {
       );
       await tester.pump();
       expect(tester.takeException(), isNull);
-      expect(find.textContaining('每日总结 · 2026-10-22 周四'), findsOneWidget);
+      expect(find.textContaining('每日总结 2026-10-22 周四'), findsOneWidget);
       expect(find.text('刷新纪录：消灭'), findsOneWidget);
       expect(find.text('之前本机最高 24'), findsOneWidget);
       expect(find.text('全场最高'), findsOneWidget);

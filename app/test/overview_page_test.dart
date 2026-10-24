@@ -140,7 +140,7 @@ void main() {
     final t = setUp(overviewJson());
     await tester.pumpWidget(t.page);
     await tester.pumpAndSettle();
-    await tester.tap(find.bySemanticsLabel(RegExp('^负 · 努巴尼')).first);
+    await tester.tap(find.bySemanticsLabel(RegExp('^负，努巴尼')).first);
     expect(t.ws.openMatchId, 'm0');
     expect(t.app.tab, 'matches');
   });

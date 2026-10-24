@@ -726,7 +726,7 @@ class EmptyState extends StatelessWidget {
   }
 }
 
-/// What happened · why · what to do next · copyable details.
+/// What happened, why, what to do next, copyable details.
 class ErrorPanel extends StatelessWidget {
   const ErrorPanel({
     super.key,

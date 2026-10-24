@@ -76,8 +76,8 @@ class AnalysisStrings {
   String get byRoleTable => '按本人职责汇总的对局强度';
 
   /// Tooltip on an average: points, then the tier.
-  String ratingTip(String points, String tier) => '$points 分 · $tier';
-  String sideMeanTip(String side) => '$side · 同职责平均';
+  String ratingTip(String points, String tier) => '$points 分，$tier';
+  String sideMeanTip(String side) => '$side同职责平均';
   String get playedRole => '本人职责';
   String get matchesColumn => '场次';
   String get winRate => '胜率';
@@ -113,9 +113,9 @@ class AnalysisStrings {
   String get allyShort => '己';
   String get enemyShort => '对';
   String slotAllyMeanTip(String slot, {required bool overall}) =>
-      '$slot · 己方平均${overall ? '（所有已定级玩家）' : ''}';
+      '己方$slot平均${overall ? '（所有已定级玩家）' : ''}';
   String slotEnemyMeanTip(String slot, {required bool overall}) =>
-      '$slot · 对方平均${overall ? '（所有已定级玩家）' : ''}';
+      '对方$slot平均${overall ? '（所有已定级玩家）' : ''}';
   String get ratedColumn => '已定级';
   String get ratedColumnTip => '已定级人数 / 总人数（己方 + 对方）';
 
@@ -197,7 +197,7 @@ class AnalysisStrings {
       '竖条：该队已定级玩家最低至最高${tiers ? '段位' : '段位分'}，圆点为平均。斜线阴影：无已定级玩家。';
 
   /// The readout line about one match.
-  String chartPointNote(String outcome, String role) => '$outcome · 本人打$role';
+  String chartPointNote(String outcome, String role) => '$outcome，本人打$role';
   String get chartAsTable => '以表格查看图中的数值';
   String chartTableRow(String when, String ally, String enemy, String diff) =>
       '$when  己方 $ally  对方 $enemy  差 $diff';
@@ -209,9 +209,9 @@ class AnalysisStrings {
   String get lifeInfo =>
       '对局时长 ÷ 阵亡次数（大神不提供每次阵亡的时间点），含复活等待。'
       '零阵亡的对局取整局时长（实际更长），用盾牌标出。';
-  String lifeNoteDeathless(String duration) => '对局时长 $duration · 零阵亡';
+  String lifeNoteDeathless(String duration) => '对局时长 $duration，零阵亡';
   String lifeNote(String duration, String deaths) =>
-      '对局时长 $duration · 阵亡 $deaths 次';
+      '对局时长 $duration，阵亡 $deaths 次';
   String get lifeCard => '存活时长';
   String seconds(String signed) => '$signed 秒';
   String get lifeShield => '盾牌：零阵亡，取整局时长。';
@@ -238,7 +238,7 @@ class AnalysisStrings {
   String detailsNotStored(int listed) =>
       '已读 $listed 场，详情尚未存到本机（需要对局时长和阵亡数）。'
       '打开几场对局，或等待后台同步完成。';
-  String growthTitle(String mode) => '$mode · 成长';
+  String growthTitle(String mode) => '$mode成长';
   String get roleSemantic => '职责';
   String get growthInfo =>
       '每项一张图：一个点一局，粗线为最近 10 场平均，空心点为败局。'
@@ -269,7 +269,7 @@ class AnalysisStrings {
 
   /// The trend card's second line: how big the change is, and how sure.
   String trendEffect(String changePct, String confidence) =>
-      '后半段 vs 前半段 $changePct% · $confidence';
+      '后半段 vs 前半段 $changePct%，$confidence';
 
   /// Under the trend cards: what the wording means (the p value is in each card's tip).
   String get confidenceMeaning =>
@@ -283,7 +283,7 @@ class AnalysisStrings {
     required int matches,
     required String p,
   }) =>
-      '前半段 $older → 后半段 $newer（$change，$changePct%）· $matches 场 · Mann-Kendall $p';
+      '前半段 $older → 后半段 $newer（$change，$changePct%），$matches 场，Mann-Kendall $p';
   String movingAverage(int n) => '$n 场平均';
   String chartEmpty(String title) => '$title：没有数据。';
   String growthChartSummary({
@@ -302,8 +302,7 @@ class AnalysisStrings {
   String noPastSeasonsBody(String mode) => '近 6 个赛季无$mode职责数据（未玩过或资料未公开）。';
 
   /// Header: mode and the season span, short form (S5–S10).
-  String trendTitle(String mode, int first, int last) =>
-      '$mode · S$first–S$last';
+  String trendTitle(String mode, int first, int last) => '$mode S$first–S$last';
   String get metricSemantic => '指标';
   String noRanksIn(String mode) => '$mode没有段位';
   String get rankInfo => '三图纵轴一致。实线：赛季末段位；虚线：赛季最高段位。';
@@ -333,7 +332,7 @@ class AnalysisStrings {
   String get seasonEnd => '赛季末';
   String get peak => '最高';
   String get noData => '没有数据';
-  String seasonPointNote(String matches, String rank) => '$matches 场 · $rank';
+  String seasonPointNote(String matches, String rank) => '$matches 场，$rank';
 
   // Rank tracks (season trend page).
   String get tracksTitle => '段位轨迹';

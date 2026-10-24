@@ -82,6 +82,10 @@ void main() {
     expect(found, isEmpty);
   });
 
+  test('copy joins facts with ，, never an infix dot', () {
+    expect(offenders(RegExp('·'), {}), isEmpty);
+  });
+
   test('wording comes from the string table (lib/l10n)', () {
     // The allowed files hold game and provider data (hero, map-mode and stat names
     // matched against upstream values), not wording.

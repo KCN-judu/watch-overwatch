@@ -157,8 +157,8 @@ class _StadiumBuildsSectionState extends State<StadiumBuildsSection> {
         u.upgrade.label;
     final rate = tr.heroes.pickRate(fmtPct(u.pickRatePct, digits: 0));
     return u.round == null
-        ? '$name · $rate'
-        : '$name · ${tr.heroes.roundTag(u.round!)} · $rate';
+        ? [name, rate].join(tr.common.sep)
+        : [name, tr.heroes.roundTag(u.round!), rate].join(tr.common.sep);
   }
 
   Widget _bars(
@@ -248,7 +248,7 @@ class _Matches extends StatelessWidget {
                 fmtDateTime(rows[id]?.startedAtMs),
                 rows[id]?.map?.label ?? tr.common.unknownMap,
                 rows[id]?.outcome.label ?? '',
-              ].join(' · '),
+              ].join(tr.common.sep),
               padding: const EdgeInsets.symmetric(
                 horizontal: Sp.withinGroup,
                 vertical: Sp.withinControl,

@@ -193,7 +193,7 @@ class _List extends StatelessWidget {
                     semanticLabel: [
                       m.name ?? tr.people.anonymous,
                       tr.people.shared(m.shared),
-                    ].join(' · '),
+                    ].join(tr.common.sep),
                     padding: EdgeInsets.symmetric(
                       horizontal: Sp.withinGroup,
                       vertical: context.density.padV,
@@ -236,7 +236,7 @@ class _MateRow extends StatelessWidget {
                   if (m.asEnemy.matches > 0)
                     tr.people.enemyLine(m.asEnemy.matches, _rate(m.asEnemy)),
                   if (m.inParty > 0) tr.people.partyLine(m.inParty),
-                ].join(' · '),
+                ].join(tr.common.sep),
                 style: meta,
               ),
             ],
@@ -322,7 +322,7 @@ class _Duo extends StatelessWidget {
                       fmtDateTime(m.startedAtMs),
                       m.map?.label ?? tr.common.unknownMap,
                       m.sameSide ? tr.people.sameSide : tr.people.otherSide,
-                    ].join(' · '),
+                    ].join(tr.common.sep),
                     padding: EdgeInsets.symmetric(
                       horizontal: Sp.withinGroup,
                       vertical: context.density.padV,
@@ -399,7 +399,7 @@ class _SharedRow extends StatelessWidget {
             [
               m.sameSide ? tr.people.sameSide : tr.people.otherSide,
               if (m.grouped) tr.people.grouped,
-            ].join(' · '),
+            ].join(tr.common.sep),
             style: meta,
           ),
         ),

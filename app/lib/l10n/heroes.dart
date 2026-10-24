@@ -113,14 +113,14 @@ class HeroStrings {
   String get perMatch => '每场平均';
   String unnamedStats(int n) => '另有 $n 项统计目录里没有名称，未显示。';
 
-  /// Caption under a two-part figure: 最后一击 1,234（60%）· 共同消灭 800.
+  /// Caption under a two-part figure: 最后一击 1,234（60%），共同消灭 800.
   String splitCaption(
     String part,
     String partValue,
     String pct,
     String rest,
     String restValue,
-  ) => '$part $partValue（$pct）· $rest $restValue';
+  ) => '$part $partValue（$pct），$rest $restValue';
 
   String get recentMatches => '近期对局';
   String recentInfo(int total, String hero) =>
@@ -153,9 +153,9 @@ class HeroStrings {
   String accountSuspendedUntil(String at) => '暂停，到期 $at';
   String get accountNormal => '正常';
 
-  /// 竞技比赛生涯 · 第 N 赛季.
+  /// 竞技比赛生涯 第 N 赛季.
   String careerHeading(String mode, int? season) =>
-      season == null ? '$mode生涯' : '$mode生涯 · 第 $season 赛季';
+      season == null ? '$mode生涯' : '$mode生涯 第 $season 赛季';
   String careerTableLabel(String mode) => '$mode各职责生涯';
   String get colRole => '职责';
   String get colCurrentRank => '当前段位';
@@ -184,22 +184,22 @@ class HeroStrings {
   /// Province board label; an empty role is the overall board.
   String provinceRankLabel(String? role, String? province) {
     final r = role == null || role.isEmpty ? '综合' : role;
-    return province == null ? r : '$r · $province';
+    return province == null ? r : '$province$r';
   }
 
   /// 第 N 名.
   String rankPosition(String n) => '第 $n 名';
 
-  /// 近期表现 · 竞技比赛.
-  String recentHeading(String mode) => '近期表现 · $mode';
+  /// 竞技比赛近期表现.
+  String recentHeading(String mode) => '$mode近期表现';
   String get recentFormInfo =>
       '基于对局页已读取的对局。胜率 = 胜 ÷（胜 + 负）；平均值只计提供了该项的对局，不足时标注 n。';
   String get noMatchesRead => '暂无已读取的对局。';
   String get record => '战绩';
 
-  /// N 平, with · M 未知 when some outcomes are unknown.
+  /// N 平, then M 未知 when some outcomes are unknown.
   String drawsNote(int draws, int unknown) =>
-      unknown > 0 ? '$draws 平 · $unknown 未知' : '$draws 平';
+      unknown > 0 ? '$draws 平，$unknown 未知' : '$draws 平';
 
   /// The range a win rate plausibly lies in, and the record behind it.
   String winRateRange(String low, String high, int wins, int matches) =>
@@ -244,7 +244,7 @@ class HeroStrings {
 
   // Hero boards (hero detail).
   String heroBoard(String province, int rank) => '英雄榜：$province第 $rank 名';
-  String heroBoardTip(int n, String rate) => '依据 $n 场 · 胜率 $rate（大神英雄榜）';
+  String heroBoardTip(int n, String rate) => '依据 $n 场，胜率 $rate（大神英雄榜）';
 
   // Stadium builds (hero detail, Stadium mode).
   String get buildsTitle => '构筑';

@@ -4,11 +4,11 @@ class DailyStrings {
 
   String get daysTitle => '有对局的日子';
   String get daysTip => '按日分组（北京时间），点击查看当天战报。';
-  String title(String date, String weekday) => '每日总结 · $date $weekday';
+  String title(String date, String weekday) => '每日总结 $date $weekday';
   String get previousDay => '前一天';
   String get nextDay => '后一天';
   String caption(String name, String mode, String date, int n) =>
-      '$name · $mode · $date · $n 场对局';
+      '$name，$mode，$date，$n 场对局';
   String get fileName => '每日总结';
   String get emptyTitle => '暂无对局数据';
   String emptyBody(String mode) => '$mode还没有读取对局。';
@@ -46,7 +46,7 @@ class DailyStrings {
   String get bestMatchNote => '胜局中 KDA 最高';
   String get bestFleta => '最高 Fleta';
   String get bestFletaNote => '最后一击 / 本队一半';
-  String where(String hero, String map) => '$hero · $map';
+  String where(String hero, String map) => '$hero，$map';
 
   String get statKills => '消灭';
   String get statDamage => '伤害';
@@ -61,7 +61,7 @@ class DailyStrings {
   String get versusToday => '当天';
   String get versusUsual => '近 30 天';
   String get versusDiff => '差';
-  String versusNote(int n, int m) => '当天 $n 场 · 近 30 天 $m 场';
+  String versusNote(int n, int m) => '当天 $n 场，近 30 天 $m 场';
 
   String get heroesTitle => '使用英雄';
   String get mapsTitle => '地图';

@@ -2,10 +2,10 @@
 class MapStrings {
   const MapStrings();
 
-  String coverage(int n, String mode) => '$mode · 已读取 $n 场';
+  String coverage(int n, String mode) => '$mode，已读取 $n 场';
   String get coverageTip => '按地图类型分组，基于本机已读取的对局。胜率不计平局；对局列表不区分攻防。';
   String get otherMode => '其他';
-  String modeSummary(int n, String rate) => '$n 场 · 胜率 $rate';
+  String modeSummary(int n, String rate) => '$n 场，胜率 $rate';
   String get modeTip => '横条：胜率；细线：置信区间；竖线：该类地图总胜率。不足 5 场置灰，不参与比较。点击查看地图详情。';
   String typeRate(String rate) => '该类总胜率 $rate';
   String get winRate => '胜率';

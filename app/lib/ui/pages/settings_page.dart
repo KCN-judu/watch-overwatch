@@ -314,7 +314,7 @@ class _SettingsPageState extends State<SettingsPage> {
               _cacheRow(app),
               _info(
                 tr.shell.backend,
-                '${app.backend.api.base}${app.backend.binaryPath == null ? '' : '  ·  ${app.backend.binaryPath}'}',
+                '${app.backend.api.base}${app.backend.binaryPath == null ? '' : '${tr.common.sep}${app.backend.binaryPath}'}',
               ),
               const SizedBox(height: Sp.withinGroup),
               Align(

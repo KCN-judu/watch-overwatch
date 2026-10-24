@@ -13,7 +13,8 @@
 ///  - The voice is a game stats tool's (docs/ui-design.md §8 措辞): labels in players'
 ///    words (强势图 / 苦手图, 绝活, 连胜中, 零阵亡, 同分段, 段位同步, 高光时刻); facts and
 ///    figures, never advice, comfort or judgement of a player; a tip is one or two short
-///    clauses, the rule first; one fact per line, joined with ·; no “只有……才会出现” or
+///    clauses, the rule first; one fact per clause, joined with ，(tr.common.sep), never an
+///    infix dot ·; no “只有……才会出现” or
 ///    “会随之生成” narrating the app itself; the provider is “大神”, never “上游”.
 ///  - The player being looked at needs no subject in most lines; where it must be told
 ///    apart from others it is “本人”, never “你” (the user may be looking at someone
