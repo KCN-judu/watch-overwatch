@@ -37,6 +37,15 @@ void main() {
     expect(block.center.dy, closeTo(card.center.dy, 2));
   });
 
+  testWidgets('the spinner stays round in a wider slot', (tester) async {
+    // The strength page's step list gives every step icon a 20px-wide slot.
+    await tester.pumpWidget(
+      host(const Row(children: [SizedBox(width: 20, child: Spinner())])),
+    );
+    final size = tester.getSize(find.byType(CircularProgressIndicator));
+    expect(size, const Size.square(Spinner.size));
+  });
+
   testWidgets('cards have one cut corner, not rounded ones', (tester) async {
     await tester.pumpWidget(
       host(const StatCard(label: '消灭', value: '12', accent: Colors.blue)),

@@ -854,17 +854,22 @@ class _AfterDelayState extends State<AfterDelay> {
 }
 
 /// The one spinner: 14px, 2px stroke, secondary text colour unless told otherwise.
+/// Stays round in a slot wider or taller than itself (the [Align] loosens the slot's
+/// tight constraints instead of letting them stretch the circle).
 class Spinner extends StatelessWidget {
   const Spinner({super.key, this.color});
   final Color? color;
   static const size = 14.0;
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: size,
-    height: size,
-    child: CircularProgressIndicator(
-      strokeWidth: 2,
-      color: color ?? context.c.textSecondary,
+  Widget build(BuildContext context) => Align(
+    widthFactor: 1,
+    heightFactor: 1,
+    child: SizedBox.square(
+      dimension: size,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: color ?? context.c.textSecondary,
+      ),
     ),
   );
 }
