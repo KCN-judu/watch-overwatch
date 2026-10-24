@@ -90,12 +90,12 @@ class _ShareableState extends State<Shareable> {
       children: [
         ?widget.trailing,
         IconAction(
-          icon: Icons.content_copy,
+          icon: Icons.content_copy_sharp,
           label: tr.recap.shareCopy,
           onPressed: _capturing ? null : _copy,
         ),
         IconAction(
-          icon: Icons.image_outlined,
+          icon: Icons.image_sharp,
           label: tr.recap.shareSave,
           onPressed: _capturing ? null : _save,
         ),

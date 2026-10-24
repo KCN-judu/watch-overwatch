@@ -22,13 +22,13 @@ void main() {
         const InfoCard(
           name: '组队',
           description: '没有组队信息',
-          glyph: Icons.groups_outlined,
+          glyph: Icons.groups_sharp,
           accent: Colors.blue,
         ),
       ),
     );
     final card = tester.getRect(find.byType(CardSurface));
-    final icon = tester.getRect(find.byIcon(Icons.groups_outlined));
+    final icon = tester.getRect(find.byIcon(Icons.groups_sharp));
     final name = tester.getRect(find.text('组队'));
     final text = tester.getRect(find.text('没有组队信息'));
     expect(icon.center.dy, closeTo(card.center.dy, 1));
@@ -37,17 +37,19 @@ void main() {
     expect(block.center.dy, closeTo(card.center.dy, 2));
   });
 
-  testWidgets('cards are plain rectangles', (tester) async {
+  testWidgets('cards have one cut corner, not rounded ones', (tester) async {
     await tester.pumpWidget(
       host(const StatCard(label: '消灭', value: '12', accent: Colors.blue)),
     );
     final box = tester.widget<DecoratedBox>(
-      find.descendant(
-        of: find.byType(CardSurface),
-        matching: find.byType(DecoratedBox),
-      ),
+      find
+          .descendant(
+            of: find.byType(CardSurface),
+            matching: find.byType(DecoratedBox),
+          )
+          .first,
     );
-    expect((box.decoration as BoxDecoration).borderRadius, isNull);
+    expect((box.decoration as ShapeDecoration).shape, isA<CutBorder>());
     expect(find.byType(ClipRRect), findsNothing);
   });
 

@@ -173,7 +173,7 @@ class _HeroesPageState extends State<HeroesPage> {
                 onChanged: (v) => setState(() => _query = v),
                 decoration: InputDecoration(
                   hintText: tr.heroes.searchHint,
-                  prefixIcon: const Icon(Icons.search, size: 18),
+                  prefixIcon: const Icon(Icons.search_sharp, size: 18),
                 ),
               ),
             ),
@@ -236,7 +236,9 @@ class _HeroesPageState extends State<HeroesPage> {
               ],
             ),
             IconAction(
-              icon: _asc ? Icons.arrow_upward : Icons.arrow_downward,
+              icon: _asc
+                  ? Icons.arrow_upward_sharp
+                  : Icons.arrow_downward_sharp,
               label: _asc
                   ? tr.heroes.sortAscending(sortLabel)
                   : tr.heroes.sortDescending(sortLabel),
@@ -278,7 +280,7 @@ class _HeroesPageState extends State<HeroesPage> {
                 ? const AfterDelay(child: SizedBox.shrink())
                 : all.isEmpty
                 ? EmptyState(
-                    icon: Icons.groups_outlined,
+                    icon: Icons.groups_sharp,
                     title: tr.heroes.noHeroesTitle(season, mode.label),
                     body: tr.heroes.noHeroesBody,
                     actions: [
@@ -290,7 +292,7 @@ class _HeroesPageState extends State<HeroesPage> {
                     ],
                   )
                 : EmptyState(
-                    icon: Icons.search_off,
+                    icon: Icons.search_off_sharp,
                     title: tr.heroes.noSearchMatchTitle(_query.trim()),
                     body: tr.heroes.noSearchMatchBody(all.length),
                     actions: [

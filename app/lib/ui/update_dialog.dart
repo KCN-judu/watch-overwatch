@@ -99,7 +99,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
     } else if (!newer) {
       body = Row(
         children: [
-          Icon(Icons.check_circle_outline, color: c.success, size: 20),
+          Icon(Icons.check_circle_outline_sharp, color: c.success, size: 20),
           const SizedBox(width: Sp.withinGroup),
           Text(tr.update.upToDate(info?.current ?? ''), style: Ty.bodyStrong),
         ],

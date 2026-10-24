@@ -27,7 +27,7 @@ String _slotName(Role? r) => r == null ? tr.analysis.overallSlot : r.label;
 
 /// Role glyph, or the "everyone" glyph for the overall slot.
 Widget _slotIcon(Role? r, {double size = 15, bool tooltip = false}) => r == null
-    ? Icon(Icons.groups_2_outlined, size: size)
+    ? Icon(Icons.groups_2_sharp, size: size)
     : RoleIcon(r, size: size, tooltip: tooltip);
 
 class StrengthPage extends StatefulWidget {
@@ -136,7 +136,7 @@ class _StrengthPageState extends State<StrengthPage> {
     if (rated.isEmpty) {
       return [
         EmptyState(
-          icon: Icons.analytics_outlined,
+          icon: Icons.analytics_sharp,
           title: tr.analysis.noRatedMatches,
           body: requested == 0
               ? tr.analysis.noMatchesRead(mode.label)
@@ -216,7 +216,7 @@ class _StrengthPageState extends State<StrengthPage> {
                     if (perRole[role]! < n) ...[
                       const SizedBox(width: Sp.withinControl),
                       Icon(
-                        Icons.warning_amber_rounded,
+                        Icons.warning_amber_sharp,
                         size: 14,
                         color: c.warning,
                       ),
@@ -231,7 +231,7 @@ class _StrengthPageState extends State<StrengthPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.bolt, size: 15, color: c.textSecondary),
+                  Icon(Icons.bolt_sharp, size: 15, color: c.textSecondary),
                   const SizedBox(width: Sp.withinControl),
                   Text(
                     tr.analysis.cacheHits(r.dataset.coverage.cacheHits),
@@ -245,11 +245,7 @@ class _StrengthPageState extends State<StrengthPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.how_to_reg_outlined,
-                  size: 15,
-                  color: c.textSecondary,
-                ),
+                Icon(Icons.how_to_reg_sharp, size: 15, color: c.textSecondary),
                 const SizedBox(width: Sp.withinControl),
                 Text(
                   '$ratedPlayers / $totalPlayers',
@@ -364,7 +360,7 @@ class _StrengthPageState extends State<StrengthPage> {
           cell: (_, g) => g.subjectRole == null
               ? Row(
                   children: [
-                    const Icon(Icons.groups_2_outlined, size: 18),
+                    const Icon(Icons.groups_2_sharp, size: 18),
                     const SizedBox(width: Sp.withinGroup),
                     Text(
                       tr.analysis.all,
@@ -544,7 +540,7 @@ class _StrengthPageState extends State<StrengthPage> {
       Col(
         id: 'rated',
         label: tr.analysis.ratedColumn,
-        headerChild: const Icon(Icons.how_to_reg_outlined, size: 15),
+        headerChild: const Icon(Icons.how_to_reg_sharp, size: 15),
         width: 76,
         numeric: true,
         tooltip: tr.analysis.ratedColumnTip,
@@ -674,14 +670,14 @@ class _Controls extends StatelessWidget {
         if (load.loading)
           AppButton(
             tr.common.cancel,
-            icon: Icons.stop_circle_outlined,
+            icon: Icons.stop_circle_sharp,
             onPressed: () => ws.cancelStrength(mode),
           )
         else ...[
           AppButton(
             load.has ? tr.analysis.reanalyse : tr.analysis.startAnalysis,
             primary: true,
-            icon: Icons.analytics_outlined,
+            icon: Icons.analytics_sharp,
             tooltip: load.has ? tr.analysis.reanalyseTip : null,
             onPressed: () => ws.runStrength(mode),
           ),
@@ -689,7 +685,7 @@ class _Controls extends StatelessWidget {
             AppButton(
               tr.analysis.requeryRanks,
               quiet: true,
-              icon: Icons.refresh,
+              icon: Icons.refresh_sharp,
               tooltip: tr.analysis.requeryRanksTip,
               onPressed: () => ws.runStrength(mode, fresh: true),
             ),
@@ -731,7 +727,7 @@ class _Intro extends StatelessWidget {
       padding: PanelPadding.spacious,
       child: Row(
         children: [
-          Icon(Icons.analytics_outlined, size: 28, color: c.textSecondary),
+          Icon(Icons.analytics_sharp, size: 28, color: c.textSecondary),
           const SizedBox(width: Sp.betweenGroups),
           Expanded(
             child: Column(
@@ -810,11 +806,11 @@ class _Running extends StatelessWidget {
                 SizedBox(
                   width: 20,
                   child: done
-                      ? Icon(Icons.check_circle, size: 18, color: color)
+                      ? Icon(Icons.check_circle_sharp, size: 18, color: color)
                       : current
                       ? Spinner(color: color)
                       : Icon(
-                          Icons.radio_button_unchecked,
+                          Icons.radio_button_unchecked_sharp,
                           size: 18,
                           color: color,
                         ),
@@ -936,11 +932,7 @@ class _Running extends StatelessWidget {
                   ),
                   if (p.failures > 0) ...[
                     const SizedBox(width: Sp.betweenItems),
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      size: 14,
-                      color: c.warning,
-                    ),
+                    Icon(Icons.warning_amber_sharp, size: 14, color: c.warning),
                     const SizedBox(width: Sp.withinControl),
                     Text(
                       tr.analysis.failures(p.failures),

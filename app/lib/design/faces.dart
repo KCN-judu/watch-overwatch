@@ -53,7 +53,10 @@ class FaceStrip extends StatelessWidget {
                       Container(
                         height: 14,
                         alignment: Alignment.center,
-                        color: c.outcome(f.outcome.id),
+                        decoration: ShapeDecoration(
+                          color: c.outcome(f.outcome.id),
+                          shape: const SlantBorder(edges: SlantEdges.trailing),
+                        ),
                         child: Text(
                           f.outcome.label,
                           style: Ty.micro.copyWith(color: c.onAccent),

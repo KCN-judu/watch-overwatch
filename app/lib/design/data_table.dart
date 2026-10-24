@@ -396,12 +396,12 @@ class _HeaderCellState<T> extends State<_HeaderCell<T>> {
         );
     final arrow = sorted
         ? Icon(
-            ascending ? Icons.arrow_upward : Icons.arrow_downward,
+            ascending ? Icons.arrow_upward_sharp : Icons.arrow_downward_sharp,
             size: 12,
             color: c.textPrimary,
           )
         : (col.sortable
-              ? Icon(Icons.unfold_more, size: 12, color: c.textSecondary)
+              ? Icon(Icons.unfold_more_sharp, size: 12, color: c.textSecondary)
               : null);
     Widget child = Container(
       width: width,

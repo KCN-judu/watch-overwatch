@@ -67,10 +67,19 @@ class Ctl {
   static const double large = 36;
 }
 
+/// Corners are nearly square: the shape language is the slant and the cut
+/// ([SlantBorder], [CutBorder] in `shapes.dart`), not rounding.
 class Radii {
-  static const double control = 6;
-  static const double container = 8;
+  static const double control = 2;
+  static const double container = 2;
 }
+
+/// The one slant (docs/ui-design.md §7): a slanted edge moves this far sideways per
+/// unit of height (about 11°). Tabs, segments, buttons, result plates, the section mark.
+const double slant = 0.2;
+
+/// The corner cut off a panel, a card or a banner.
+const double cornerCut = 10;
 
 /// Motion durations. Reduced-motion preference collapses all of them to zero.
 class Dur {
@@ -188,28 +197,31 @@ class AppColors extends ThemeExtension<AppColors> {
   final double barAlpha;
 
   static const dark = AppColors(
-    window: Color(0xFF12141A),
-    nav: Color(0xFF171A21),
-    raised: Color(0xFF1D212A),
-    header: Color(0xFF232834),
-    hover: Color(0x0DFFFFFF),
-    selected: Color(0x298E96FF),
-    border: Color(0x1FFFFFFF),
-    textPrimary: Color(0xFFE8EAEF),
-    textSecondary: Color(0xFFA9AFBD),
-    accent: Color(0xFF8E96FF),
-    onAccent: Color(0xFF11131A),
-    win: Color(0xFF5FD19A),
-    loss: Color(0xFFFF7A70),
-    draw: Color(0xFFA9AFBD),
-    ally: Color(0xFF4FB0F0),
-    enemy: Color(0xFFF2994A),
-    warning: Color(0xFFE9B84A),
-    error: Color(0xFFFF7A70),
-    success: Color(0xFF5FD19A),
-    positive: Color(0xFF5FD19A),
-    negative: Color(0xFFFF7A70),
-    grid: Color(0x1FFFFFFF),
+    // Deep blue-slate, the game's menus; everything raised steps toward blue-grey.
+    window: Color(0xFF0D1320),
+    nav: Color(0xFF111A2A),
+    raised: Color(0xFF162030),
+    header: Color(0xFF1C283A),
+    hover: Color(0x10FFFFFF),
+    selected: Color(0x24F99E1A),
+    border: Color(0x26A9C3E6),
+    textPrimary: Color(0xFFEEF2F8),
+    textSecondary: Color(0xFFA1ADC2),
+    // The game's orange.
+    accent: Color(0xFFF99E1A),
+    onAccent: Color(0xFF1B1204),
+    win: Color(0xFF4FD69C),
+    loss: Color(0xFFFF8075),
+    draw: Color(0xFFA1ADC2),
+    // Blue team and red team, as in the game.
+    ally: Color(0xFF52B6F5),
+    enemy: Color(0xFFFF6A84),
+    warning: Color(0xFFF2D04A),
+    error: Color(0xFFFF8075),
+    success: Color(0xFF4FD69C),
+    positive: Color(0xFF4FD69C),
+    negative: Color(0xFFFF8075),
+    grid: Color(0x1FA9C3E6),
     statDamage: Color(0xFFF0605A),
     statHealing: Color(0xFF3FC47E),
     statMitigation: Color(0xFF4E9CF0),
@@ -217,33 +229,37 @@ class AppColors extends ThemeExtension<AppColors> {
   );
 
   static const light = AppColors(
-    window: Color(0xFFF4F5F7),
-    nav: Color(0xFFECEEF2),
+    window: Color(0xFFEEF1F6),
+    nav: Color(0xFFE4E9F1),
     raised: Color(0xFFFFFFFF),
-    header: Color(0xFFF0F2F5),
-    hover: Color(0x0A000000),
-    selected: Color(0x243B42C4),
-    border: Color(0x1F000000),
-    textPrimary: Color(0xFF1A1D24),
-    textSecondary: Color(0xFF525866),
-    accent: Color(0xFF3B42C4),
+    header: Color(0xFFF1F4F9),
+    hover: Color(0x0D0D1320),
+    selected: Color(0x24C2620A),
+    border: Color(0x29182A44),
+    textPrimary: Color(0xFF141B28),
+    textSecondary: Color(0xFF4F5A6E),
+    // The orange darkened until it reads as text on every light surface.
+    accent: Color(0xFFA04C00),
     onAccent: Color(0xFFFFFFFF),
     win: Color(0xFF166A42),
     loss: Color(0xFFAD2B24),
-    draw: Color(0xFF525866),
+    draw: Color(0xFF4F5A6E),
     ally: Color(0xFF11608F),
-    enemy: Color(0xFF8A4A07),
+    enemy: Color(0xFFB0213F),
     warning: Color(0xFF6F4D00),
     error: Color(0xFFAD2B24),
     success: Color(0xFF166A42),
     positive: Color(0xFF166A42),
     negative: Color(0xFFAD2B24),
-    grid: Color(0x1F000000),
+    grid: Color(0x1F182A44),
     statDamage: Color(0xFFD0453E),
     statHealing: Color(0xFF1E9A5C),
     statMitigation: Color(0xFF2C7BD4),
     barAlpha: 0.32,
   );
+
+  /// Alpha mask from opaque to clear (only the alpha counts).
+  static const fade = [Color(0xFF000000), Color(0x00000000)];
 
   /// Alpha mask that fades a row's picture out toward the right (only the alpha counts).
   static const artFade = [
@@ -410,10 +426,11 @@ class Ty {
   static const fallback = ['Microsoft YaHei', 'Segoe UI'];
 
   /// Big figures only (KPIs, scores, poster numbers): Windows' own Bahnschrift, a
-  /// DIN-style face, set semi-condensed so numbers read tall and tight (the reference's
-  /// "数字是主角"). Chinese in a figure ("3 胜 2 负") falls back to YaHei.
+  /// DIN-style face, set condensed and heavy so numbers read tall and tight, as the
+  /// game's do. Upright: drawn oblique (the face has no italic) they leaned too far.
+  /// Words in a figure ("3 胜 2 负") get their own style.
   static const numbers = 'Bahnschrift';
-  static const _narrow = [FontVariation('wdth', 85)];
+  static const _narrow = [FontVariation('wdth', 78)];
   static const _tab = [FontFeature.tabularFigures()];
   static const _even = TextLeadingDistribution.even;
   static const meta = TextStyle(
@@ -437,13 +454,13 @@ class Ty {
   static const section = TextStyle(
     fontSize: 15,
     height: 1.5,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
     leadingDistribution: _even,
   );
   static const page = TextStyle(
     fontSize: 20,
     height: 1.4,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
     leadingDistribution: _even,
   );
   static const cell = TextStyle(
@@ -469,7 +486,7 @@ class Ty {
     fontVariations: _narrow,
     fontSize: 44,
     height: 1.05,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
     leadingDistribution: _even,
   );
 
@@ -480,7 +497,7 @@ class Ty {
     fontVariations: _narrow,
     fontSize: 26,
     height: 1.2,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
     leadingDistribution: _even,
   );
 

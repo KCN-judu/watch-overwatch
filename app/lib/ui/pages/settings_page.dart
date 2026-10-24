@@ -128,7 +128,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   AppButton(
                     tr.common.back,
-                    icon: Icons.arrow_back,
+                    icon: Icons.arrow_back_sharp,
                     onPressed: () => app.showSettings(false),
                     tooltip: 'Esc',
                   ),
@@ -198,7 +198,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   AppButton(
                     tr.shell.copyTokenScript,
-                    icon: Icons.content_copy,
+                    icon: Icons.content_copy_sharp,
                     onPressed: () => _copyTokenScript(app),
                   ),
                   Text(
@@ -321,7 +321,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 alignment: Alignment.centerLeft,
                 child: AppButton(
                   tr.shell.shortcuts,
-                  icon: Icons.keyboard_outlined,
+                  icon: Icons.keyboard_sharp,
                   tooltip: 'F1',
                   onPressed: ShellScope.of(context).actions.openShortcuts,
                 ),
@@ -344,7 +344,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         when u.newer && u.latest != null)
                       AppButton(
                         tr.update.newVersion(u.latest!.version),
-                        icon: Icons.system_update_alt,
+                        icon: Icons.system_update_alt_sharp,
                         primary: true,
                         onPressed: () => showUpdateDialog(context),
                       )
@@ -576,9 +576,9 @@ class _AccountStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final (icon, color) = switch (a['status']) {
-      'ready' => (Icons.check_rounded, c.success),
-      'cooldown' => (Icons.schedule, c.warning),
-      _ => (Icons.error_outline, c.error),
+      'ready' => (Icons.check_sharp, c.success),
+      'cooldown' => (Icons.schedule_sharp, c.warning),
+      _ => (Icons.error_outline_sharp, c.error),
     };
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -602,7 +602,7 @@ class _MetricStatus extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          ok ? Icons.check_rounded : Icons.close_rounded,
+          ok ? Icons.check_sharp : Icons.close_sharp,
           size: 14,
           color: ok ? c.success : c.error,
         ),

@@ -22,16 +22,16 @@ import 'shell.dart' show ShellScope;
 import '../design/net_pic.dart';
 
 const tabIcons = {
-  'overview': Icons.dashboard_outlined,
-  'daily': Icons.today_outlined,
-  'matches': Icons.sports_esports_outlined,
-  'heroes': Icons.groups_2_outlined,
-  'maps': Icons.map_outlined,
-  'people': Icons.people_outline,
-  'strength': Icons.balance,
-  'growth': Icons.trending_up,
-  'trend': Icons.show_chart,
-  'profile': Icons.badge_outlined,
+  'overview': Icons.dashboard_sharp,
+  'daily': Icons.today_sharp,
+  'matches': Icons.sports_esports_sharp,
+  'heroes': Icons.groups_2_sharp,
+  'maps': Icons.map_sharp,
+  'people': Icons.people_outline_sharp,
+  'strength': Icons.balance_sharp,
+  'growth': Icons.trending_up_sharp,
+  'trend': Icons.show_chart_sharp,
+  'profile': Icons.badge_sharp,
 };
 
 class PlayerView extends StatelessWidget {
@@ -47,8 +47,19 @@ class PlayerView extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            PlayerHeader(workspace: workspace),
-            TabStrip(app: app),
+            // The page head: the player and the tabs on the hexagon texture.
+            ColoredBox(
+              color: context.c.nav,
+              child: HexBackdrop(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PlayerHeader(workspace: workspace),
+                    TabStrip(app: app),
+                  ],
+                ),
+              ),
+            ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -120,13 +131,13 @@ class PlayerHeader extends StatelessWidget {
       if (profile?.endorsementLevel != null)
         fact(
           endorsementUrl == null
-              ? Icon(Icons.thumb_up_outlined, size: 14, color: c.textSecondary)
+              ? Icon(Icons.thumb_up_sharp, size: 14, color: c.textSecondary)
               : NetPic(
                   endorsementUrl,
                   width: 18,
                   height: 18,
                   error: Icon(
-                    Icons.thumb_up_outlined,
+                    Icons.thumb_up_sharp,
                     size: 14,
                     color: c.textSecondary,
                   ),
@@ -136,13 +147,13 @@ class PlayerHeader extends StatelessWidget {
         ),
       if (profile?.playTimeHours != null)
         fact(
-          Icon(Icons.schedule, size: 14, color: c.textSecondary),
+          Icon(Icons.schedule_sharp, size: 14, color: c.textSecondary),
           tr.shell.playTimeHours(fmtOne(profile!.playTimeHours)),
           tr.shell.playTime,
         ),
       if (profile?.totalMatches != null)
         fact(
-          Icon(Icons.sports_esports_outlined, size: 14, color: c.textSecondary),
+          Icon(Icons.sports_esports_sharp, size: 14, color: c.textSecondary),
           tr.shell.matchCountFormatted(fmtInt(profile!.totalMatches)),
           tr.shell.totalMatches,
         ),
@@ -213,7 +224,7 @@ class PlayerHeader extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.warning_amber_rounded,
+                            Icons.warning_amber_sharp,
                             size: 14,
                             color: c.warning,
                           ),
@@ -252,13 +263,13 @@ class PlayerHeader extends StatelessWidget {
               ),
               const SizedBox(width: Sp.withinGroup),
               IconAction(
-                icon: Icons.refresh,
+                icon: Icons.refresh_sharp,
                 label: tr.shell.refreshData,
                 shortcut: 'F5',
                 onPressed: app.refreshCurrent,
               ),
               IconAction(
-                icon: Icons.ios_share,
+                icon: Icons.ios_share_sharp,
                 label: tr.shell.exportDataset,
                 shortcut: 'Ctrl+E',
                 onPressed: app.exporting
@@ -327,11 +338,7 @@ class _RankLine extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.emoji_events_outlined,
-                size: 14,
-                color: c.textSecondary,
-              ),
+              Icon(Icons.emoji_events_sharp, size: 14, color: c.textSecondary),
               const SizedBox(width: Sp.withinControl),
               Text(tr.shell.competitive, style: label),
             ],
@@ -455,8 +462,9 @@ class _TabStripState extends State<TabStrip> {
   }
 }
 
-/// A tab is the one item whose selection is an underline rather than an outline
-/// ([ItemState]): it names the page below it. Hover and focus are the usual ones.
+/// A tab is the one item whose selection is not an outline ([ItemState]): the selected
+/// tab is a solid accent plate leaning like every picked thing ([SlantBorder]), as the
+/// game's menus mark theirs. Hover and focus are the usual ones.
 class _Tab extends StatefulWidget {
   const _Tab({
     required this.icon,
@@ -504,19 +512,23 @@ class _TabState extends State<_Tab> {
             onTap: onTap,
             child: Container(
               height: Ctl.large,
-              padding: const EdgeInsets.symmetric(horizontal: Sp.betweenItems),
+              margin: const EdgeInsets.symmetric(vertical: Sp.withinControl),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.betweenGroups),
               alignment: Alignment.center,
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: selected ? c.accent : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-                color: c.itemFill(hovered: _hovered),
+              decoration: ShapeDecoration(
+                color: selected
+                    ? (_hovered
+                          ? Color.alphaBlend(c.hover, c.accent)
+                          : c.accent)
+                    : c.itemFill(hovered: _hovered),
+                shape: const SlantBorder(),
               ),
               foregroundDecoration: widget.ring
-                  ? BoxDecoration(border: c.itemOutline(focused: true))
+                  ? ShapeDecoration(
+                      shape: SlantBorder(
+                        side: BorderSide(color: c.textPrimary, width: 2),
+                      ),
+                    )
                   : null,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -524,14 +536,14 @@ class _TabState extends State<_Tab> {
                   Icon(
                     icon,
                     size: 16,
-                    color: selected ? c.accent : c.textSecondary,
+                    color: selected ? c.onAccent : c.textSecondary,
                   ),
                   const SizedBox(width: Sp.iconGap),
                   Text(
                     label,
                     style: Ty.body.copyWith(
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                      color: selected ? c.textPrimary : c.textSecondary,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                      color: selected ? c.onAccent : c.textSecondary,
                     ),
                   ),
                 ],
@@ -585,7 +597,7 @@ class LoadStatusBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                stale ? Icons.history_toggle_off : Icons.schedule,
+                stale ? Icons.history_toggle_off_sharp : Icons.schedule_sharp,
                 size: 14,
                 color: stale ? c.warning : c.textSecondary,
               ),
@@ -623,7 +635,7 @@ class LoadStatusBar extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 14, color: c.error),
+              Icon(Icons.error_outline_sharp, size: 14, color: c.error),
               const SizedBox(width: Sp.withinControl),
               Text(
                 tr.shell.refreshFailedShowingOld('$error'),

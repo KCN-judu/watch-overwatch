@@ -118,8 +118,9 @@ class HeadlineFigure extends StatelessWidget {
 }
 
 /// A page's anchor (docs: the skill's visual-direction.md): a picture — a hero's banner,
-/// a map — fading in from the right behind a dense scrim, the page's title, and one row
-/// of display-size figures. A thin bar down the left in the subject's own colour.
+/// a map — fading in from the right behind a dense scrim, the hexagon texture and a glow
+/// in the subject's colour, the page's title, and one row of display-size figures. A
+/// thin bar down the left in the subject's own colour; the top-right corner is cut.
 class HeadlineBand extends StatelessWidget {
   const HeadlineBand({
     super.key,
@@ -152,7 +153,12 @@ class HeadlineBand extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return ClipRect(
+    final shape = CutBorder(
+      cut: cornerCut * 2,
+      side: BorderSide(color: c.border),
+    );
+    return ShapeClip(
+      shape: shape,
       child: Stack(
         children: [
           if (art != null)
@@ -177,8 +183,8 @@ class HeadlineBand extends StatelessWidget {
             ),
           Container(
             width: double.infinity,
+            foregroundDecoration: ShapeDecoration(shape: shape),
             decoration: BoxDecoration(
-              border: Border.all(color: c.border),
               gradient: LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
@@ -194,30 +200,33 @@ class HeadlineBand extends StatelessWidget {
                 children: [
                   Container(width: accentBar, color: tint ?? c.accent),
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(Sp.betweenSections),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (eyebrow != null || actions.isNotEmpty)
-                            Row(
-                              children: [
-                                Expanded(child: eyebrow ?? const SizedBox()),
-                                ...actions,
-                              ],
+                    child: HexBackdrop(
+                      tint: tint,
+                      child: Padding(
+                        padding: const EdgeInsets.all(Sp.betweenSections),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (eyebrow != null || actions.isNotEmpty)
+                              Row(
+                                children: [
+                                  Expanded(child: eyebrow ?? const SizedBox()),
+                                  ...actions,
+                                ],
+                              ),
+                            if (title != null) ...[
+                              const SizedBox(height: Sp.withinControl),
+                              Text(title!, style: Ty.page),
+                            ],
+                            const SizedBox(height: Sp.betweenGroups),
+                            Wrap(
+                              spacing: Sp.page,
+                              runSpacing: Sp.betweenGroups,
+                              crossAxisAlignment: WrapCrossAlignment.start,
+                              children: figures,
                             ),
-                          if (title != null) ...[
-                            const SizedBox(height: Sp.withinControl),
-                            Text(title!, style: Ty.page),
                           ],
-                          const SizedBox(height: Sp.betweenGroups),
-                          Wrap(
-                            spacing: Sp.page,
-                            runSpacing: Sp.betweenGroups,
-                            crossAxisAlignment: WrapCrossAlignment.start,
-                            children: figures,
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),

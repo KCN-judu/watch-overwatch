@@ -178,7 +178,7 @@ class _PaletteState extends State<_Palette> {
                   onChanged: (_) => setState(() => _active = 0),
                   decoration: InputDecoration(
                     hintText: tr.shell.paletteHint,
-                    prefixIcon: const Icon(Icons.search, size: 18),
+                    prefixIcon: const Icon(Icons.search_sharp, size: 18),
                   ),
                 ),
               ),

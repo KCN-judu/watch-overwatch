@@ -62,7 +62,7 @@ class _NavigatorPaneState extends State<NavigatorPane> {
                 onChanged: (_) => app.clearSearchError(),
                 decoration: InputDecoration(
                   hintText: tr.shell.battleTagHint,
-                  prefixIcon: const Icon(Icons.search, size: 18),
+                  prefixIcon: const Icon(Icons.search_sharp, size: 18),
                   suffixIcon: app.searching
                       ? const Padding(
                           padding: EdgeInsets.all(Sp.withinGroup),
@@ -163,13 +163,13 @@ class _NavigatorPaneState extends State<NavigatorPane> {
                   child: AppButton(
                     tr.shell.settings,
                     quiet: true,
-                    icon: Icons.settings_outlined,
+                    icon: Icons.settings_sharp,
                     tooltip: 'Ctrl+,',
                     onPressed: () => app.showSettings(true),
                   ),
                 ),
                 IconAction(
-                  icon: Icons.keyboard_double_arrow_left,
+                  icon: Icons.keyboard_double_arrow_left_sharp,
                   label: tr.shell.collapseLibrary,
                   shortcut: 'Ctrl+B',
                   onPressed: () => app.setNav(collapsed: true),
@@ -315,7 +315,7 @@ class _PlayerListState extends State<_PlayerList> {
                           // Shown on hover, focus and for the open player, so it is reachable without a pointer.
                           if (showRemove)
                             IconAction(
-                              icon: Icons.close,
+                              icon: Icons.close_sharp,
                               label: tr.shell.removeFromLibrary(name),
                               shortcut: 'Delete',
                               onPressed: () => app.removePlayer(name),
@@ -349,14 +349,14 @@ class _Rail extends StatelessWidget {
         children: [
           const SizedBox(height: Sp.withinGroup),
           IconAction(
-            icon: Icons.search,
+            icon: Icons.search_sharp,
             label: tr.shell.findPlayer,
             shortcut: 'Ctrl+L',
             onPressed: scope.actions.focusSearch,
           ),
           const SizedBox(height: Sp.withinControl),
           IconAction(
-            icon: Icons.keyboard_double_arrow_right,
+            icon: Icons.keyboard_double_arrow_right_sharp,
             label: tr.shell.expandLibrary,
             shortcut: 'Ctrl+B',
             onPressed: () => app.setNav(collapsed: false),
@@ -406,7 +406,7 @@ class _Rail extends StatelessWidget {
           const Divider(height: 1),
           const SizedBox(height: Sp.withinGroup),
           IconAction(
-            icon: Icons.settings_outlined,
+            icon: Icons.settings_sharp,
             label: tr.shell.settings,
             shortcut: 'Ctrl+,',
             onPressed: () => app.showSettings(true),

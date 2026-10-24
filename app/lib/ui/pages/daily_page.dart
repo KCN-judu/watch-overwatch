@@ -43,7 +43,7 @@ class DailyPage extends StatelessWidget {
     final s = r.summary;
     if (s == null || r.days.isEmpty) {
       return EmptyState(
-        icon: Icons.today_outlined,
+        icon: Icons.today_sharp,
         title: tr.daily.emptyTitle,
         body: tr.daily.emptyBody(mode.label),
         actions: [
@@ -246,12 +246,12 @@ class _Summary extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconAction(
-            icon: Icons.chevron_left,
+            icon: Icons.chevron_left_sharp,
             label: tr.daily.previousDay,
             onPressed: older == null ? null : () => onGo(older!),
           ),
           IconAction(
-            icon: Icons.chevron_right,
+            icon: Icons.chevron_right_sharp,
             label: tr.daily.nextDay,
             onPressed: newer == null ? null : () => onGo(newer!),
           ),
@@ -483,7 +483,7 @@ class _LobbyTop extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.emoji_events_outlined, color: c.warning, size: 20),
+              Icon(Icons.emoji_events_sharp, color: c.warning, size: 20),
               const SizedBox(width: Sp.iconGap),
               Text(tr.daily.lobbyTopTitle, style: Ty.bodyStrong),
             ],
@@ -536,14 +536,14 @@ class _HighlightCard extends StatelessWidget {
       String? note,
     ) = switch (h.kind) {
       HighlightKind.lobbyTop => (
-        Icons.emoji_events_outlined,
+        Icons.emoji_events_sharp,
         c.warning,
         tr.daily.lobbyTop(_stat(h.stat)),
         '× ${h.value.round()}',
         tr.daily.lobbyTopNote(h.value.round()),
       ),
       HighlightKind.personalRecord => (
-        Icons.auto_awesome,
+        Icons.auto_awesome_sharp,
         c.positive,
         tr.daily.newRecord(_stat(h.stat)),
         _value(h.stat, h.value),
@@ -552,41 +552,47 @@ class _HighlightCard extends StatelessWidget {
             : tr.daily.recordNote(_value(h.stat, h.previous!)),
       ),
       HighlightKind.dayBest => (
-        Icons.trending_up,
+        Icons.trending_up_sharp,
         c.accent,
         tr.daily.dayBest(_stat(h.stat)),
         _value(h.stat, h.value),
         null,
       ),
       HighlightKind.streak => (
-        Icons.local_fire_department_outlined,
+        Icons.local_fire_department_sharp,
         c.positive,
         tr.daily.streak(h.value.round()),
         '${h.value.round()}',
         tr.daily.streakNote,
       ),
       HighlightKind.deathless => (
-        Icons.shield_outlined,
+        Icons.shield_sharp,
         c.accent,
         tr.daily.deathless(h.value.round()),
         '${h.value.round()}',
         tr.daily.deathlessNote,
       ),
       HighlightKind.bestMatch => (
-        Icons.star_outline,
+        Icons.star_outline_sharp,
         c.positive,
         tr.daily.bestMatch,
         fmtTwo(h.value),
         tr.daily.bestMatchNote,
       ),
       HighlightKind.bestFleta => (
-        Icons.gps_fixed,
+        Icons.gps_fixed_sharp,
         c.accent,
         tr.daily.bestFleta,
         fmtOne(h.value),
         tr.daily.bestFletaNote,
       ),
-      HighlightKind.unknown => (Icons.info_outline, c.accent, '', '', null),
+      HighlightKind.unknown => (
+        Icons.info_outline_sharp,
+        c.accent,
+        '',
+        '',
+        null,
+      ),
     };
     final where = h.hero == null && h.map == null
         ? null
