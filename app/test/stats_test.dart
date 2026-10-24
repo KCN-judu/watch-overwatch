@@ -43,6 +43,6 @@ void main() {
     expect(Confidence.parse('firm'), Confidence.firm);
     expect(Confidence.parse('too_few'), Confidence.tooFew);
     expect(Confidence.parse(null), Confidence.none);
-    expect(Confidence.firm.label, '较可信');
+    expect(Confidence.firm.label, '显著');
   });
 }

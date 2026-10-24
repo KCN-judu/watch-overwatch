@@ -90,8 +90,8 @@ class CoreStrings {
   String get strengthReading => '正在读取对局…';
 
   /// A later round of the lobby-strength analysis, after some matches had no player to rate.
-  String strengthRound(int round) => '第 $round 轮：有对局没有可评定的玩家，再多取几场…';
-  String get strengthReadingOlder => '对局不够，正在读取更早的对局…';
+  String strengthRound(int round) => '第 $round 轮：部分对局无已定级玩家，补读中…';
+  String get strengthReadingOlder => '对局不足，正在读取更早的对局…';
 
   String get serviceUnavailable => '无法连接本地服务。';
 

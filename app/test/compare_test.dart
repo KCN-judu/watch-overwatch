@@ -81,7 +81,7 @@ void main() {
     );
     await tester.pump();
     expect(find.text('安娜 对比 雾子'), findsOneWidget);
-    expect(find.text('雾子 只有 3 场，数字很不稳定。'), findsOneWidget);
+    expect(find.text('雾子 仅 3 场，样本不足。'), findsOneWidget);
     expect(find.text('+26.7（+80%）'), findsOneWidget); // 60% − 33.3%
     await tester.tap(find.widgetWithText(AppButton, '换一个'));
     expect(ws.comparingHero, isTrue);
@@ -167,7 +167,7 @@ void main() {
     await tester.pump();
     expect(find.text('+20%'), findsWidgets); // 60% − 40%
     expect(find.text('+5.0'), findsOneWidget); // kills
-    expect(find.text('KCN#51896 用了 40 场，小明#5123 用了 10 场。'), findsOneWidget);
-    expect(find.text('双方场次相差较大，样本少的一方数字更不稳定。'), findsOneWidget);
+    expect(find.text('KCN#51896 40 场 · 小明#5123 10 场'), findsOneWidget);
+    expect(find.text('双方场次差距较大，场次少的一方波动更大。'), findsOneWidget);
   });
 }

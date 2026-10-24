@@ -134,7 +134,7 @@ void main() {
     expect(find.text('10 场 · 胜率 80%'), findsOneWidget);
     expect(find.text('12:34'), findsOneWidget); // mean length
     expect(find.text('有详情的 4 场'), findsOneWidget);
-    expect(find.text('在这张图上玩什么'), findsOneWidget);
+    expect(find.text('本图英雄'), findsOneWidget);
   });
 
   testWidgets('a map with too few matches says it is not compared', (
@@ -147,7 +147,7 @@ void main() {
     await tester.tap(find.text('伊利奥斯').first);
     await tester.pumpAndSettle();
     expect(find.text('场次不足，不参与比较'), findsOneWidget);
-    expect(find.text('打开过详情的对局才有时长'), findsOneWidget);
+    expect(find.text('需要对局详情'), findsOneWidget);
   });
 
   testWidgets('the open map leads to its matches, and a hero to those on it', (
@@ -157,7 +157,7 @@ void main() {
     final t = setUp(mapsJson());
     await tester.pumpWidget(t.page);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(AppButton, '查看这张图的对局'));
+    await tester.tap(find.widgetWithText(AppButton, '查看本图对局'));
     expect(t.ws.filtersFor(Mode.quick).mapGuid, '2C3');
     expect(t.ws.filtersFor(Mode.quick).heroGuid, isNull);
     expect(t.app.tab, 'matches');

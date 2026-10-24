@@ -129,8 +129,8 @@ void main() {
     expect(find.text('比之前 20 场 +20%'), findsOneWidget);
     expect(find.text('13 胜 7 负', findRichText: true), findsOneWidget);
     expect(find.text('2 胜 1 负', findRichText: true), findsOneWidget); // today
-    expect(find.textContaining('努巴尼 是该玩家的强图'), findsOneWidget);
-    expect(find.text('什么时候打得好'), findsOneWidget);
+    expect(find.textContaining('强势图 努巴尼'), findsOneWidget);
+    expect(find.text('时段胜率'), findsOneWidget);
   });
 
   testWidgets('a face in the form strip opens that match', (tester) async {
@@ -186,7 +186,7 @@ void main() {
     final t = setUp(json);
     await tester.pumpWidget(t.page);
     await tester.pumpAndSettle();
-    expect(find.text('状态下滑主要来自 努巴尼（净胜 −6）'), findsOneWidget);
+    expect(find.text('下滑来源：努巴尼（净胜 −6）'), findsOneWidget);
     await tester.tap(find.widgetWithText(AppButton, '努巴尼'));
     expect(t.ws.filtersFor(Mode.quick).mapGuid, '576460752303424195');
     expect(t.app.tab, 'matches');
@@ -201,14 +201,14 @@ void main() {
     final t = setUp(overviewJson());
     await tester.pumpWidget(t.page);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('不再提示这类'));
+    await tester.tap(find.byTooltip('屏蔽此类'));
     await tester.pumpAndSettle();
     expect(t.app.mutedInsights, {'map'});
-    expect(find.textContaining('努巴尼 是该玩家的强图'), findsNothing);
-    expect(find.text('已隐藏 1 类提示'), findsWidgets);
-    await tester.tap(find.widgetWithText(AppButton, '全部恢复'));
+    expect(find.textContaining('强势图 努巴尼'), findsNothing);
+    expect(find.text('已屏蔽 1 类'), findsWidgets);
+    await tester.tap(find.widgetWithText(AppButton, '取消屏蔽'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('努巴尼 是该玩家的强图'), findsOneWidget);
+    expect(find.textContaining('强势图 努巴尼'), findsOneWidget);
   });
 
   testWidgets('no stored matches: say so and point to the match list', (
@@ -218,6 +218,6 @@ void main() {
     await tester.pumpWidget(t.page);
     await tester.pumpAndSettle();
     expect(find.byType(EmptyState), findsOneWidget);
-    expect(find.text('打开对局页'), findsOneWidget);
+    expect(find.text('去对局页读取'), findsOneWidget);
   });
 }

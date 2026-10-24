@@ -68,7 +68,7 @@ void main() {
       ws.benchmarkFor(Mode.quick).value = BenchmarkResult(bench());
       await tester.pumpWidget(host(ws, Mode.quick, app));
       expect(
-        find.bySemanticsLabel('治疗：5,854 /10分，第 27 百分位（偏低），同侪中位数 7,546'),
+        find.bySemanticsLabel('治疗：5,854 /10分，第 27 百分位（偏低），同分段中位数 7,546'),
         findsOneWidget,
       );
       expect(find.textContaining('基准：黄金–白金的雾子，99 场'), findsOneWidget);
@@ -95,7 +95,7 @@ void main() {
       'heroes': <Object?>[],
     });
     await tester.pumpWidget(host(ws, Mode.quick, app));
-    expect(find.textContaining('至少 30 场'), findsOneWidget);
+    expect(find.textContaining('≥ 30 场'), findsOneWidget);
   });
 
   testWidgets('stadium has no benchmark', (tester) async {

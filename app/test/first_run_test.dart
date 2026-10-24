@@ -63,6 +63,6 @@ void main() {
     await tester.pumpWidget(host(app, FakeActions(), false));
     expect(find.text('输入战网昵称'), findsOneWidget);
     expect(find.text('打开示例玩家'), findsNothing);
-    expect(find.text('三步看到自己的数据。'), findsOneWidget);
+    expect(find.text('三步查看战绩。'), findsOneWidget);
   });
 }

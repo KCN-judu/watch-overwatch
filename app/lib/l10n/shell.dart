@@ -30,8 +30,8 @@ class ShellStrings {
 
   // First run: three steps, or the sample player.
   String get welcomeTitle => '欢迎使用 Watch Overwatch';
-  String get welcomeBody => '三步看到自己的数据；也可以先用示例数据看看每个页面。';
-  String get welcomeBodyPlain => '三步看到自己的数据。';
+  String get welcomeBody => '三步查看战绩，也可先用示例数据体验。';
+  String get welcomeBodyPlain => '三步查看战绩。';
   String get stepAccount => '添加大神账号';
   String get stepAccountBody =>
       '在设置里粘贴大神 App 的 role_id 和 token（获取方法见使用指引的“凭据”一节），点“测试连接”确认可用。凭据只保存在本机。';
@@ -39,9 +39,9 @@ class ShellStrings {
   String get stepFind => '输入战网昵称';
   String get stepFindBody => '在左上角的搜索框输入完整的战网昵称，例如 Player#12345。';
   String get stepRead => '读取对局';
-  String get stepReadBody => '第一次会从最新一场往回读对局列表，页面顶部显示读到第几页；之后打开就有，只补新的对局。';
+  String get stepReadBody => '首次从最新一场往回读取对局，之后只补新对局。';
   String get trySample => '先看示例数据';
-  String get trySampleBody => '示例玩家的对局都是生成的（玩家名带“示例”），不需要账号，也不会向上游发请求。';
+  String get trySampleBody => '示例玩家为生成数据，无需账号，不会请求大神。';
   String get openSample => '打开示例玩家';
 
   /// The made-up player the service answers itself (`watch_core::demo::DEMO_NAME`).
@@ -65,7 +65,7 @@ class ShellStrings {
 
   /// Header of the saved-player list: 玩家库 · N.
   String playerLibraryCount(int n) => '玩家库 · $n';
-  String get playerLibraryEmpty => '还没有玩家。查找成功的玩家会保存在这里，重启后仍然可选。';
+  String get playerLibraryEmpty => '暂无玩家。查找过的玩家会保存在这里。';
   String get settings => '设置';
   String get collapseLibrary => '折叠玩家库';
   String get expandLibrary => '展开玩家库';
@@ -110,9 +110,9 @@ class ShellStrings {
   ) => '$role：当前 $current（$skillRating 分），最高 $peak，$matches 场';
   String get playerViews => '玩家视图';
   String updatedAt(String time) => '更新于 $time';
-  String updatedAtStaleTip(String time) => '更新于 $time，已超过 5 分钟，可以刷新';
+  String updatedAtStaleTip(String time) => '更新于 $time（超过 5 分钟）';
   String updatedAtStale(String time) => '更新于 $time（已超过 5 分钟）';
-  String refreshFailedShowingOld(String error) => '刷新失败，显示的是旧数据：$error';
+  String refreshFailedShowingOld(String error) => '刷新失败，当前为旧数据：$error';
 
   // ---- ui/overlays.dart ----
 
@@ -133,7 +133,7 @@ class ShellStrings {
   String get shortcutsTitle => '快捷键参考';
   String get shortcutsNote => '所有命令也在菜单和命令面板（Ctrl+K）里。输入文字时，单键快捷键不起作用。';
   String exportTitle(String player) => '导出 $player 的数据集';
-  String get exportIntro => '保存为 JSON 文件，位置和文件名由你选，不含凭据。每场对局都带双方玩家的数据。';
+  String get exportIntro => '导出为 JSON，含每场双方玩家数据，不含凭据。';
   String get exportModes => '包含的模式';
   String get exportAllModes => '全部模式';
   String get exportCount => '对局数量（每个模式取最近的）';
@@ -142,8 +142,8 @@ class ShellStrings {
   String get exportCountCustom => '自定义';
   String get exportCountField => '场数（1–5000）';
   String get exportRanks => '同时导出玩家段位';
-  String get exportRanksNote => '每名玩家的竞技段位，用于对局强度。第一次要逐个查询，每场约多花 7 秒；查过的下次直接用。';
-  String get exportReadNote => '本机已有的对局直接使用，没有的才会读取，约每场 1 秒；在后台进行，可随时取消。';
+  String get exportRanksNote => '用于对局强度。首次需逐个查询，每场约多 7 秒；查过的直接复用。';
+  String get exportReadNote => '本机已有的对局直接使用，缺的约每场 1 秒读取，后台进行，可随时取消。';
   String get startExport => '开始导出';
   String get exportNeedMode => '至少选择一个模式。';
   String get exportNeedCount => '请输入场数。';
@@ -171,7 +171,7 @@ class ShellStrings {
 
   /// Screen-reader label of an account row.
   String accountRow(String name, String status) => '账号 $name，$status';
-  String get noAccounts => '还没有账号。在下面添加第一个。';
+  String get noAccounts => '暂无账号，请在下方添加。';
   String get addOrUpdateAccount => '添加或更新账号';
   String get addOrUpdateNote => '名称相同会更新已有账号。token 留空不会保留旧值，请重新粘贴。';
   String get copyTokenScript => '复制获取脚本';
@@ -255,18 +255,18 @@ class ShellStrings {
     _ => errorUnknown,
   };
   String get errorOffline => '连不上本地服务。请确认 watchd.exe 在同一目录，然后重试。';
-  String get errorTimeout => '等了太久没有得到响应。请稍后重试；如果查询的范围较大，可以先缩小范围。';
+  String get errorTimeout => '请求超时。请稍后重试，或缩小查询范围。';
   String get errorAuth => '大神账号的凭据已失效。请在设置中更新 token，然后重试。';
   String get errorNoAccount => '还没有可用的大神账号。请先在设置中添加一个账号。';
   String get errorValidation => '这次请求的内容无效。请检查输入或重新选择后再试。';
-  String get errorBusy => '本地服务正忙。请稍等片刻再重试。';
-  String get errorRateLimited => '请求太频繁，大神暂时限制了访问。请等一会儿再重试。';
+  String get errorBusy => '本地服务繁忙，请稍后重试。';
+  String get errorRateLimited => '请求过于频繁，大神已限流，请稍后重试。';
   String get errorNetwork => '连不上大神服务。请检查网络和代理设置，然后重试。';
-  String get errorResponse => '大神返回的数据无法读取。请稍后重试；如果一直这样，请复制详情反馈。';
-  String get errorBusiness => '大神没有返回有效数据。该玩家可能不存在或资料不公开，也可能是账号授权已失效。';
+  String get errorResponse => '大神返回的数据无法解析。请稍后重试，持续出现请复制详情反馈。';
+  String get errorBusiness => '大神未返回有效数据：玩家不存在、资料未公开，或账号授权失效。';
   String get errorUpstream => '大神服务暂时不可用。请稍后重试。';
   String get errorShutdown => '本地服务正在关闭。请重新启动应用。';
-  String get errorUnknown => '出现了意外的错误。请重试；如果一直这样，请复制详情反馈。';
+  String get errorUnknown => '未知错误。请重试，持续出现请复制详情反馈。';
 
   // ---- design/cards.dart ----
 
@@ -278,8 +278,8 @@ class ShellStrings {
   String get chartNoData => '没有可绘制的数据';
   String axisTruncated(String min, String max) => '纵轴范围 $min–$max，不从 0 开始。';
   String get axisFromZero => '纵轴从 0 开始。';
-  String get chartHintPerTeam => '移到己方或对方的点上看这一队的详情；键盘用 ←/→ 换场、↑/↓ 换队。';
-  String get chartHint => '点击图表或用 ←/→ 查看每个点的精确值。';
+  String get chartHintPerTeam => '悬停查看该队详情；←/→ 换场，↑/↓ 换队。';
+  String get chartHint => '点击或按 ←/→ 查看精确值。';
 
   /// Shown in a chart tooltip where a series has no value at a point.
   String get chartValueMissing => '无数据';
@@ -308,8 +308,8 @@ class ShellStrings {
   /// A rank with its skill rating: 白金 2 · 2650 分.
   String rankWithRating(String rank, String rating) => '$rank · $rating 分';
   String rankFromOtherRole(String rank) =>
-      '没有这个职责的段位，取其他职责里最高的竞技段位（不是这场对局时的）：$rank';
-  String rankSnapshot(String rank) => '竞技段位快照（读取这场对局时取的）：$rank';
+      '无该职责段位，取其他职责最高段位：$rank';
+  String rankSnapshot(String rank) => '本局记录的竞技段位：$rank';
   String heroPortrait(String hero) => '$hero 立绘';
   String masteryLevel(int level) => '熟练度 $level';
 
@@ -342,13 +342,13 @@ class ShellStrings {
   String get heatLegendLow => '低';
   String get heatLegendHigh => '高';
   String heatMeaning(String metric, int minN) =>
-      '颜色越深，$metric离中线越远；少于 $minN 场的格子不着色。';
+      '颜色越深，$metric偏离中线越多；不足 $minN 场不着色。';
   String intervalRow(String label, String value, String range, int n) =>
       '$label：$value（区间 $range），$n 场';
   String intervalRowTooFew(String label, String value, int n) =>
       '$label：$value，只有 $n 场，样本太少';
   String intervalMeaning(String reference) =>
-      '横条是数值，细线是可能的范围（区间），竖线是$reference；灰色的条目场次太少，不参与比较。';
+      '横条：数值；细线：置信区间；竖线：$reference。灰色为场次不足，不参与比较。';
   String sparkline(String label, String first, String last) =>
       '$label：从 $first 到 $last';
 }
