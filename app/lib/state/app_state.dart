@@ -71,6 +71,11 @@ class PlayerWorkspace extends ChangeNotifier {
   String? _session;
   Json? identity;
 
+  /// The lookup under way, shared by every load that needs a session meanwhile: at
+  /// start several pages ask at once, and they wait for one lookup instead of each
+  /// sending their own.
+  Future<String>? _lookup;
+
   final matches = <Mode, Load<PlayerDataset>>{};
   final competitive = Load<CareerSnapshot>();
   final trend = <Mode, Load<List<SeasonPoint>>>{};
@@ -243,8 +248,12 @@ class PlayerWorkspace extends ChangeNotifier {
 
   // ---- Session ---------------------------------------------------------------
 
-  Future<String> ensureSession() async {
-    if (_session != null) return _session!;
+  Future<String> ensureSession() {
+    if (_session != null) return Future.value(_session!);
+    return _lookup ??= _lookUp().whenComplete(() => _lookup = null);
+  }
+
+  Future<String> _lookUp() async {
     final r = await app.api.search(name);
     _session = r.session;
     identity = r.identity;

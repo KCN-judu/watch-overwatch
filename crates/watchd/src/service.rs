@@ -36,6 +36,9 @@ pub(crate) struct PlayerSession {
     pub identity: Value,
     created: Instant,
     cache: Arc<QueryCache>,
+    /// The name it was looked up by, normalized and lower-cased: a second lookup of the
+    /// same name reuses this session instead of asking 大神 again.
+    looked_up: String,
 }
 
 fn error(kind: &'static str, message: &str) -> Failure {
@@ -120,10 +123,35 @@ pub(crate) struct SearchInput {
     name: String,
 }
 
+/// One lookup at a time per name: requests for the same name that arrive together wait
+/// for the first and then reuse its session.
+static LOOKUPS: std::sync::LazyLock<std::sync::Mutex<HashMap<String, Arc<Mutex<()>>>>> =
+    std::sync::LazyLock::new(Default::default);
+
 pub(crate) async fn search_player(
     State(s): State<AppState>,
     Json(input): Json<SearchInput>,
 ) -> Response {
+    let key = collect::normalize_battletag(&input.name)
+        .unwrap_or_else(|| input.name.trim().to_string())
+        .to_lowercase();
+    let gate = LOOKUPS
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .entry(key.clone())
+        .or_default()
+        .clone();
+    let _one_at_a_time = gate.lock().await;
+    {
+        let sessions = s.sessions.lock().await;
+        if let Some((id, session)) = sessions
+            .iter()
+            .filter(|(_, p)| p.created.elapsed() < SESSION_TTL)
+            .find(|(_, p)| p.looked_up == key)
+        {
+            return Json(json!({"session":id,"identity":session.identity})).into_response();
+        }
+    }
     let (token, identity) = match collect::search_player(s.client.as_ref(), &input.name).await {
         Ok(found) => found,
         Err(e) => return fail(e).into_response(),
@@ -152,6 +180,7 @@ pub(crate) async fn search_player(
             identity: identity.clone(),
             created: Instant::now(),
             cache: Arc::new(Mutex::new(HashMap::new())),
+            looked_up: key,
         },
     );
     Json(json!({"session":id,"identity":identity})).into_response()
@@ -1701,6 +1730,18 @@ mod tests {
         )
         .await;
         let session = found["session"].as_str().expect("a session").to_string();
+        // The same name again, in another spelling: the session is reused, no new lookup.
+        let again = body(
+            search_player(
+                State(s.clone()),
+                Json(SearchInput {
+                    name: format!(" {} ", watch_core::DEMO_NAME.to_uppercase()),
+                }),
+            )
+            .await,
+        )
+        .await;
+        assert_eq!(again["session"].as_str(), Some(session.as_str()));
         let ds = body(
             player_dataset(
                 State(s.clone()),

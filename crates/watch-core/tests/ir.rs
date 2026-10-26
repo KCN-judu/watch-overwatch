@@ -359,6 +359,15 @@ async fn search_requires_a_customer_token() {
         collect::search_player(&ok, "  ").await.unwrap_err().kind,
         "validation"
     );
+    // Success with no data at all (seen 2026-10-26 for every name) is its own case.
+    let empty = Search(json!({"code":0,"success":true,"data":null}));
+    assert_eq!(
+        collect::search_player(&empty, "A#1")
+            .await
+            .unwrap_err()
+            .kind,
+        "empty"
+    );
 }
 
 fn row(id: &str, at: i64, outcome: Outcome, hero: &str, damage: Option<f64>) -> MatchSummary {
