@@ -1,6 +1,6 @@
 # 旧网页界面的退役
 
-`ui/` 是 Flutter 界面之前的网页界面，由 `watchd` 在根路径 `/` 提供（单独运行时是 `http://127.0.0.1:18180/`）。1.4.0 里它和它的路由都还在，不再更新。下表逐项决定每个功能是迁移、已有替代，还是不做。
+`ui/` 是 Flutter 界面之前的网页界面，由 `watchd` 在根路径 `/` 提供（单独运行时是 `http://127.0.0.1:18180/`）。1.5.0 里它和它的路由都还在，不再更新。下表逐项决定每个功能是迁移、已有替代，还是不做。
 
 ## 功能对等清单
 
@@ -28,7 +28,7 @@
 | 步骤 | 内容 | 状态 |
 |---|---|---|
 | 1 | Flutter 界面是唯一推荐的界面；旧网页界面仍随 `watchd` 提供，README 和本页写明不再更新 | 1.3.0 起已做 |
-| 2 | 旧网页界面顶部提示“已停止更新，请使用 Watch Overwatch 桌面程序”；`/api/community` 里不做的查询（`shop`、`patch`、`esports`、`blizzard_search`、`blizzard_profile`）标为弃用 | 未做（1.4.0 仍无提示，这些查询未标弃用） |
+| 2 | 旧网页界面顶部提示“已停止更新，请使用 Watch Overwatch 桌面程序”；`/api/community` 里不做的查询（`shop`、`patch`、`esports`、`blizzard_search`、`blizzard_profile`）标为弃用 | 未做（1.5.0 仍无提示，这些查询未标弃用） |
 | 3 | 删除 `ui/`、`watchd` 里提供它的路由（`/`、`/app.js` 等）和弃用的查询；保留 `province`、`hero_board`、`pick_rate`；在 CHANGELOG 的“变更”里写明 | 未做，在第 2 步之后的次版本 |
 
 脚本和第三方调用只依赖 [本机接口](http-api.md) 里列出的 `/api/...` 接口，不受影响。
