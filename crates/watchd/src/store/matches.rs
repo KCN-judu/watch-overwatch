@@ -230,6 +230,20 @@ pub fn remember_profile(tx: &Transaction<'_>, bnet_id: &str, data: &str) -> rusq
     Ok(())
 }
 
+/// `(mode, match_id, bnet_id)` of `subject`'s stored matches with a player, by id or name.
+pub fn shared_matches(
+    conn: &Connection,
+    subject: &str,
+    bnet_id: Option<&str>,
+    name_lower: &str,
+) -> rusqlite::Result<Vec<(String, String, String)>> {
+    conn.prepare_cached(SQL.participant.shared)?
+        .query_map(params![subject, bnet_id, name_lower], |r| {
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+        })?
+        .collect()
+}
+
 /// The bnet id a (lower-cased) name was last seen to be, if any.
 pub fn known_id(conn: &Connection, name_lower: &str) -> rusqlite::Result<Option<String>> {
     conn.prepare_cached(&SQL.player.name_select)?

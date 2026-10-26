@@ -266,7 +266,8 @@ class ShellStrings {
   String get errorNetwork => '连不上大神服务。请检查网络和代理设置，然后重试。';
   String get errorResponse => '大神返回的数据无法解析。请稍后重试，持续出现请复制详情反馈。';
   String get errorBusiness => '大神未返回有效数据：玩家不存在、资料未公开，或账号授权失效。';
-  String get errorEmpty => '大神返回成功，但没有数据（账号验证已通过）。昵称有误，或大神的玩家查询暂时不可用。';
+  String get errorEmpty =>
+      '大神的昵称查询没有返回数据（账号验证已通过）。本账号自己，和本机存有共同对局的玩家，不用昵称查询也能查到。';
   String get errorUpstream => '大神服务暂时不可用。请稍后重试。';
   String get errorShutdown => '本地服务正在关闭。请重新启动应用。';
   String get errorUnknown => '未知错误。请重试，持续出现请复制详情反馈。';

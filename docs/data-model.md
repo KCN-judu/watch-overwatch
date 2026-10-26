@@ -65,12 +65,19 @@ IR 的数据来自这些大神接口（`dashen/endpoint.rs`）：
 
 | 接口 | 用途 |
 |---|---|
-| `searchBnetAccount` | 按战网昵称查玩家，拿到 token（POST，其余为 GET） |
+| `queryCard` | 本账号自己的资料卡，带本账号玩家的 token：查自己不用搜索 |
+| `searchBnetAccount` | 按战网昵称查玩家，拿到 token（POST，其余为 GET）。只在前两条路都走不通时才用，见下 |
 | `customer/queryCard` | 玩家资料卡 |
 | `customer/queryCountInfo` | 竞技、快速的生涯：各职责、英雄使用统计、近期对局、省榜、荣誉；也用来取参与者的段位快照 |
 | `customer/queryMatchList`、`queryMatchInfo` | 对局列表、对局详情 |
 | `customer/fight/queryCount`、`queryMatchList`、`queryMatchInfo` | 角斗领域的对应接口 |
 | `queryProvinceRank`、`billboard/*` | 省榜、英雄榜 |
+
+查一个昵称时依次试三条路，前一条成了就不再往下：
+
+1. 用 `queryCard` 读本账号的资料卡，昵称相同（不分大小写）就是本账号自己。
+2. 本机存有本账号和这个玩家的共同对局时，用本账号的 token 重读最近一场的详情：详情里有每名参与者的 token，再用 `customer/queryCard` 读这个玩家的资料卡。
+3. `searchBnetAccount` 按昵称搜索。2026-10-26 起，大神对这个接口一律返回成功但不带数据，大神 App 里也一样。
 
 `customer/fight/getLeisureFightRoleCard` 也在白名单里，只能经 `/api/request` 调用。
 

@@ -1136,19 +1136,60 @@ pub async fn search_player<F: Fetcher>(f: &F, name: &str) -> Result<(String, Val
     if identity.is_null() {
         return Err(failure(
             "empty",
-            "大神返回成功，但没有数据（账号验证已通过）。昵称有误，或大神的玩家查询暂时不可用。",
+            "大神的昵称查询没有返回数据（账号验证已通过）。本账号自己，和本机存有共同对局的玩家，不用昵称查询也能查到。",
         ));
     }
-    let token = identity
+    let token = customer_token(&identity).ok_or_else(|| {
+        failure(
+            "business",
+            "未找到玩家，或大神没有返回玩家授权。请使用完整的战网昵称（名字#数字）。",
+        )
+    })?;
+    Ok((token, identity))
+}
+
+fn customer_token(identity: &Value) -> Option<String> {
+    identity
         .get("customerToken")
         .and_then(Value::as_str)
         .filter(|t| !t.is_empty())
         .map(String::from)
-        .ok_or_else(|| {
-            failure(
-                "business",
-                "未找到玩家，或大神没有返回玩家授权。请使用完整的战网昵称（名字#数字）。",
-            )
-        })?;
+}
+
+/// The account's own player, from its card: the token and identity [`search_player`]
+/// would give for the account's name, without a search.
+pub async fn account_player<F: Fetcher>(f: &F) -> Result<(String, Value), Failure> {
+    let fetched = f.fetch(Endpoint::AccountCard, json!({})).await?;
+    let identity = normalize::payload(&fetched.value).clone();
+    let token = customer_token(&identity)
+        .ok_or_else(|| failure("business", "大神没有返回本账号的资料卡。"))?;
     Ok((token, identity))
+}
+
+/// Another player, through a match they played with the holder of `token`: the match
+/// detail carries every participant's token, and their card gives the identity.
+/// `None` when the match no longer lists them with a token.
+pub async fn co_player<F: Fetcher>(
+    f: &F,
+    token: &str,
+    mode: Mode,
+    match_id: &str,
+    bnet_id: &str,
+) -> Result<Option<(String, Value)>, Failure> {
+    let detail = f
+        .fetch(mode.match_info(), match_info_payload(token, match_id))
+        .await?;
+    let Some((_, theirs, _)) = normalize::participant_tokens(normalize::payload(&detail.value))
+        .into_iter()
+        .find(|t| t.0 == bnet_id)
+    else {
+        return Ok(None);
+    };
+    let card = f.fetch(Endpoint::Card, json!({"token":theirs})).await?;
+    let mut identity = normalize::payload(&card.value).clone();
+    if !identity.is_object() {
+        return Ok(None);
+    }
+    identity["customerToken"] = json!(theirs);
+    Ok(Some((theirs, identity)))
 }

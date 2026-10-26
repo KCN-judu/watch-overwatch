@@ -58,6 +58,7 @@ impl Mode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Endpoint {
     SearchAccount,
+    AccountCard,
     Card,
     CareerCount,
     MatchList,
@@ -72,8 +73,9 @@ pub enum Endpoint {
 }
 
 impl Endpoint {
-    pub const ALL: [Endpoint; 12] = [
+    pub const ALL: [Endpoint; 13] = [
         Self::SearchAccount,
+        Self::AccountCard,
         Self::Card,
         Self::CareerCount,
         Self::MatchList,
@@ -90,6 +92,8 @@ impl Endpoint {
     pub fn path(self) -> &'static str {
         match self {
             Self::SearchAccount => "searchBnetAccount",
+            // The account's own card, customerToken included: who the account is, no search.
+            Self::AccountCard => "queryCard",
             Self::Card => "customer/queryCard",
             Self::CareerCount => "customer/queryCountInfo",
             Self::MatchList => "customer/queryMatchList",
@@ -116,7 +120,7 @@ impl Endpoint {
     pub fn account_in_payload(self) -> bool {
         matches!(
             self,
-            Self::SearchAccount | Self::ProvinceRank | Self::HeroBoard
+            Self::SearchAccount | Self::AccountCard | Self::ProvinceRank | Self::HeroBoard
         )
     }
 }

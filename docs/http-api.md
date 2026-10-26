@@ -10,7 +10,7 @@
 - **只接受本机**：`Host` 必须是 `127.0.0.1` 或 `localhost` 加端口；非 GET 请求必须带头 `x-watch-client: watch-overwatch`，有 `Origin` 时必须是本机。不满足时返回 403，防止网页向它发请求。请求体最大 64 KB。
 - **请求和返回都是 JSON**：字段名用 snake_case；缺失的值是 `null`，不用 0。
 - **模式**：`mode` 取 `competitive`、`quick`、`stadium`（也接受大神的 `sport`、`leisure`、`SportFight`），省略时为竞技。
-- **会话**：先用 `/api/player/search` 查玩家，拿到会话编号 `session`，其余玩家接口都带它。会话只在内存里，一小时过期，过期后重新查找。一小时内再查同一个昵称（不分大小写）返回同一个会话，不再向大神查；同时到达的同名查找只发一次请求。
+- **会话**：先用 `/api/player/search` 查玩家，拿到会话编号 `session`，其余玩家接口都带它。查找先试本账号的资料卡和本机的共同对局，都不行才按昵称搜索，见 [数据模型](data-model.md#大神接口)。会话只在内存里，一小时过期，过期后重新查找。一小时内再查同一个昵称（不分大小写）返回同一个会话，不再向大神查；同时到达的同名查找只发一次请求。
 - **本机数据**：标“只用本机数据”的接口不请求大神，本机对局库打不开时返回 `{"enabled": false}`。
 - **错误**：返回 `{"error": {"kind": …, "message": …}}`。`kind` 决定状态码：`validation` → 400，`busy`、`rate_limited` → 429，`timeout` → 504，`no_account`、`auth` → 503，其余 → 502。`message` 是给人看的说明。查找玩家时，大神返回 `success` 但 `data` 为空，`kind` 是 `empty`；有玩家记录但没有玩家令牌，`kind` 是 `business`。凭据被大神拒绝（401/403）时这个账号停用，直到更新凭据。
 - **安全**：任何返回里都没有令牌；`/api/request` 只转发白名单内的大神接口。

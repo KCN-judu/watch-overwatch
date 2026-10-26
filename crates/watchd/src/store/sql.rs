@@ -270,6 +270,12 @@ const PARTICIPANT_INDEX: &str =
 const PARTICIPANT_ORPHANS: &str = "DELETE FROM match_participant WHERE NOT EXISTS (
     SELECT 1 FROM match_detail d WHERE d.subject = match_participant.subject
     AND d.mode = match_participant.mode AND d.match_id = match_participant.match_id)";
+/// `mode`, `match_id`, `bnet_id` of `?1`'s stored matches with the player `?2` (a bnet id)
+/// or named `?3` (lower-cased), newest fetched first.
+const PARTICIPANT_SHARED: &str = "SELECT p.mode, p.match_id, p.bnet_id FROM match_participant p
+    JOIN match_detail d ON d.subject = p.subject AND d.mode = p.mode AND d.match_id = p.match_id
+    WHERE p.subject = ?1 AND p.bnet_id <> ?1 AND (p.bnet_id = ?2 OR lower(p.name) = ?3)
+    ORDER BY d.fetched_ms DESC LIMIT 3";
 
 // ---- Generated statements ----------------------------------------------------------------------
 
@@ -322,6 +328,7 @@ pub struct CareerSql {
 pub struct ParticipantSql {
     pub upsert: String,
     pub delete_orphans: &'static str,
+    pub shared: &'static str,
     pub count: String,
     pub count_players: String,
     pub delete_all: String,
@@ -392,6 +399,7 @@ impl Sql {
             participant: ParticipantSql {
                 upsert: PARTICIPANT.upsert(),
                 delete_orphans: PARTICIPANT_ORPHANS,
+                shared: PARTICIPANT_SHARED,
                 count: PARTICIPANT.count(),
                 count_players: PARTICIPANT.count_distinct("bnet_id"),
                 delete_all: PARTICIPANT.delete_all(),
@@ -456,6 +464,7 @@ impl Sql {
             .map(String::as_str),
         );
         all.push(self.participant.delete_orphans);
+        all.push(self.participant.shared);
         all
     }
 }
