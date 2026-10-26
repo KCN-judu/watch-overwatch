@@ -152,7 +152,7 @@ pub(crate) async fn search_player(
             return Json(json!({"session":id,"identity":session.identity})).into_response();
         }
     }
-    let (token, identity) = match collect::search_player(s.client.as_ref(), &input.name).await {
+    let (token, identity) = match find_player(&s, &input.name, &key).await {
         Ok(found) => found,
         Err(e) => return fail(e).into_response(),
     };
@@ -184,6 +184,33 @@ pub(crate) async fn search_player(
         },
     );
     Json(json!({"session":id,"identity":identity})).into_response()
+}
+
+/// Who `name` is, asking 大神 as little as possible: the account's own card, then a
+/// stored match shared with that player, and only then the name search.
+async fn find_player(s: &AppState, name: &str, key: &str) -> Result<(String, Value), Failure> {
+    let client = s.client.as_ref();
+    if collect::normalize_battletag(name).is_none() {
+        return collect::search_player(client, name).await;
+    }
+    if let Ok((token, identity)) = collect::account_player(client).await {
+        if identity["name"]
+            .as_str()
+            .is_some_and(|n| n.to_lowercase() == key)
+        {
+            return Ok((token, identity));
+        }
+        if let (Some(store), Some(me)) = (&s.store, subject_id(&identity)) {
+            for (mode, match_id, bnet_id) in store.shared_matches(&me, key) {
+                if let Ok(Some(found)) =
+                    collect::co_player(client, &token, mode, &match_id, &bnet_id).await
+                {
+                    return Ok(found);
+                }
+            }
+        }
+    }
+    collect::search_player(client, name).await
 }
 
 #[derive(Deserialize)]
@@ -1730,6 +1757,16 @@ mod tests {
         )
         .await;
         let session = found["session"].as_str().expect("a session").to_string();
+        let searches = || async {
+            s.client
+                .metrics()
+                .await
+                .iter()
+                .filter(|m| m.endpoint == "searchBnetAccount")
+                .count()
+        };
+        // The account's own player comes from its card, not a search.
+        assert_eq!(searches().await, 0);
         // The same name again, in another spelling: the session is reused, no new lookup.
         let again = body(
             search_player(
@@ -1779,6 +1816,18 @@ mod tests {
         )
         .await;
         assert_eq!(overview["enabled"], true);
+        // A player from a stored match is reached through that match, not a search.
+        let mate = detail["ir"]["allies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|p| p["name"] != watch_core::DEMO_NAME)
+            .expect("a teammate")
+            .clone();
+        let name = mate["name"].as_str().unwrap().to_string();
+        let found = body(search_player(State(s.clone()), Json(SearchInput { name })).await).await;
+        assert_eq!(found["identity"]["bnetId"], mate["bnet_id"], "{found}");
+        assert_eq!(searches().await, 0);
         assert!(overview["listed"].as_u64().unwrap() >= 20);
         assert!(s.client.metrics().await.iter().all(|m| m.status == "demo"));
         let _ = std::fs::remove_dir_all(dir);

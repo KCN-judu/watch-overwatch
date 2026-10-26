@@ -168,6 +168,21 @@ impl LocalStore {
             .flatten()
     }
 
+    /// `subject`'s stored matches with the player `name` (newest first, at most 3), as
+    /// `(mode, match_id, bnet_id)`: a way to that player's token without a search.
+    pub fn shared_matches(&self, subject: &str, name: &str) -> Vec<(Mode, String, String)> {
+        let lower = name.trim().to_lowercase();
+        self.matches
+            .read("find shared matches", |c| {
+                let id = matches::known_id(c, &lower)?;
+                matches::shared_matches(c, subject, id.as_deref(), &lower)
+            })
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|(mode, id, player)| Some((Mode::parse(&mode)?, id, player)))
+            .collect()
+    }
+
     /// Every stored match detail, whoever it was stored for.
     pub fn all_details(&self) -> Vec<MatchDetail> {
         self.matches

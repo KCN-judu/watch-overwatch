@@ -136,9 +136,20 @@ async fn dataset(args: &Args) -> anyhow::Result<()> {
 
     let client = WatchClient::new(load_secrets()?)?;
     let catalog = Catalog::load();
-    let (token, identity) = collect::search_player(&client, name)
+    // The account's own player needs no search.
+    let own = collect::account_player(&client)
         .await
-        .map_err(|e| anyhow::anyhow!(e.message))?;
+        .ok()
+        .filter(|(_, id)| {
+            let wanted = collect::normalize_battletag(name).map(|n| n.to_lowercase());
+            id["name"].as_str().map(str::to_lowercase) == wanted
+        });
+    let (token, identity) = match own {
+        Some(found) => found,
+        None => collect::search_player(&client, name)
+            .await
+            .map_err(|e| anyhow::anyhow!(e.message))?,
+    };
     let dataset = collect::collect_player(&client, &catalog, &token, &identity, &plan).await;
     drop(token);
     let analysis = analysis::analyze(&dataset, &AnalysisOptions::default());

@@ -1747,3 +1747,43 @@ async fn a_failed_lookup_stays_querying_and_is_asked_again_by_the_next_attempt()
     assert!(matches!(one_of(&second).support, RankState::Ranked(_)));
     assert!(one_of(&second).settled());
 }
+
+#[tokio::test]
+async fn players_are_found_from_the_account_card_and_shared_matches() {
+    struct Provider;
+    impl Fetcher for Provider {
+        async fn fetch(&self, e: Endpoint, p: Value) -> Result<Fetched, Failure> {
+            let data = match e {
+                Endpoint::AccountCard => json!({"bnetId":1,"name":"Me#1","customerToken":"MINE"}),
+                Endpoint::MatchInfo => {
+                    assert_eq!(p["token"], "MINE");
+                    json!({"teammateList":[{"bnetId":"2","name":"Pal#2","customerToken":"PAL"}],
+                           "enemyList":[{"bnetId":"3","name":"Foe#3"}]})
+                }
+                Endpoint::Card => {
+                    assert_eq!(p["token"], "PAL");
+                    json!({"bnetId":"2","name":"Pal#2"})
+                }
+                _ => panic!("no other request: {e:?}"),
+            };
+            Ok(Fetched {
+                value: json!({"code":0,"success":true,"data":data}),
+                cached: false,
+            })
+        }
+    }
+    let (token, me) = collect::account_player(&Provider).await.unwrap();
+    assert_eq!((token.as_str(), &me["name"]), ("MINE", &json!("Me#1")));
+    let (token, pal) = collect::co_player(&Provider, "MINE", Mode::Competitive, "m", "2")
+        .await
+        .unwrap()
+        .expect("found through the match");
+    assert_eq!((token.as_str(), &pal["name"]), ("PAL", &json!("Pal#2")));
+    // Listed without a token: not reachable this way.
+    assert!(
+        collect::co_player(&Provider, "MINE", Mode::Competitive, "m", "3")
+            .await
+            .unwrap()
+            .is_none()
+    );
+}

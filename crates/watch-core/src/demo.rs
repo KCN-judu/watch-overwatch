@@ -29,6 +29,7 @@ pub fn respond(endpoint: Endpoint, payload: &Value) -> Option<Value> {
     // The other players in the sample matches are looked up too (lobby strength): their
     // names carry `#示例`, their tokens are the sample token with their id after it.
     let other = match endpoint {
+        Endpoint::AccountCard => None,
         Endpoint::SearchAccount => {
             let name = payload["name"].as_str()?.trim();
             if name.eq_ignore_ascii_case(DEMO_NAME) {
@@ -59,7 +60,7 @@ pub fn respond(endpoint: Endpoint, payload: &Value) -> Option<Value> {
         );
     }
     let data = match endpoint {
-        Endpoint::SearchAccount => json!({
+        Endpoint::SearchAccount | Endpoint::AccountCard => json!({
             "customerToken": DEMO_TOKEN, "bnetId": SUBJECT, "name": DEMO_NAME, "level": 7,
         }),
         Endpoint::Card => json!({
