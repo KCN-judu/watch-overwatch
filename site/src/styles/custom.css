@@ -1,18 +1,246 @@
-/* The app's own accent (the indigo of its dark theme) is the only colour the site adds. */
+/*
+ * The app's look, kept to what helps reading (docs/ui-design.md §7): its palette
+ * (Overwatch orange on deep blue), nearly square corners, the slanted section mark,
+ * a coloured bar on the left for "this one". Left out: slanted tabs and cut panels,
+ * condensed figures, the full-strength hexagon texture; prose stays plain.
+ */
+
+/* ---- Colours: the app's tokens (app/lib/design/tokens.dart) ---------------------- */
+
 :root {
-  --sl-color-accent-low: #1f2150;
-  --sl-color-accent: #5560e8;
-  --sl-color-accent-high: #b6baff;
-  --sl-font: 'Segoe UI', 'Microsoft YaHei UI', 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
-}
-:root[data-theme='light'] {
-  --sl-color-accent-low: #dcdeff;
-  --sl-color-accent: #3b42c4;
-  --sl-color-accent-high: #232885;
+  --wo-window: #0d1320;
+  --wo-nav: #111a2a;
+  --wo-raised: #162030;
+  --wo-header: #1c283a;
+  --wo-border: rgba(169, 195, 230, 0.15);
+  --wo-selected: rgba(249, 158, 26, 0.14);
+  --wo-ally: #52b6f5;
+  --wo-win: #4fd69c;
+  --wo-warning: #f2d04a;
+  --wo-loss: #ff8075;
+
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #eef2f8;
+  --sl-color-gray-2: #c9d2e0;
+  --sl-color-gray-3: #a1adc2;
+  --sl-color-gray-4: #6b7891;
+  --sl-color-gray-5: #2a3850;
+  --sl-color-gray-6: #162030;
+  --sl-color-black: #0d1320;
+
+  --sl-color-accent-low: #3a2608;
+  --sl-color-accent: #f99e1a;
+  --sl-color-accent-high: #ffd08a;
+  --sl-color-text-accent: #f9a93a;
+
+  --sl-color-bg: var(--wo-window);
+  --sl-color-bg-nav: var(--wo-nav);
+  --sl-color-bg-sidebar: var(--wo-nav);
+  --sl-color-bg-inline-code: var(--wo-header);
+  --sl-color-hairline: var(--wo-border);
+  --sl-color-hairline-light: rgba(169, 195, 230, 0.22);
+  --sl-color-hairline-shade: #070b13;
+
+  --sl-color-blue: var(--wo-ally);
+  --sl-color-blue-low: #0f2a3f;
+  --sl-color-green: var(--wo-win);
+  --sl-color-green-low: #0f2e24;
+  --sl-color-orange: var(--wo-warning);
+  --sl-color-orange-low: #352c0c;
+  --sl-color-red: var(--wo-loss);
+  --sl-color-red-low: #3a1717;
+
+  --sl-font: 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', 'Segoe UI',
+    system-ui, sans-serif;
+  --wo-figures: 'Bahnschrift', 'DIN Alternate', 'Segoe UI', sans-serif;
+  --wo-radius: 2px;
+  /* The hexagon texture of the app's page header, faint enough to read over. */
+  --wo-hex: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48' viewBox='0 0 28 48'%3E%3Cpath d='M14 0l14 8v16L14 32 0 24V8zM14 32v16' fill='none' stroke='%23a9c3e6' stroke-opacity='0.07'/%3E%3C/svg%3E");
 }
 
-/* Screenshots: full width of the column, a quiet frame. */
-.sl-markdown-content img {
+:root[data-theme='light'] {
+  --wo-window: #eef1f6;
+  --wo-nav: #e4e9f1;
+  --wo-raised: #ffffff;
+  --wo-header: #e6ebf3;
+  --wo-border: rgba(24, 42, 68, 0.16);
+  --wo-selected: rgba(194, 98, 10, 0.12);
+  --wo-ally: #11608f;
+  --wo-win: #166a42;
+  --wo-warning: #6f4d00;
+  --wo-loss: #ad2b24;
+
+  --sl-color-white: #141b28;
+  --sl-color-gray-1: #1d2636;
+  --sl-color-gray-2: #333e52;
+  --sl-color-gray-3: #4f5a6e;
+  --sl-color-gray-4: #7b869a;
+  --sl-color-gray-5: #c3cbd8;
+  --sl-color-gray-6: #e4e9f1;
+  --sl-color-gray-7: #f1f4f9;
+  --sl-color-black: #ffffff;
+
+  --sl-color-accent-low: #f6e2c8;
+  --sl-color-accent: #a04c00;
+  --sl-color-accent-high: #6b3200;
+  --sl-color-text-accent: #a04c00;
+
+  --sl-color-bg: var(--wo-raised);
+  --sl-color-bg-nav: var(--wo-nav);
+  --sl-color-bg-sidebar: var(--wo-window);
+  --sl-color-bg-inline-code: var(--wo-header);
+  --sl-color-hairline: var(--wo-border);
+  --sl-color-hairline-light: rgba(24, 42, 68, 0.1);
+  --sl-color-hairline-shade: rgba(24, 42, 68, 0.2);
+
+  --sl-color-blue-low: #dcecf7;
+  --sl-color-green-low: #dcefe5;
+  --sl-color-orange-low: #f6ecd2;
+  --sl-color-red-low: #f6dddb;
+
+  --wo-hex: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48' viewBox='0 0 28 48'%3E%3Cpath d='M14 0l14 8v16L14 32 0 24V8zM14 32v16' fill='none' stroke='%23182a44' stroke-opacity='0.06'/%3E%3C/svg%3E");
+}
+
+/* ---- Frame: header with the texture and an orange rule, sidebar like the app's ---- */
+
+header.header {
+  background-color: var(--sl-color-bg-nav);
+  background-image: var(--wo-hex);
+  border-bottom: 2px solid var(--sl-color-accent);
+}
+.site-title {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--sl-color-white);
+}
+
+/* Group labels small and quiet; the current page gets the app's selected row: a tint
+   and a bar on the left, not a filled pill. */
+.sidebar-content .group-label .large {
+  font-size: var(--sl-text-sm);
+  font-weight: 700;
+  color: var(--sl-color-gray-3);
+  letter-spacing: 0.04em;
+}
+.sidebar-content a {
+  border-radius: var(--wo-radius);
+  border-inline-start: 3px solid transparent;
+}
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+  background-color: var(--wo-selected);
+  border-inline-start-color: var(--sl-color-accent);
+  color: var(--sl-color-white);
+  font-weight: 700;
+}
+
+/* ---- Headings: the section mark (a slanted orange stroke) on h2 ------------------- */
+
+.sl-markdown-content h1,
+.content-panel h1 {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.sl-markdown-content h2 {
+  position: relative;
+  padding-inline-start: 0.85em;
+  padding-block-end: 0.3em;
+  border-bottom: 1px solid var(--sl-color-hairline);
+  font-weight: 700;
+}
+.sl-markdown-content h2::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0.15em;
+  top: 0.15em;
+  width: 0.2em;
+  height: 0.95em;
+  background: var(--sl-color-accent);
+  transform: skewX(-11deg);
+}
+.sl-markdown-content h3 {
+  font-weight: 700;
+}
+.sl-markdown-content :is(h2, h3) a.sl-anchor-link {
+  color: var(--sl-color-gray-4);
+}
+
+/* ---- Prose: CJK reads better a little looser; links underlined only on hover ------ */
+
+.sl-markdown-content {
+  line-height: 1.8;
+}
+.sl-markdown-content a:not(.sl-anchor-link) {
+  text-decoration-color: color-mix(in srgb, var(--sl-color-text-accent) 40%, transparent);
+  text-underline-offset: 0.2em;
+}
+.sl-markdown-content a:not(.sl-anchor-link):hover {
+  text-decoration-color: currentColor;
+}
+.sl-markdown-content strong {
+  color: var(--sl-color-white);
+}
+
+/* ---- Tables: the app's data table (header band, hairline rows, figures aligned) ---- */
+
+.sl-markdown-content table {
+  border-collapse: collapse;
   border: 1px solid var(--sl-color-hairline);
-  border-radius: 4px;
+  border-radius: var(--wo-radius);
+  font-size: var(--sl-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.sl-markdown-content :is(th, td) {
+  border: 0;
+  border-bottom: 1px solid var(--sl-color-hairline);
+  padding: 0.55rem 0.8rem;
+}
+.sl-markdown-content th {
+  background: var(--wo-header);
+  color: var(--sl-color-gray-2);
+  font-weight: 700;
+}
+.sl-markdown-content tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ---- Code and asides: square corners, asides marked by their bar like app notices - */
+
+.sl-markdown-content code {
+  border-radius: var(--wo-radius);
+}
+.sl-markdown-content .expressive-code {
+  --ec-brdRad: 2px;
+}
+.starlight-aside {
+  border-radius: var(--wo-radius);
+  border-inline-start-width: 3px;
+}
+
+/* ---- Screenshots: the capture script already frames them (corners, shadow, ground) - */
+
+.sl-markdown-content img {
+  border-radius: var(--wo-radius);
+}
+
+/* ---- Pagination and the table of contents: same selected language ---------------- */
+
+.pagination-links a {
+  border-radius: var(--wo-radius);
+  box-shadow: none;
+  border-color: var(--sl-color-hairline-light);
+}
+.pagination-links a:hover {
+  border-color: var(--sl-color-accent);
+}
+starlight-toc a[aria-current='true'] {
+  color: var(--sl-color-text-accent);
+  font-weight: 700;
+}
+
+/* ---- Search box: a plain field, not a pill --------------------------------------- */
+
+site-search button[data-open-modal] {
+  border-radius: var(--wo-radius);
 }
