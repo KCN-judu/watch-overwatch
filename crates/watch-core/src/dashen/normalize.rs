@@ -80,10 +80,13 @@ fn entity(cat: &Catalog, kind: EntityKind, guid: Option<String>) -> Option<Entit
 
 /// The response body's `data` field, or the value itself if it is not an envelope.
 pub fn payload(response: &Value) -> &Value {
-    match response.get("data") {
-        Some(data) if response.get("code").is_some() || response.get("success").is_some() => data,
-        _ => response,
+    static ABSENT: Value = Value::Null;
+    if response.get("code").is_none() && response.get("success").is_none() {
+        return response;
     }
+    // An envelope without `data` (大神 sends `{"code":0,"success":true,"traceId":…}`)
+    // carries nothing, not the envelope itself.
+    response.get("data").unwrap_or(&ABSENT)
 }
 
 pub const TIER_BASES: [(&str, i64); 9] = [
