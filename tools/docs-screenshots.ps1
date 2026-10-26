@@ -18,7 +18,7 @@ param(
   [switch]$NoBuild,
   [string[]]$Only,
   [string]$Out = "docs/images",
-  [string]$Background = "#D9E0EA",
+  [string]$Background = "#1C283A",
   [ValidateSet("dark", "light")][string]$Theme = "dark"
 )
 $ErrorActionPreference = "Stop"

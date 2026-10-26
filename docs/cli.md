@@ -110,7 +110,7 @@ powershell -File tools/docs-screenshots.ps1 -NoBuild -Only overview,maps
 | 构建 | `watchd` 带 `--features demo`（目标目录 `target/demo`，不碰正在运行的那份），应用带 `--dart-define=WATCH_DEMO=true`，复制到 `target/screenshots/app` |
 | 启动 | 数据目录 `target/screenshots/data`（`WATCH_DATA_DIR`），端口 18380（`WATCHD_PORT`），服务程序用 `WATCHD_PATH` 指定；可以和平时用的那份同时开。预先写好 `ui-state.json`（主题、竞技模式、不检查更新）和 `players.json`（示例玩家），启动即打开示例玩家的概览 |
 | 拍摄 | 每张图重新启动一次，按 `$Shots` 里的步骤点击；窗口固定 1360 × 860，按窗口可见边框截取 |
-| 加工 | ImageMagick：去掉最外 1 像素、8 像素圆角、阴影、纯色底（`-Background`，默认 `#D9E0EA`）。原始截图留在 `target/screenshots/raw` |
+| 加工 | ImageMagick：去掉最外 1 像素、8 像素圆角、阴影、纯色底（`-Background`，默认 `#1C283A`，应用的表头深蓝）。原始截图留在 `target/screenshots/raw` |
 
 参数：`-Theme light` 拍浅色主题，`-Out` 换输出目录。
 
