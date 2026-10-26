@@ -31,6 +31,5 @@ class PeopleStrings {
   String get sameSide => '同队';
   String get otherSide => '对面';
   String get grouped => '组排';
-  String kda(String k, String d, String a) => '$k/$d/$a';
   String partyTag(int n) => '$n 人组排';
 }

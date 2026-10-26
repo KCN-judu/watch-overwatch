@@ -33,7 +33,7 @@ pub fn report_svg(document: &Value) -> String {
             _ => "#a1a1a7",
         };
         let y = 150 + index * 45;
-        svg.push_str(&format!(r##"<path d="M48 {}H1152" stroke="#414144"/><text x="48" y="{}" font-size="16" fill="{}">{}</text><text x="160" y="{}" font-size="16">{} / {}</text><text x="650" y="{}" font-size="16">K / A / D: {} / {} / {}</text>"##,y+14,y,color,xml(outcome),y,xml(map),xml(hero),y,row["stats"]["kills"],row["stats"]["assists"],row["stats"]["deaths"]));
+        svg.push_str(&format!(r##"<path d="M48 {}H1152" stroke="#414144"/><text x="48" y="{}" font-size="16" fill="{}">{}</text><text x="160" y="{}" font-size="16">{} / {}</text><text x="650" y="{}" font-size="16">消灭/助攻/阵亡 {}/{}/{}</text>"##,y+14,y,color,xml(outcome),y,xml(map),xml(hero),y,row["stats"]["kills"],row["stats"]["assists"],row["stats"]["deaths"]));
     }
     if rows.is_empty() {
         svg.push_str(r#"<text x="48" y="150" font-size="16">此视图没有可用于对局卡片的记录；完整字段请使用 JSON 导出。</text>"#);

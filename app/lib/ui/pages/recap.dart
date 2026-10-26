@@ -215,7 +215,7 @@ class _RecapState extends State<_Recap> {
       if (match != null)
         (
           title: tr.recap.stepBest,
-          value: fmtKda(match.stats),
+          value: fmtEad(match.stats),
           note: tr.recap.bestNote(
             match.hero?.label ?? tr.common.unknownHero,
             match.map?.label ?? tr.common.unknownMap,

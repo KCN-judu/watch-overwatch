@@ -254,10 +254,14 @@ String fmtPlayTime(double? seconds) {
 
 String fmtScore(int? a, int? b) => a == null || b == null ? missing : '$a:$b';
 
-String fmtKda(StatLine s) =>
-    s.kills == null && s.assists == null && s.deaths == null
+/// Eliminations / assists / deaths, in the order Overwatch's scoreboard shows them
+/// (消灭 / 助攻 / 阵亡). Every count triple in the app goes through here.
+String fmtEadOf(num? eliminations, num? assists, num? deaths) =>
+    eliminations == null && assists == null && deaths == null
     ? missing
-    : '${fmtInt(s.kills)}/${fmtInt(s.assists)}/${fmtInt(s.deaths)}';
+    : '${fmtInt(eliminations)}/${fmtInt(assists)}/${fmtInt(deaths)}';
+
+String fmtEad(StatLine s) => fmtEadOf(s.kills, s.assists, s.deaths);
 
 /// Chinese substring match: case-insensitive, no word-boundary assumptions.
 bool matchesQuery(String haystack, String query) =>

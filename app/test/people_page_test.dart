@@ -106,8 +106,8 @@ void main() {
       expect(find.text('共同 6 场'), findsOneWidget);
       expect(find.textContaining('同队 5 场，胜率 80%'), findsOneWidget);
       expect(find.text('同队，组排'), findsOneWidget);
-      expect(find.text('20/3/9'), findsOneWidget);
-      await tester.tap(find.text('20/3/9'));
+      expect(find.text('20/9/3'), findsOneWidget);
+      await tester.tap(find.text('20/9/3'));
       expect(t.ws.openMatchId, 'm1');
       expect(t.app.tab, 'matches');
     },
