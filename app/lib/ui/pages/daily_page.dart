@@ -873,10 +873,7 @@ class _MatchLine extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        Text(
-          tr.people.kda(fmtInt(s.kills), fmtInt(s.deaths), fmtInt(s.assists)),
-          style: Ty.num(Ty.body),
-        ),
+        Text(fmtEad(s), style: Ty.num(Ty.body)),
       ],
     );
   }

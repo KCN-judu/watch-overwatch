@@ -760,7 +760,7 @@ class _Recent extends StatelessWidget {
                     SizedBox(
                       width: 110,
                       child: Text(
-                        fmtKda(m.stats),
+                        fmtEad(m.stats),
                         textAlign: TextAlign.right,
                         style: Ty.num(Ty.body),
                       ),

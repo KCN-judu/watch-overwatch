@@ -170,7 +170,11 @@ class TeamTable extends StatelessWidget {
       )) {
         return missing;
       }
-      return '${fmtInt(sum((p) => p.stats.kills))}/${fmtInt(sum((p) => p.stats.assists))}/${fmtInt(sum((p) => p.stats.deaths))}';
+      return fmtEadOf(
+        sum((p) => p.stats.kills),
+        sum((p) => p.stats.assists),
+        sum((p) => p.stats.deaths),
+      );
     }
 
     final cols = <Col<_Line>>[
@@ -273,16 +277,16 @@ class TeamTable extends StatelessWidget {
       ),
       Col(
         id: 'kda',
-        label: 'K/A/D',
-        width: 92,
+        label: tr.matches.ead,
+        width: 112,
         numeric: true,
-        tooltip: tr.matches.kdaTip,
+        tooltip: tr.matches.eadTip,
         cell: (_, l) => l.isTotal
             ? Text(
                 kdaTotal(),
                 style: const TextStyle(fontWeight: FontWeight.w600),
               )
-            : Text(fmtKda(l.player!.stats)),
+            : Text(fmtEad(l.player!.stats)),
       ),
       Col(
         id: 'damage',

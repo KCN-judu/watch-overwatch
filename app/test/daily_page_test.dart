@@ -132,7 +132,7 @@ void main() {
       expect(find.textContaining('治疗 ×', findRichText: true), findsOneWidget);
       expect(find.text('4 连胜'), findsOneWidget);
       expect(find.text('+25%'), findsOneWidget);
-      expect(find.text('31/0/9'), findsOneWidget);
+      expect(find.text('31/9/0'), findsOneWidget);
       await tester.tap(find.text('刷新纪录：消灭'));
       expect(ws.openMatchId, 'b');
       expect(app.tab, 'matches');

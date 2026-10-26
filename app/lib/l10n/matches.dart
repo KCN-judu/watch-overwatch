@@ -121,7 +121,8 @@ class MatchStrings {
   /// Badge next to the player being looked at.
   String get subject => '本人';
   String get suspendedTip => '账号暂停中';
-  String get kdaTip => 'Kills / Assists / Deaths：消灭 / 助攻 / 阵亡';
+  String get ead => '消灭/助攻/阵亡';
+  String get eadTip => '与游戏内记分板同序';
   String get damageTip => '对英雄伤害，条长以全场最高为满';
   String get healingTip => '治疗量，条长以全场最高为满';
   String get mitigationTip => '阻挡 / 减免的伤害量（非次数），条长以全场最高为满';

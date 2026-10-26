@@ -364,14 +364,12 @@ class _SharedRow extends StatelessWidget {
     final catalog = AppScope.of(context).catalog;
     final c = context.c;
     final meta = Ty.meta.copyWith(color: c.textSecondary);
-    String kda(StatLine s) =>
-        tr.people.kda(fmtInt(s.kills), fmtInt(s.deaths), fmtInt(s.assists));
     Widget side(EntityRef? hero, StatLine s) => Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         NetImage(catalog.heroIcon(hero), size: 24, fallback: hero?.label ?? ''),
         const SizedBox(width: Sp.iconGap),
-        Text(kda(s), style: Ty.num(Ty.body)),
+        Text(fmtEad(s), style: Ty.num(Ty.body)),
       ],
     );
     return Row(

@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:watch_overwatch/core/models.dart';
+import 'package:watch_overwatch/core/support.dart';
 import 'package:watch_overwatch/design/tokens.dart';
 
 /// Every Dart file under lib/, path relative to the app folder with `/` separators.
@@ -84,6 +86,17 @@ void main() {
 
   test('copy joins facts with ，, never an infix dot', () {
     expect(offenders(RegExp('·'), {}), isEmpty);
+  });
+
+  test('count triples are 消灭/助攻/阵亡, built in one place', () {
+    // Overwatch's scoreboard order. A triple put together anywhere else drifts.
+    expect(
+      offenders(RegExp(r"\}/\$\{[^']*\}/\$\{|\$\w+/\$\w+/\$\w+"), {
+        'lib/core/support.dart',
+      }),
+      isEmpty,
+    );
+    expect(fmtEad(const StatLine(kills: 12, assists: 6, deaths: 2)), '12/6/2');
   });
 
   test('wording comes from the string table (lib/l10n)', () {
