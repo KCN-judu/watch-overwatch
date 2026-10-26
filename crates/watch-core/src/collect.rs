@@ -1131,6 +1131,14 @@ pub async fn search_player<F: Fetcher>(f: &F, name: &str) -> Result<(String, Val
         .fetch(Endpoint::SearchAccount, json!({"name":name}))
         .await?;
     let identity = normalize::payload(&fetched.value).clone();
+    // 大神 answered “success” and sent nothing at all: say exactly that, apart from a
+    // player record that lacks the token.
+    if identity.is_null() {
+        return Err(failure(
+            "empty",
+            "大神返回成功，但没有数据（账号验证已通过）。昵称有误，或大神的玩家查询暂时不可用。",
+        ));
+    }
     let token = identity
         .get("customerToken")
         .and_then(Value::as_str)
