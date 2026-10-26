@@ -360,14 +360,19 @@ async fn search_requires_a_customer_token() {
         "validation"
     );
     // Success with no data at all (seen 2026-10-26 for every name) is its own case.
-    let empty = Search(json!({"code":0,"success":true,"data":null}));
-    assert_eq!(
-        collect::search_player(&empty, "A#1")
-            .await
-            .unwrap_err()
-            .kind,
-        "empty"
-    );
+    for body in [
+        json!({"code":0,"success":true,"data":null}),
+        // What 大神 actually sends: no `data` key at all.
+        json!({"code":0,"success":true,"traceId":"t"}),
+    ] {
+        assert_eq!(
+            collect::search_player(&Search(body), "A#1")
+                .await
+                .unwrap_err()
+                .kind,
+            "empty"
+        );
+    }
 }
 
 fn row(id: &str, at: i64, outcome: Outcome, hero: &str, damage: Option<f64>) -> MatchSummary {
